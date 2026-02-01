@@ -2,6 +2,11 @@
 
 A Text-to-SQL Business Intelligence Dashboard powered by Multi-Agent AI.
 
+
+https://github.com/user-attachments/assets/fe8c9466-1f92-44c9-9265-6ab98135695d
+
+
+
 **Ask questions in plain English → Get SQL queries → See visualizations**
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
