@@ -1,0 +1,235 @@
+from typing import TypedDict, Optional
+from langgraph.graph import StateGraph, END
+
+from database import connection_manager
+from query_executor.executor import execute_query
+from query_executor.safety import validate_query
+from visualization.analyzer import analyze_data_shape
+from visualization.recommender import recommend_chart
+from .schema_builder import build_schema_context, build_conversation_prompt
+from .sql_generator import generate_sql, generate_error_correction
+from .session_manager import get_history_for_llm
+
+
+# ─── State Definition ──────────────────────────────────────
+class ChatState(TypedDict):
+    """State that flows through the LangGraph workflow."""
+    connection_id: str
+    session_id: str
+    user_message: str
+    schema_context: str
+    llm_messages: list[dict]
+    explanation: str
+    sql: str
+    columns: list[str]
+    rows: list[dict]
+    row_count: int
+    execution_time_ms: float
+    error: str
+    retry_count: int
+    max_retries: int
+    chart_recommendation: Optional[dict]
+
+
+# ─── Node Functions ────────────────────────────────────────
+
+def build_context(state: ChatState) -> dict:
+    """Node 1: Build schema context and conversation prompt."""
+    schema_context = build_schema_context(state["connection_id"])
+    history = get_history_for_llm(state["session_id"])
+    llm_messages = build_conversation_prompt(
+        schema_context=schema_context,
+        history=history,
+        user_message=state["user_message"],
+    )
+    return {
+        "schema_context": schema_context,
+        "llm_messages": llm_messages,
+    }
+
+
+def generate_sql_node(state: ChatState) -> dict:
+    """Node 2: Call LLM to generate SQL."""
+    explanation, sql = generate_sql(state["llm_messages"])
+    return {
+        "explanation": explanation,
+        "sql": sql,
+        "error": "" if sql else "LLM did not generate any SQL query.",
+    }
+
+
+def validate_sql_node(state: ChatState) -> dict:
+    """Node 3: Validate the generated SQL for safety."""
+    sql = state["sql"]
+    if not sql:
+        return {"error": "No SQL query was generated."}
+
+    is_safe, error_msg = validate_query(sql)
+    if not is_safe:
+        return {"error": error_msg}
+
+    return {"error": ""}
+
+
+def execute_sql_node(state: ChatState) -> dict:
+    """Node 4: Execute the SQL against the database."""
+    engine = connection_manager.get_engine(state["connection_id"])
+    if not engine:
+        return {"error": "Database connection not found."}
+
+    sql = state["sql"]
+    print(f"[execute_sql] Running: {sql[:100]}...")
+
+    # execute_query handles validation + row limiting internally
+    result = execute_query(engine, sql, row_limit=500, connection_id=state["connection_id"])
+
+    if result.success:
+        print(f"[execute_sql] ✅ Success — {result.row_count} rows, {len(result.columns)} cols")
+        return {
+            "columns": result.columns,
+            "rows": result.rows,
+            "row_count": result.row_count,
+            "execution_time_ms": result.execution_time_ms,
+            "error": "",
+        }
+    else:
+        print(f"[execute_sql] ❌ Error — {result.error}")
+        return {"error": result.error or "Query execution failed."}
+
+
+def analyze_results_node(state: ChatState) -> dict:
+    """Node 5: Analyze query results and recommend a chart."""
+    columns = state.get("columns", [])
+    rows = state.get("rows", [])
+
+    if not columns or not rows:
+        return {"chart_recommendation": None}
+
+    analysis = analyze_data_shape(columns, rows)
+    recommendation = recommend_chart(analysis, columns, rows)
+
+    if recommendation:
+        print(f"[analyze] 📊 Recommending: {recommendation['type']} chart — {recommendation['title']}")
+    else:
+        print(f"[analyze] 📊 No chart recommended for this data shape")
+
+    return {"chart_recommendation": recommendation}
+
+
+def handle_error_node(state: ChatState) -> dict:
+    """Node 5: Feed error back to LLM for self-correction."""
+    retry_count = state["retry_count"] + 1
+    explanation, corrected_sql = generate_error_correction(
+        messages=state["llm_messages"],
+        sql=state["sql"],
+        error=state["error"],
+    )
+    return {
+        "explanation": explanation,
+        "sql": corrected_sql,
+        "retry_count": retry_count,
+        "error": "" if corrected_sql else "LLM could not generate a corrected query.",
+    }
+
+
+# ─── Routing Functions ─────────────────────────────────────
+
+def should_execute_or_retry(state: ChatState) -> str:
+    """After validation: execute if valid, retry if error and retries left."""
+    if not state.get("error"):
+        return "execute"
+    if state["retry_count"] < state["max_retries"]:
+        return "retry"
+    return "give_up"
+
+
+def should_finish_or_retry(state: ChatState) -> str:
+    """After execution: finish if success, retry if error and retries left."""
+    if not state.get("error"):
+        return "finish"
+    if state["retry_count"] < state["max_retries"]:
+        return "retry"
+    return "give_up"
+
+
+# ─── Build the Graph ───────────────────────────────────────
+
+def build_chat_graph() -> StateGraph:
+    """Build the LangGraph workflow for Text-to-SQL chat."""
+    graph = StateGraph(ChatState)
+
+    # Add nodes
+    graph.add_node("build_context", build_context)
+    graph.add_node("generate_sql", generate_sql_node)
+    graph.add_node("validate_sql", validate_sql_node)
+    graph.add_node("execute_sql", execute_sql_node)
+    graph.add_node("analyze_results", analyze_results_node)
+    graph.add_node("handle_error", handle_error_node)
+
+    # Set entry point
+    graph.set_entry_point("build_context")
+
+    # Edges
+    graph.add_edge("build_context", "generate_sql")
+    graph.add_edge("generate_sql", "validate_sql")
+
+    # After validation: execute, retry, or give up
+    graph.add_conditional_edges(
+        "validate_sql",
+        should_execute_or_retry,
+        {
+            "execute": "execute_sql",
+            "retry": "handle_error",
+            "give_up": END,
+        }
+    )
+
+    # After execution: analyze results or retry
+    graph.add_conditional_edges(
+        "execute_sql",
+        should_finish_or_retry,
+        {
+            "finish": "analyze_results",
+            "retry": "handle_error",
+            "give_up": END,
+        }
+    )
+
+    # After analysis: done
+    graph.add_edge("analyze_results", END)
+
+    # After error handling: go back to validate
+    graph.add_edge("handle_error", "validate_sql")
+
+    return graph.compile()
+
+
+# Compiled graph singleton
+chat_graph = build_chat_graph()
+
+
+def run_chat(connection_id: str, session_id: str, user_message: str) -> ChatState:
+    """
+    Run the full Text-to-SQL pipeline.
+    Returns the final state with SQL, results, or error.
+    """
+    initial_state: ChatState = {
+        "connection_id": connection_id,
+        "session_id": session_id,
+        "user_message": user_message,
+        "schema_context": "",
+        "llm_messages": [],
+        "explanation": "",
+        "sql": "",
+        "columns": [],
+        "rows": [],
+        "row_count": 0,
+        "execution_time_ms": 0.0,
+        "error": "",
+        "retry_count": 0,
+        "max_retries": 3,
+        "chart_recommendation": None,
+    }
+
+    final_state = chat_graph.invoke(initial_state)
+    return final_state

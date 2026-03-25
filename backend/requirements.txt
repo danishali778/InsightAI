@@ -1,26 +1,18 @@
-# InsightAI Backend Dependencies
+# QueryMind Backend Dependencies
 
 # Core API
 fastapi
-uvicorn
+uvicorn[standard]
 python-dotenv
-sse-starlette
+pydantic
 
-# Database
-psycopg2-binary
+# Database Drivers
 sqlalchemy
+psycopg2-binary
+pymysql
 
 # LLM & Orchestration
 langchain
-langchain-community
+langchain-core
 langchain-groq
 langgraph
-
-# CrewAI (install separately - see instructions below)
-# crewai has uvloop dependency which doesn't work on Windows
-# Install with: pip install crewai --no-binary :all:
-
-# Utilities
-pydantic
-faker
-litellm

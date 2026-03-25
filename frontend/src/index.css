@@ -1,115 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 @import "tailwindcss";
 
-:root {
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --glass-bg: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --dark-bg: #0f0f1a;
-  --card-bg: #1a1a2e;
-  --accent-purple: #764ba2;
-  --accent-blue: #667eea;
-  --success: #10b981;
-  --error: #ef4444;
-  --warning: #f59e0b;
+@layer base {
+  :root {
+    --bg: #060a12;
+    --surface: #0d1420;
+    --surface2: #111928;
+    --accent: #00e5ff;
+    --accent2: #7c3aff;
+    --accent3: #ff6b35;
+    --text: #e8edf5;
+    --muted: #6b7a99;
+    --border: rgba(255, 255, 255, 0.06);
+    --glow: 0 0 40px rgba(0, 229, 255, 0.15);
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-style: normal;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  div,
+  a {
+    font-style: normal;
+  }
 }
 
-* {
-  box-sizing: border-box;
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
 }
 
-body {
-  margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--dark-bg);
-  color: #ffffff;
-  min-height: 100vh;
+/* Font utilities */
+.font-syne {
+  font-family: 'Syne', sans-serif !important;
+  font-style: normal !important;
 }
 
-/* Glassmorphism utilities */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
+.font-dm-mono {
+  font-family: 'DM Mono', monospace !important;
+  font-style: normal !important;
 }
 
-.glass-card {
-  background: rgba(26, 26, 46, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  border-radius: 16px;
+.font-dm-sans {
+  font-family: 'DM Sans', sans-serif !important;
+  font-style: normal !important;
+}
+
+/* Color utilities */
+.text-accent {
+  color: var(--accent) !important;
+}
+
+.text-muted-custom {
+  color: var(--muted);
+}
+
+.bg-surface {
+  background: var(--surface);
+}
+
+.bg-surface2 {
+  background: var(--surface2);
 }
 
 /* Gradient text */
 .gradient-text {
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Primary button */
-.btn-primary {
-  background: var(--primary-gradient);
-  color: white;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+/* Hero background effects */
+.hero-bg-gradient {
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124, 58, 255, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 80% 50%, rgba(0, 229, 255, 0.08) 0%, transparent 60%);
 }
 
-.btn-primary:hover {
+.hero-grid-pattern {
+  background-image: linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, black 30%, transparent 80%);
+}
+
+/* Glow button */
+.btn-glow {
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-glow:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 0 50px rgba(0, 229, 255, 0.45);
 }
 
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
+/* Demo box shadow */
+.demo-shadow {
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5), var(--glow);
 }
 
-/* Input styling */
-.input-glass {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  color: white;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  width: 100%;
+/* SQL syntax colors */
+.sql-kw {
+  color: var(--accent);
 }
 
-.input-glass:focus {
-  outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+.sql-tbl {
+  color: #ffb347;
 }
 
-.input-glass::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+.sql-str {
+  color: #b5ead7;
 }
 
-/* Animations */
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
-  }
-
-  50% {
-    box-shadow: 0 0 40px rgba(102, 126, 234, 0.5);
-  }
+/* Charts section radial glow */
+.charts-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(124, 58, 255, 0.12) 0%, transparent 70%);
+  pointer-events: none;
 }
 
-@keyframes slide-in {
+/* CTA section glow */
+.cta-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 80% at 50% 50%, rgba(124, 58, 255, 0.15) 0%, transparent 65%);
+}
+
+/* Steps connector line */
+.steps-connector::before {
+  content: '';
+  position: absolute;
+  top: 28px;
+  left: 60px;
+  right: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent2), var(--accent), transparent);
+  opacity: 0.4;
+}
+
+/* Tool card hover */
+.tool-card-hover:hover {
+  border-color: var(--tool-color, var(--accent)) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--tool-color, var(--accent));
+}
+
+/* SVG charts */
+.bar-anim {
+  transition: opacity 0.2s;
+}
+
+.bar-anim:hover {
+  opacity: 0.8;
+}
+
+/* Scroll reveal animations */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 {
+  transition-delay: 0.1s;
+}
+
+.reveal-delay-2 {
+  transition-delay: 0.2s;
+}
+
+.reveal-delay-3 {
+  transition-delay: 0.3s;
+}
+
+/* Keyframes */
+@keyframes fadeDown {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(-16px);
   }
 
   to {
@@ -118,48 +227,59 @@ body {
   }
 }
 
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out forwards;
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+.animate-fade-down {
+  animation: fadeDown 0.8s ease both;
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(102, 126, 234, 0.5);
-  border-radius: 4px;
+.animate-fade-down-1 {
+  animation: fadeDown 0.8s 0.1s ease both;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(102, 126, 234, 0.7);
+.animate-fade-down-2 {
+  animation: fadeDown 0.8s 0.2s ease both;
 }
 
-/* Chart customizations */
-.recharts-wrapper {
-  position: relative !important;
+.animate-fade-down-3 {
+  animation: fadeDown 0.8s 0.3s ease both;
 }
 
-.recharts-wrapper svg {
-  overflow: visible !important;
+.animate-fade-up {
+  animation: fadeUp 0.8s 0.5s ease both;
 }
 
-.recharts-cartesian-grid-horizontal line,
-.recharts-cartesian-grid-vertical line {
-  stroke: rgba(255, 255, 255, 0.1);
+.animate-pulse-dot {
+  animation: pulse-dot 2s infinite;
 }
 
-.recharts-text {
-  fill: rgba(255, 255, 255, 0.7);
-}
-
-/* Chart container - disable transforms that break hit detection */
-.glass-card {
-  transform: none !important;
+/* Responsive */
+@media (max-width: 900px) {
+  .steps-connector::before {
+    display: none;
+  }
 }
