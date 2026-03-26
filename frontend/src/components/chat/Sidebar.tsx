@@ -1,28 +1,18 @@
 import { useState } from 'react';
 import { T } from '../dashboard/tokens';
+import type { ChatSidebarProps } from '../../types/chat';
 
-interface Session { id: string; connection_id: string; message_count: number; created_at: string; }
-interface Connection { id: string; db_type: string; database: string; host: string; status: string; }
-
-interface SidebarProps {
-  sessions: Session[];
-  activeSessionId: string | null;
-  onSelectSession: (id: string) => void;
-  onNewChat: () => void;
-  onDeleteSession: (id: string) => void;
-  onOpenConnect: () => void;
-  connections: Connection[];
-}
-
-export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession, onOpenConnect, connections }: SidebarProps) {
+export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession, onRenameSession, onOpenConnect, connections }: ChatSidebarProps) {
   const [search, setSearch] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
 
   const today = new Date().toDateString();
   const yesterday = new Date(Date.now() - 86400000).toDateString();
   const weekAgo = Date.now() - 7 * 86400000;
 
-  const grouped: { label: string; items: Session[] }[] = [];
-  const todayItems: Session[] = [], yesterdayItems: Session[] = [], weekItems: Session[] = [], olderItems: Session[] = [];
+  const grouped: { label: string; items: ChatSidebarProps['sessions'] }[] = [];
+  const todayItems: ChatSidebarProps['sessions'] = [], yesterdayItems: ChatSidebarProps['sessions'] = [], weekItems: ChatSidebarProps['sessions'] = [], olderItems: ChatSidebarProps['sessions'] = [];
 
   sessions.forEach(s => {
     const d = new Date(s.created_at);
@@ -96,7 +86,7 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
           <div key={group.label}>
             <div style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: 1.5, color: T.text3, textTransform: 'uppercase', padding: '12px 6px 6px', fontFamily: T.fontMono }}>{group.label}</div>
             {group.items
-              .filter(s => !search || s.id.toLowerCase().includes(search.toLowerCase()))
+              .filter(s => !search || s.id.toLowerCase().includes(search.toLowerCase()) || (s.title || '').toLowerCase().includes(search.toLowerCase()))
               .map(s => {
                 const isActive = s.id === activeSessionId;
                 return (
@@ -111,9 +101,31 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
                   >
                     {isActive && <div style={{ position: 'absolute', left: -1, top: '20%', bottom: '20%', width: 2, borderRadius: 2, background: T.accent }} />}
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.green, flexShrink: 0, boxShadow: '0 0 5px rgba(34,211,165,0.5)' }} />
-                    <span style={{ fontSize: '0.8rem', color: isActive ? T.text : T.text2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
-                      Session {s.id.slice(0, 6)}
-                    </span>
+                    {editingId === s.id ? (
+                      <input
+                        autoFocus
+                        value={editText}
+                        onChange={e => setEditText(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { onRenameSession(s.id, editText.trim() || s.title || `Session ${s.id.slice(0, 6)}`); setEditingId(null); }
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                        onBlur={() => { onRenameSession(s.id, editText.trim() || s.title || `Session ${s.id.slice(0, 6)}`); setEditingId(null); }}
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          flex: 1, fontSize: '0.8rem', color: T.text, background: T.s2,
+                          border: `1px solid ${T.accent}`, borderRadius: 4, padding: '1px 4px',
+                          outline: 'none', fontFamily: T.fontBody, minWidth: 0,
+                        }}
+                      />
+                    ) : (
+                      <span
+                        onDoubleClick={e => { e.stopPropagation(); setEditingId(s.id); setEditText(s.title || `Session ${s.id.slice(0, 6)}`); }}
+                        style={{ fontSize: '0.8rem', color: isActive ? T.text : T.text2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}
+                      >
+                        {s.title || `Session ${s.id.slice(0, 6)}`}
+                      </span>
+                    )}
                     <span style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono, flexShrink: 0 }}>{timeAgo(s.created_at)}</span>
                     <button onClick={e => { e.stopPropagation(); onDeleteSession(s.id); }}
                       style={{ background: 'none', border: 'none', color: T.text3, cursor: 'pointer', fontSize: '0.65rem', padding: '0 2px', opacity: 0, transition: 'opacity 0.2s', flexShrink: 0 }}

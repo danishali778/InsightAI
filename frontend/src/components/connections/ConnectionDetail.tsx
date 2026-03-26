@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { T } from '../dashboard/tokens';
-import type { ConnectionData } from './ConnectionListPanel';
+import { StatusIndicator } from '../common/StatusIndicator';
 import { testConnection } from '../../services/api';
+import type { ConnectionDetailProps, ConnectionDetailTab, ConnectionListItem } from '../../types/connections';
+import { ErdDiagram } from './ErdDiagram';
 
-export function ConnectionDetail({ connection, schema, queryHistory, onDelete, onRefreshSchema }: { connection: ConnectionData | null, schema?: any, queryHistory?: any[], onDelete?: (id: string) => void, onRefreshSchema?: () => void }) {
-  const [activeTab, setActiveTab] = useState<'overview'|'credentials'|'schema'|'security'|'activity'>('overview');
+export function ConnectionDetail({ connection, schema, queryHistory, onDelete, onRefreshSchema }: ConnectionDetailProps) {
+  const [activeTab, setActiveTab] = useState<ConnectionDetailTab>('overview');
   
   if (!connection) {
     return (
@@ -38,9 +40,12 @@ export function ConnectionDetail({ connection, schema, queryHistory, onDelete, o
           <div style={{ fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono }}>{connection.host || 'localhost'} · {connection.port || 'N/A'} · database: {connection.database || 'N/A'}</div>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: '0.72rem', fontFamily: T.fontMono, flexShrink: 0, background: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: sc.text, animation: 'lp 2s infinite' }} />
-          {connection.status === 'offline' ? 'Offline' : `Live · ${connection.latency}ms`}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 20, fontSize: '0.85rem', fontFamily: T.fontBody, flexShrink: 0, background: sc.bg, border: `1px solid ${sc.border}` }}>
+          <StatusIndicator
+            status={connection.status === 'live' ? 'online' : connection.status === 'offline' ? 'offline' : 'loading'}
+            latency={typeof connection.latency === 'number' ? connection.latency : undefined}
+            size="sm"
+          />
         </div>
         
         <div style={{ display: 'flex', gap: 7 }}>
@@ -124,7 +129,7 @@ function Tab({ active, label, onClick }: { active: boolean, label: string, onCli
 // Tabs Content
 // ------------------------
 
-function OverviewTab({ connection, schema, queryHistory, onTabSwitch }: { connection: ConnectionData, schema?: any, queryHistory?: any[], onTabSwitch: (tab: any) => void }) {
+function OverviewTab({ connection, schema, queryHistory, onTabSwitch }: { connection: ConnectionListItem, schema?: ConnectionDetailProps['schema'], queryHistory?: ConnectionDetailProps['queryHistory'], onTabSwitch: (tab: ConnectionDetailTab) => void }) {
   const tables = schema?.tables || [];
   const tableCount = tables.length;
   const recentQueries = (queryHistory || []).slice(0, 3);
@@ -185,9 +190,9 @@ function OverviewTab({ connection, schema, queryHistory, onTabSwitch }: { connec
   );
 }
 
-function CredentialsTab({ connection }: { connection: ConnectionData }) {
+function CredentialsTab({ connection }: { connection: ConnectionListItem }) {
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string; tables_found?: number } | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; tables_found?: number | null } | null>(null);
 
   const runTest = async () => {
     setTesting(true);
@@ -270,35 +275,57 @@ function CredentialsTab({ connection }: { connection: ConnectionData }) {
 
 function SchemaTab({ schema, onRefresh }: { schema?: any, onRefresh?: () => void }) {
   const tables = schema?.tables || [];
+  const [viewMode, setViewMode] = useState<'table' | 'erd'>('table');
+
+  const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
+    padding: '4px 12px', borderRadius: 6, border: `1px solid ${active ? T.accent + '44' : T.border}`,
+    background: active ? T.accentDim : 'transparent', color: active ? T.accent : T.text3,
+    fontSize: '0.72rem', cursor: 'pointer', fontFamily: T.fontMono, fontWeight: active ? 600 : 400,
+    transition: 'all 0.15s',
+  });
+
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <span style={{ fontSize: '0.82rem', color: T.text2 }}>{tables.length} tables · 1 schema</span>
+        <div style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
+          <button onClick={() => setViewMode('table')} style={toggleBtnStyle(viewMode === 'table')}>Table</button>
+          <button onClick={() => setViewMode('erd')} style={toggleBtnStyle(viewMode === 'erd')}>ERD</button>
+        </div>
         {onRefresh && <button onClick={onRefresh} style={{ marginLeft: 'auto', padding: '5px 12px', borderRadius: 7, border: `1px solid ${T.border}`, background: 'transparent', color: T.text2, fontSize: '0.72rem', cursor: 'pointer', fontFamily: T.fontBody }}>↺ Sync Schema</button>}
       </div>
-      <SectionCard title="All Tables" badge={{ text: `${tables.length} tables`, color: T.accent }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
-          <thead>
-            <tr style={{ background: T.s3 }}>
-              {['Table', 'Rows', 'Columns'].map(h => (
-                <th key={h} style={{ padding: '9px 18px', textAlign: 'left', fontFamily: T.fontMono, fontSize: '0.65rem', color: T.text3, textTransform: 'uppercase', borderBottom: `1px solid ${T.border}` }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tables.map((t: any, i: number) => (
-              <tr key={i} style={{ borderBottom: `1px solid ${T.border}` }}>
-                <td style={{ padding: '9px 18px', color: T.text, fontFamily: T.fontMono }}>{t.name}</td>
-                <td style={{ padding: '9px 18px', color: T.text2, fontFamily: T.fontMono }}>{t.row_count?.toLocaleString() || 'N/A'}</td>
-                <td style={{ padding: '9px 18px', color: T.text2, fontFamily: T.fontMono }}>{t.columns?.length || 0}</td>
+
+      {viewMode === 'table' && (
+        <SectionCard title="All Tables" badge={{ text: `${tables.length} tables`, color: T.accent }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+            <thead>
+              <tr style={{ background: T.s3 }}>
+                {['Table', 'Rows', 'Columns'].map(h => (
+                  <th key={h} style={{ padding: '9px 18px', textAlign: 'left', fontFamily: T.fontMono, fontSize: '0.65rem', color: T.text3, textTransform: 'uppercase', borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                ))}
               </tr>
-            ))}
-            {tables.length === 0 && (
-              <tr><td colSpan={3} style={{ padding: '18px', color: T.text3, textAlign: 'center' }}>No tables found — connect a database first</td></tr>
-            )}
-          </tbody>
-        </table>
-      </SectionCard>
+            </thead>
+            <tbody>
+              {tables.map((t: any, i: number) => (
+                <tr key={i} style={{ borderBottom: `1px solid ${T.border}` }}>
+                  <td style={{ padding: '9px 18px', color: T.text, fontFamily: T.fontMono }}>{t.name}</td>
+                  <td style={{ padding: '9px 18px', color: T.text2, fontFamily: T.fontMono }}>{t.row_count?.toLocaleString() || 'N/A'}</td>
+                  <td style={{ padding: '9px 18px', color: T.text2, fontFamily: T.fontMono }}>{t.columns?.length || 0}</td>
+                </tr>
+              ))}
+              {tables.length === 0 && (
+                <tr><td colSpan={3} style={{ padding: '18px', color: T.text3, textAlign: 'center' }}>No tables found — connect a database first</td></tr>
+              )}
+            </tbody>
+          </table>
+        </SectionCard>
+      )}
+
+      {viewMode === 'erd' && (
+        <div style={{ height: 'calc(100vh - 280px)', minHeight: 450 }}>
+          <ErdDiagram tables={tables} />
+        </div>
+      )}
     </>
   );
 }

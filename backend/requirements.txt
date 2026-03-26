@@ -11,6 +11,9 @@ sqlalchemy
 psycopg2-binary
 pymysql
 
+# Scheduling
+apscheduler>=3.10,<4.0
+
 # LLM & Orchestration
 langchain
 langchain-core

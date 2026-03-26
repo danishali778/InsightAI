@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import { T } from '../dashboard/tokens';
-
-interface FolderSidebarProps {
-  folders: { name: string; count: number }[];
-  tags: string[];
-  stats: { total_queries: number; scheduled: number; total_runs: number; recently_run?: number };
-  activeFolder: string;
-  activeTag: string | null;
-  onFolderChange: (folder: string) => void;
-  onTagChange: (tag: string | null) => void;
-}
+import type { FolderSidebarProps } from '../../types/library';
 
 const TAG_COLORS: Record<string, string> = {
   revenue: '#00e5ff', churn: '#7c3aff', users: '#22d3a5',
@@ -23,6 +14,8 @@ export function FolderSidebar({ folders, tags, stats, activeFolder, activeTag, o
     { id: 'All Queries', icon: '⭐', count: stats.total_queries },
     { id: 'Recently Run', icon: '🕐', count: stats.recently_run ?? 0 },
     { id: 'Scheduled', icon: '📅', count: stats.scheduled },
+    { id: 'Shared with Me', icon: '👥', count: 4 },   /* STATIC */
+    { id: 'Public Library', icon: '🌐', count: 12 },   /* STATIC */
   ];
 
   return (

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from .models import Dashboard, CreateDashboardRequest, DashboardWidget, AddWidgetRequest
+from .models import Dashboard, CreateDashboardRequest, DashboardWidget, AddWidgetRequest, UpdateWidgetRequest
 
 
 # In-memory stores
@@ -54,6 +54,15 @@ def delete_dashboard(dashboard_id: str) -> bool:
 
 def add_widget(req: AddWidgetRequest) -> DashboardWidget:
     """Add a new widget to a dashboard."""
+    # Keep size presets as defaults; layout remains user-overridable later.
+    size_defaults = {
+        "half": {"w": 1, "h": 7, "minW": 1, "minH": 5},
+        "full": {"w": 2, "h": 8, "minW": 2, "minH": 6},
+    }
+    layout_default = size_defaults.get(req.size, size_defaults["half"])
+    dash_widgets = [w for w in _widgets.values() if w.dashboard_id == req.dashboard_id]
+    next_y = max((w.y + w.h) for w in dash_widgets) if dash_widgets else 0
+
     widget = DashboardWidget(
         id=str(uuid.uuid4())[:8],
         dashboard_id=req.dashboard_id,
@@ -65,6 +74,13 @@ def add_widget(req: AddWidgetRequest) -> DashboardWidget:
         rows=req.rows,
         chart_config=req.chart_config,
         cadence=req.cadence,
+        x=req.x if req.x is not None else 0,
+        y=req.y if req.y is not None else next_y,
+        w=req.w if req.w is not None else layout_default["w"],
+        h=req.h if req.h is not None else layout_default["h"],
+        minW=req.minW if req.minW is not None else layout_default["minW"],
+        minH=req.minH if req.minH is not None else layout_default["minH"],
+        bar_orientation=req.bar_orientation or "horizontal",
         created_at=datetime.now(timezone.utc),
     )
     _widgets[widget.id] = widget
@@ -88,6 +104,18 @@ def delete_widget(widget_id: str) -> bool:
         del _widgets[widget_id]
         return True
     return False
+
+
+def update_widget(widget_id: str, req: UpdateWidgetRequest) -> Optional[DashboardWidget]:
+    """Update widget layout/preferences."""
+    widget = _widgets.get(widget_id)
+    if not widget:
+        return None
+    update_data = req.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(widget, field, value)
+    _widgets[widget_id] = widget
+    return widget
 
 
 def get_stats(dashboard_id: Optional[str] = None) -> dict:

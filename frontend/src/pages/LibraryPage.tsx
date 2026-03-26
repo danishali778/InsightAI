@@ -5,12 +5,14 @@ import { FolderSidebar } from '../components/library/FolderSidebar';
 import { QueryList } from '../components/library/QueryList';
 import { T } from '../components/dashboard/tokens';
 import { listSavedQueries, listLibraryFolders, listLibraryTags, getLibraryStats, deleteSavedQuery } from '../services/api';
+import type { FolderSummary, LibraryStats } from '../types/api';
+import type { LibraryQuery } from '../types/library';
 
 export function LibraryPage() {
-  const [queries, setQueries] = useState<any[]>([]);
-  const [folders, setFolders] = useState<any[]>([]);
+  const [queries, setQueries] = useState<LibraryQuery[]>([]);
+  const [folders, setFolders] = useState<FolderSummary[]>([]);
   const [tags, setTags] = useState<string[]>([]);
-  const [stats, setStats] = useState<any>({ total_queries: 0, scheduled: 0, total_runs: 0, folders: 0 });
+  const [stats, setStats] = useState<LibraryStats>({ total_queries: 0, scheduled: 0, total_runs: 0, recently_run: 0, folders: 0 });
   const [activeFolder, setActiveFolder] = useState('All Queries');
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function LibraryPage() {
     <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: T.bg, color: T.text, fontFamily: T.fontBody }}>
       <LibrarySidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
-        <LibraryTopbar />
+        <LibraryTopbar stats={stats} />
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           <FolderSidebar
             folders={folders}

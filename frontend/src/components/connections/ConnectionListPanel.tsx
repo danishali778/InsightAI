@@ -1,23 +1,5 @@
 import { T } from '../dashboard/tokens';
-
-export type ConnectionStatus = 'live' | 'offline' | 'warning';
-
-export interface ConnectionData {
-  id: string;
-  name: string;
-  type: string;
-  version?: string;
-  status: ConnectionStatus;
-  latency?: number;
-  queries: number;
-  icon: string;
-  color: string;
-  host?: string;
-  port?: number;
-  database?: string;
-  username?: string;
-  tables_count?: number;
-}
+import type { ConnectionListItem } from '../../types/connections';
 
 export function ConnectionListPanel({ 
   connections, 
@@ -25,7 +7,7 @@ export function ConnectionListPanel({
   onSelect, 
   onAdd 
 }: { 
-  connections: ConnectionData[], 
+  connections: ConnectionListItem[], 
   activeId: string | null, 
   onSelect: (id: string) => void,
   onAdd: () => void 
@@ -96,7 +78,7 @@ export function ConnectionListPanel({
   );
 }
 
-function ConnectionItem({ data, active, onClick }: { data: ConnectionData, active: boolean, onClick: () => void }) {
+function ConnectionItem({ data, active, onClick }: { data: ConnectionListItem, active: boolean, onClick: () => void }) {
   const getRingColor = () => {
     switch(data.status) {
       case 'live': return T.green;

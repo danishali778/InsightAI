@@ -5,21 +5,9 @@ import { ResultsTable } from './ResultsTable';
 import { ChartBlock } from './ChartBlock';
 import { AddToDashboardModal } from './AddToDashboardModal';
 import { saveQuery } from '../../services/api';
+import type { ChatMessageView } from '../../types/chat';
 
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  sql?: string;
-  columns?: string[];
-  rows?: Record<string, unknown>[];
-  row_count?: number;
-  truncated?: boolean;
-  execution_time_ms?: number;
-  chart_recommendation?: { type: 'bar' | 'line' | 'pie' | 'scatter' | 'area'; x_column: string; y_columns: string[]; title: string; x_label: string; y_label: string; };
-  error?: string;
-}
-
-export function MessageBubble({ message, connectionId }: { message: Message, connectionId?: string }) {
+export function MessageBubble({ message, connectionId }: { message: ChatMessageView, connectionId?: string }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveLabel, setSaveLabel] = useState<string | null>(null);
@@ -85,7 +73,13 @@ export function MessageBubble({ message, connectionId }: { message: Message, con
         </div>
 
         {/* SQL */}
-        {message.sql && <SqlBlock sql={message.sql} />}
+        {message.sql && (
+          <SqlBlock
+            sql={message.sql}
+            defaultOpen
+            title="GENERATED SQL"
+          />
+        )}
 
         {/* Results Table */}
         {message.columns && message.rows && message.rows.length > 0 && (

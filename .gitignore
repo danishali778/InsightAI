@@ -70,3 +70,15 @@ htmlcov/
 
 # Local mockups
 querymind-*.html
+
+# Claude Code
+.claude/
+
+# MCP config
+.mcp.json
+
+# Playwright MCP screenshots
+.playwright-mcp/
+
+# Screenshots / reference images
+*.png

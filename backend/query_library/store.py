@@ -1,11 +1,12 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from .models import SavedQuery, SaveQueryRequest, UpdateQueryRequest
+from .models import SavedQuery, SaveQueryRequest, UpdateQueryRequest, QueryRunRecord, ScheduleConfig
 
 
-# In-memory store
+# In-memory stores
 _queries: dict[str, SavedQuery] = {}
+_run_history: dict[str, list[QueryRunRecord]] = {}  # query_id -> runs (newest first)
 
 
 def _normalize_sql(sql: str) -> str:
@@ -69,7 +70,7 @@ def list_queries(
         result.sort(key=lambda q: q.last_run_at, reverse=True)  # type: ignore
         return result
     if folder == "Scheduled":
-        result = [q for q in result if q.schedule]
+        result = [q for q in result if q.schedule and q.schedule.enabled]
     if tag:
         result = [q for q in result if tag in q.tags]
     if connection_id:
@@ -134,7 +135,7 @@ def get_stats() -> dict:
     """Get library-wide statistics."""
     queries = list(_queries.values())
     total = len(queries)
-    scheduled = len([q for q in queries if q.schedule])
+    scheduled = len([q for q in queries if q.schedule and q.schedule.enabled])
     total_runs = sum(q.run_count for q in queries)
 
     return {
@@ -144,3 +145,53 @@ def get_stats() -> dict:
         "recently_run": len([q for q in queries if q.last_run_at]),
         "folders": len(set(q.folder_name for q in queries)),
     }
+
+
+def get_scheduled_queries() -> list[SavedQuery]:
+    """Return all queries with an enabled schedule."""
+    return [q for q in _queries.values() if q.schedule and q.schedule.enabled]
+
+
+def update_schedule(query_id: str, config: Optional[ScheduleConfig]) -> Optional[SavedQuery]:
+    """Update just the schedule field of a query."""
+    query = _queries.get(query_id)
+    if not query:
+        return None
+    query.schedule = config
+    query.updated_at = datetime.now(timezone.utc)
+    _queries[query_id] = query
+    return query
+
+
+def log_run(
+    query_id: str,
+    success: bool,
+    row_count: int = 0,
+    execution_time_ms: float = 0.0,
+    error: Optional[str] = None,
+    triggered_by: str = "manual",
+) -> QueryRunRecord:
+    """Record a run of a saved query."""
+    record = QueryRunRecord(
+        id=str(uuid.uuid4())[:8],
+        query_id=query_id,
+        success=success,
+        row_count=row_count,
+        execution_time_ms=execution_time_ms,
+        error=error,
+        triggered_by=triggered_by,
+        ran_at=datetime.now(timezone.utc),
+    )
+    if query_id not in _run_history:
+        _run_history[query_id] = []
+    _run_history[query_id].insert(0, record)  # newest first
+    # Cap per-query history
+    if len(_run_history[query_id]) > 100:
+        _run_history[query_id] = _run_history[query_id][:100]
+    return record
+
+
+def get_run_history(query_id: str, limit: int = 20) -> list[QueryRunRecord]:
+    """Get run history for a saved query, newest first."""
+    runs = _run_history.get(query_id, [])
+    return runs[:limit]

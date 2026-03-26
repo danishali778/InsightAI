@@ -1,13 +1,7 @@
 import { T } from '../dashboard/tokens';
+import type { ChatResultsTableProps } from '../../types/chat';
 
-interface ResultsTableProps {
-  columns: string[];
-  rows: Record<string, unknown>[];
-  rowCount?: number;
-  executionTime?: number;
-}
-
-export function ResultsTable({ columns, rows, rowCount, executionTime }: ResultsTableProps) {
+export function ResultsTable({ columns, rows, rowCount, executionTime, truncated }: ChatResultsTableProps) {
   const fmt = (v: unknown) => {
     if (v === null || v === undefined) return '—';
     if (typeof v === 'number') return v.toLocaleString();
@@ -16,7 +10,6 @@ export function ResultsTable({ columns, rows, rowCount, executionTime }: Results
 
   return (
     <div style={{ borderBottom: `1px solid ${T.border}` }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: T.s2 }}>
         <span style={{
           fontSize: '0.65rem', fontFamily: T.fontMono, fontWeight: 600, letterSpacing: 1,
@@ -26,6 +19,7 @@ export function ResultsTable({ columns, rows, rowCount, executionTime }: Results
         <span style={{ fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono, flex: 1 }}>
           <span style={{ color: T.green }}>{rowCount ?? rows.length} rows</span>
           {executionTime != null && ` · ${(executionTime / 1000).toFixed(2)}s`}
+          {truncated && ' · limited'}
         </span>
         <div style={{ display: 'flex', gap: 5 }}>
           {['CSV', 'JSON'].map(f => (
@@ -38,7 +32,6 @@ export function ResultsTable({ columns, rows, rowCount, executionTime }: Results
         </div>
       </div>
 
-      {/* Table */}
       <div style={{ overflowX: 'auto', maxHeight: 200 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
           <thead>

@@ -13,3 +13,11 @@ class QueryRecord(BaseModel):
     execution_time_ms: Optional[float] = None
     row_count: Optional[int] = None
     timestamp: datetime
+
+
+class QueryStats(BaseModel):
+    """Aggregate execution statistics for a connection."""
+    total: int = 0
+    successful: int = 0
+    failed: int = 0
+    avg_time_ms: float = 0.0

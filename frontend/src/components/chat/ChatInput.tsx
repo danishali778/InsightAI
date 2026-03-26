@@ -1,15 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { T } from '../dashboard/tokens';
-
-interface Connection { id: string; db_type: string; database: string; host: string; status: string; }
-
-interface ChatInputProps {
-  connections: Connection[];
-  activeConnectionId: string;
-  onConnectionChange: (id: string) => void;
-  onSend: (message: string) => void;
-  loading: boolean;
-}
+import type { ChatInputProps } from '../../types/chat';
 
 export function ChatInput({ connections, activeConnectionId, onConnectionChange, onSend, loading }: ChatInputProps) {
   const [text, setText] = useState('');

@@ -2,13 +2,14 @@ import { T } from '../dashboard/tokens';
 
 interface ChatTopbarProps {
   sessionId: string | null;
+  sessionTitle?: string | null;
   dbType?: string;
   dbName?: string;
   onToggleSchema: () => void;
   schemaOpen: boolean;
 }
 
-export function ChatTopbar({ sessionId, dbName, onToggleSchema, schemaOpen }: ChatTopbarProps) {
+export function ChatTopbar({ sessionId, sessionTitle, dbName, onToggleSchema, schemaOpen }: ChatTopbarProps) {
   return (
     <div style={{
       height: 52, flexShrink: 0,
@@ -20,7 +21,7 @@ export function ChatTopbar({ sessionId, dbName, onToggleSchema, schemaOpen }: Ch
       {/* Left */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.9rem', color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {sessionId ? `Session ${sessionId.slice(0, 8)}` : 'New Conversation'}
+          {sessionId ? (sessionTitle || `Session ${sessionId.slice(0, 8)}`) : 'New Conversation'}
         </div>
         {dbName && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: T.text3, fontFamily: T.fontMono, flexShrink: 0 }}>

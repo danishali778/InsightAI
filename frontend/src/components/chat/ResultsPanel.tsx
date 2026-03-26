@@ -1,32 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { ResultsTable } from './ResultsTable';
 import { ChartBlock } from './ChartBlock';
-
-interface ChartRecommendation {
-    type: 'bar' | 'line' | 'pie' | 'scatter' | 'area';
-    x_column: string;
-    y_columns: string[];
-    title: string;
-    x_label: string;
-    y_label: string;
-}
-
-interface ResultsPanelProps {
-    columns: string[];
-    rows: Record<string, unknown>[];
-    rowCount: number;
-    truncated?: boolean;
-    executionTimeMs?: number;
-    chartRecommendation?: ChartRecommendation;
-    onClose: () => void;
-    panelHeight: number;
-    onResize: (height: number) => void;
-}
+import type { ChatResultsPanelProps } from '../../types/chat';
 
 export function ResultsPanel({
     columns, rows, rowCount, truncated, executionTimeMs,
     chartRecommendation, onClose, panelHeight, onResize
-}: ResultsPanelProps) {
+}: ChatResultsPanelProps) {
     const [activeTab, setActiveTab] = useState<'table' | 'chart'>(
         chartRecommendation ? 'chart' : 'table'
     );

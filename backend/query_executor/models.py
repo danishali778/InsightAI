@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 
@@ -12,8 +12,8 @@ class QueryRequest(BaseModel):
 class QueryResult(BaseModel):
     """Result of a SQL query execution."""
     success: bool
-    columns: list[str] = []
-    rows: list[dict] = []
+    columns: list[str] = Field(default_factory=list)
+    rows: list[dict] = Field(default_factory=list)
     row_count: int = 0
     truncated: bool = False  # True if results were capped
     execution_time_ms: float = 0.0

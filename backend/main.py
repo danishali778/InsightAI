@@ -1,15 +1,27 @@
 import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from common import register_exception_handlers
 from config import APP_HOST, APP_PORT, ALLOWED_ORIGINS
 from routers import database, query, chat, query_history, query_library, dashboard_widgets
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from query_library.scheduler import init_scheduler, restore_all_jobs, shutdown_scheduler
+    init_scheduler()
+    restore_all_jobs()
+    yield
+    shutdown_scheduler()
 
 
 app = FastAPI(
     title="QueryMind API",
     description="Chat with your data — Text-to-SQL powered by AI",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 # CORS
@@ -20,6 +32,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+register_exception_handlers(app)
 
 # Include routers
 app.include_router(database.router)

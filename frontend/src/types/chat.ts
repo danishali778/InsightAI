@@ -1,0 +1,81 @@
+import type { ChartRecommendation, DatabaseConnection, SessionSummary } from './api';
+
+export interface ChatMessageView {
+  role: 'user' | 'assistant';
+  content: string;
+  sql?: string;
+  columns?: string[];
+  rows?: Array<Record<string, unknown>>;
+  row_count?: number;
+  truncated?: boolean;
+  execution_time_ms?: number;
+  chart_recommendation?: ChartRecommendation;
+  error?: string;
+}
+
+export interface ChatSidebarProps {
+  sessions: SessionSummary[];
+  activeSessionId: string | null;
+  onSelectSession: (id: string) => void;
+  onNewChat: () => void;
+  onDeleteSession: (id: string) => void;
+  onRenameSession: (id: string, title: string) => void;
+  onOpenConnect: () => void;
+  connections: DatabaseConnection[];
+}
+
+export interface ChatInputProps {
+  connections: DatabaseConnection[];
+  activeConnectionId: string;
+  onConnectionChange: (id: string) => void;
+  onSend: (message: string) => void;
+  loading: boolean;
+}
+
+export interface AddToDashboardMessage {
+  title?: string;
+  dbName?: string;
+  rowCount?: number;
+  sql?: string;
+  columns?: string[];
+  rows?: Array<Record<string, unknown>>;
+  connectionId?: string;
+  chart_recommendation?: ChartRecommendation;
+}
+
+export interface ChatChartBlockProps {
+  recommendation: ChartRecommendation;
+  rows: Array<Record<string, unknown>>;
+  columns: string[];
+}
+
+export interface ChatResultsPanelProps {
+  columns: string[];
+  rows: Array<Record<string, unknown>>;
+  rowCount: number;
+  truncated?: boolean;
+  executionTimeMs?: number;
+  chartRecommendation?: ChartRecommendation;
+  onClose: () => void;
+  panelHeight: number;
+  onResize: (height: number) => void;
+}
+
+export interface ChatResultsTableProps {
+  columns: string[];
+  rows: Array<Record<string, unknown>>;
+  rowCount?: number;
+  executionTime?: number;
+  truncated?: boolean;
+}
+
+export interface ChatSchemaPanelProps {
+  connectionId: string;
+  visible: boolean;
+}
+
+export interface AddToDashboardModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  message: AddToDashboardMessage;
+}

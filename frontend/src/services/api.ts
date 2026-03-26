@@ -1,229 +1,178 @@
-const API_BASE = 'http://localhost:8000/api';
+import { jsonRequest, request } from './http';
+import type {
+  AddDashboardWidgetRequest,
+  ApiMessageResponse,
+  ChatRequest,
+  ChatResponse,
+  ConnectDatabaseRequest,
+  ConnectDatabaseResponse,
+  CreateDashboardRequest,
+  DashboardStats,
+  DashboardSummary,
+  DashboardWidget,
+  DatabaseConnection,
+  FolderSummary,
+  LibraryStats,
+  QueryRecord,
+  QueryRunHistoryRecord,
+  QueryStats,
+  RunSavedQueryResponse,
+  SaveQueryRequest,
+  SaveQueryResponse,
+  SavedQuery,
+  ScheduleConfig,
+  ScheduleStatusResponse,
+  SchemaResponse,
+  SessionMessagesResponse,
+  SessionSummary,
+  TestConnectionRequest,
+  TestConnectionResponse,
+  UpdateDashboardWidgetRequest,
+  UpdateSavedQueryRequest,
+} from '../types/api';
 
-// ─── Database ──────────────────────────────────────────────
-
-export async function connectDatabase(config: {
-    db_type: string;
-    host: string;
-    port: number;
-    database: string;
-    username: string;
-    password: string;
-}) {
-    const res = await fetch(`${API_BASE}/database/connect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-    });
-    if (!res.ok) throw new Error((await res.json()).detail);
-    return res.json();
+export function connectDatabase(config: ConnectDatabaseRequest) {
+  return jsonRequest<ConnectDatabaseResponse>('/database/connect', 'POST', config);
 }
 
-export async function testConnection(config: {
-    db_type: string;
-    host: string;
-    port: number;
-    database: string;
-    username: string;
-    password: string;
-}) {
-    const res = await fetch(`${API_BASE}/database/test`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-    });
-    return res.json();
+export function testConnection(config: TestConnectionRequest) {
+  return jsonRequest<TestConnectionResponse>('/database/test', 'POST', config);
 }
 
-export async function listConnections() {
-    const res = await fetch(`${API_BASE}/database/connections`);
-    return res.json();
+export function listConnections() {
+  return request<DatabaseConnection[]>('/database/connections');
 }
 
-export async function disconnectDatabase(connectionId: string) {
-    const res = await fetch(`${API_BASE}/database/connections/${connectionId}`, {
-        method: 'DELETE',
-    });
-    return res.json();
+export function disconnectDatabase(connectionId: string) {
+  return request<ApiMessageResponse>(`/database/connections/${connectionId}`, { method: 'DELETE' });
 }
 
-// ─── Chat ──────────────────────────────────────────────────
-
-export async function sendMessage(data: {
-    connection_id: string;
-    session_id?: string;
-    message: string;
-}) {
-    const res = await fetch(`${API_BASE}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error((await res.json()).detail);
-    return res.json();
+export function sendMessage(data: ChatRequest) {
+  return jsonRequest<ChatResponse>('/chat', 'POST', data);
 }
 
-export async function listSessions() {
-    const res = await fetch(`${API_BASE}/chat/sessions`);
-    return res.json();
+export function listSessions() {
+  return request<SessionSummary[]>('/chat/sessions');
 }
 
-export async function getSessionMessages(sessionId: string) {
-    const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}/messages`);
-    return res.json();
+export function getSessionMessages(sessionId: string) {
+  return request<SessionMessagesResponse>(`/chat/sessions/${sessionId}/messages`);
 }
 
-export async function deleteSession(sessionId: string) {
-    const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
-        method: 'DELETE',
-    });
-    return res.json();
+export function deleteSession(sessionId: string) {
+  return request<ApiMessageResponse>(`/chat/sessions/${sessionId}`, { method: 'DELETE' });
 }
 
-export async function createSession(connectionId: string) {
-    const res = await fetch(`${API_BASE}/chat/sessions?connection_id=${connectionId}`, {
-        method: 'POST',
-    });
-    return res.json();
+export function createSession(connectionId?: string) {
+  const params = connectionId ? `?connection_id=${connectionId}` : '';
+  return request<SessionSummary>(`/chat/sessions${params}`, { method: 'POST' });
 }
 
-// ─── Schema ────────────────────────────────────────────────
-
-export async function getSchema(connectionId: string) {
-    const res = await fetch(`${API_BASE}/database/connections/${connectionId}/schema`);
-    if (!res.ok) throw new Error('Failed to fetch schema');
-    return res.json();
+export function renameSession(sessionId: string, title: string) {
+  return jsonRequest<SessionSummary>(`/chat/sessions/${sessionId}`, 'PATCH', { title });
 }
 
-// ─── Query History ─────────────────────────────────────────
+export function getSchema(connectionId: string) {
+  return request<SchemaResponse>(`/database/connections/${connectionId}/schema`);
+}
 
 export async function getQueryHistory(connectionId?: string, limit: number = 20) {
-    const params = new URLSearchParams();
-    if (connectionId) params.set('connection_id', connectionId);
-    params.set('limit', String(limit));
-    const res = await fetch(`${API_BASE}/query-history?${params}`);
-    return res.json();
+  const params = new URLSearchParams();
+  if (connectionId) params.set('connection_id', connectionId);
+  params.set('limit', String(limit));
+  return request<QueryRecord[]>(`/query-history?${params.toString()}`);
 }
 
-export async function getQueryStats(connectionId: string) {
-    const res = await fetch(`${API_BASE}/query-history/stats?connection_id=${connectionId}`);
-    return res.json();
+export function getQueryStats(connectionId: string) {
+  return request<QueryStats>(`/query-history/stats?connection_id=${connectionId}`);
 }
-
-// ─── Query Library ─────────────────────────────────────────
 
 export async function listSavedQueries(folder?: string, tag?: string, connectionId?: string) {
-    const params = new URLSearchParams();
-    if (folder) params.set('folder', folder);
-    if (tag) params.set('tag', tag);
-    if (connectionId) params.set('connection_id', connectionId);
-    const res = await fetch(`${API_BASE}/library/queries?${params}`);
-    return res.json();
+  const params = new URLSearchParams();
+  if (folder) params.set('folder', folder);
+  if (tag) params.set('tag', tag);
+  if (connectionId) params.set('connection_id', connectionId);
+  return request<SavedQuery[]>(`/library/queries?${params.toString()}`);
 }
 
-export async function saveQuery(data: {
-    title: string; sql: string; description?: string; folder_name?: string;
-    connection_id?: string; icon?: string; icon_bg?: string; tags?: string[]; schedule?: string;
-}) {
-    const res = await fetch(`${API_BASE}/library/queries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error((await res.json()).detail);
-    return res.json();
+export function saveQuery(data: SaveQueryRequest) {
+  return jsonRequest<SaveQueryResponse>('/library/queries', 'POST', data);
 }
 
-export async function getSavedQuery(queryId: string) {
-    const res = await fetch(`${API_BASE}/library/queries/${queryId}`);
-    return res.json();
+export function getSavedQuery(queryId: string) {
+  return request<SavedQuery>(`/library/queries/${queryId}`);
 }
 
-export async function updateSavedQuery(queryId: string, data: Record<string, any>) {
-    const res = await fetch(`${API_BASE}/library/queries/${queryId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    return res.json();
+export function updateSavedQuery(queryId: string, data: UpdateSavedQueryRequest) {
+  return jsonRequest<SavedQuery>(`/library/queries/${queryId}`, 'PUT', data);
 }
 
-export async function deleteSavedQuery(queryId: string) {
-    const res = await fetch(`${API_BASE}/library/queries/${queryId}`, { method: 'DELETE' });
-    return res.json();
+export function deleteSavedQuery(queryId: string) {
+  return request<ApiMessageResponse>(`/library/queries/${queryId}`, { method: 'DELETE' });
 }
 
-export async function runSavedQuery(queryId: string) {
-    const res = await fetch(`${API_BASE}/library/queries/${queryId}/run`, { method: 'POST' });
-    return res.json();
+export function runSavedQuery(queryId: string) {
+  return request<RunSavedQueryResponse>(`/library/queries/${queryId}/run`, { method: 'POST' });
 }
 
-export async function listLibraryFolders() {
-    const res = await fetch(`${API_BASE}/library/folders`);
-    return res.json();
+export function getQueryRunHistory(queryId: string, limit: number = 20) {
+  return request<QueryRunHistoryRecord[]>(`/library/queries/${queryId}/runs?limit=${limit}`);
 }
 
-export async function listLibraryTags() {
-    const res = await fetch(`${API_BASE}/library/tags`);
-    return res.json();
+export function getQuerySchedule(queryId: string) {
+  return request<ScheduleStatusResponse>(`/library/queries/${queryId}/schedule`);
 }
 
-export async function getLibraryStats() {
-    const res = await fetch(`${API_BASE}/library/stats`);
-    return res.json();
+export function setQuerySchedule(queryId: string, config: ScheduleConfig) {
+  return jsonRequest<ScheduleStatusResponse>(`/library/queries/${queryId}/schedule`, 'PUT', config);
 }
 
-// ─── Dashboard ─────────────────────────────────────────────
-
-export async function listDashboards() {
-    const res = await fetch(`${API_BASE}/dashboard/dashboards`);
-    return res.json();
+export function removeQuerySchedule(queryId: string) {
+  return request<ScheduleStatusResponse>(`/library/queries/${queryId}/schedule`, { method: 'DELETE' });
 }
 
-export async function createDashboard(data: { name: string; icon?: string }) {
-    const res = await fetch(`${API_BASE}/dashboard/dashboards`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    return res.json();
+export function listLibraryFolders() {
+  return request<FolderSummary[]>('/library/folders');
 }
 
-export async function deleteDashboard(dashboardId: string) {
-    const res = await fetch(`${API_BASE}/dashboard/dashboards/${dashboardId}`, { method: 'DELETE' });
-    return res.json();
+export function listLibraryTags() {
+  return request<string[]>('/library/tags');
 }
 
-// ─── Dashboard Widgets ─────────────────────────────────────
-
-export async function listDashboardWidgets(dashboardId?: string) {
-    const params = dashboardId ? `?dashboard_id=${dashboardId}` : '';
-    const res = await fetch(`${API_BASE}/dashboard/widgets${params}`);
-    return res.json();
+export function getLibraryStats() {
+  return request<LibraryStats>('/library/stats');
 }
 
-export async function addDashboardWidget(data: {
-    dashboard_id: string; title: string; viz_type: string; size: string;
-    connection_id?: string; columns: string[]; rows: Record<string, any>[];
-    chart_config?: { x_column?: string; y_columns?: string[]; title?: string; x_label?: string; y_label?: string };
-    cadence?: string;
-}) {
-    const res = await fetch(`${API_BASE}/dashboard/widgets`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error((await res.json()).detail);
-    return res.json();
+export function listDashboards() {
+  return request<DashboardSummary[]>('/dashboard/dashboards');
 }
 
-export async function deleteDashboardWidget(widgetId: string) {
-    const res = await fetch(`${API_BASE}/dashboard/widgets/${widgetId}`, { method: 'DELETE' });
-    return res.json();
+export function createDashboard(data: CreateDashboardRequest) {
+  return jsonRequest<Omit<DashboardSummary, 'widget_count'>>('/dashboard/dashboards', 'POST', data);
 }
 
-export async function getDashboardStats(dashboardId?: string) {
-    const params = dashboardId ? `?dashboard_id=${dashboardId}` : '';
-    const res = await fetch(`${API_BASE}/dashboard/stats${params}`);
-    return res.json();
+export function deleteDashboard(dashboardId: string) {
+  return request<ApiMessageResponse>(`/dashboard/dashboards/${dashboardId}`, { method: 'DELETE' });
+}
+
+export function listDashboardWidgets(dashboardId?: string) {
+  const params = dashboardId ? `?dashboard_id=${dashboardId}` : '';
+  return request<DashboardWidget[]>(`/dashboard/widgets${params}`);
+}
+
+export function addDashboardWidget(data: AddDashboardWidgetRequest) {
+  return jsonRequest<DashboardWidget>('/dashboard/widgets', 'POST', data);
+}
+
+export function deleteDashboardWidget(widgetId: string) {
+  return request<ApiMessageResponse>(`/dashboard/widgets/${widgetId}`, { method: 'DELETE' });
+}
+
+export function updateDashboardWidget(widgetId: string, data: UpdateDashboardWidgetRequest) {
+  return jsonRequest<DashboardWidget>(`/dashboard/widgets/${widgetId}`, 'PATCH', data);
+}
+
+export function getDashboardStats(dashboardId?: string) {
+  const params = dashboardId ? `?dashboard_id=${dashboardId}` : '';
+  return request<DashboardStats>(`/dashboard/stats${params}`);
 }

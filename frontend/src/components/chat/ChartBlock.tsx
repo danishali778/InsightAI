@@ -1,13 +1,11 @@
 import { useRef, useState } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { T } from '../dashboard/tokens';
-
-interface ChartRecommendation { type: 'bar' | 'line' | 'pie' | 'scatter' | 'area'; x_column: string; y_columns: string[]; title: string; x_label: string; y_label: string; }
-interface ChartBlockProps { recommendation: ChartRecommendation; rows: Record<string, unknown>[]; columns: string[]; }
+import type { ChatChartBlockProps } from '../../types/chat';
 
 const COLORS = ['#00e5ff', '#7c3aff', '#22d3a5', '#f59e0b', '#f87171', '#a29bfe', '#fab1a0', '#81ecec'];
 
-export function ChartBlock({ recommendation, rows }: ChartBlockProps) {
+export function ChartBlock({ recommendation, rows }: ChatChartBlockProps) {
   const [chartType, setChartType] = useState(recommendation.type);
   const chartRef = useRef<HTMLDivElement>(null);
   const { x_column, y_columns } = recommendation;

@@ -1,136 +1,97 @@
-# InsightAI: Multi-Agent Text-to-SQL Business Intelligence Dashboard
+# QueryMind Project Description
 
-## Project Overview
+## Product Summary
 
-InsightAI is an intelligent Business Intelligence (BI) dashboard that transforms natural language questions into SQL queries and presents the results through dynamic, interactive visualizations. The system leverages a multi-agent AI architecture to provide accurate, context-aware data analysis without requiring users to have any SQL or technical knowledge.
+QueryMind is a text-to-SQL analytics application for exploring relational databases through a chat interface. A user connects a database, asks a question in plain language, receives generated SQL and query results, and can promote useful results into a saved query library or dashboard widgets.
 
-The platform bridges the gap between complex database systems and business users by enabling conversational data exploration. Users simply type questions like "Show me revenue by product category" or "Compare monthly sales trends," and the system automatically generates optimized SQL queries, executes them against the connected database, and presents the results using the most appropriate visualization type.
+The current repository is organized around feature modules:
 
----
+- `backend/ai_core`: prompt building, chat/session models, SQL generation, orchestration
+- `backend/database`: connection management, schema inspection, database contracts
+- `backend/query_executor`: query validation and execution
+- `backend/query_history`: query activity records and stats
+- `backend/query_library`: saved query models and library behavior
+- `backend/dashboard`: dashboard and widget models/store behavior
+- `backend/routers`: API endpoints mapped to those feature modules
+- `frontend/src/pages`: top-level application screens
+- `frontend/src/components`: feature-specific UI
+- `frontend/src/services`: API access and HTTP utilities
+- `frontend/src/types`: shared frontend contracts
 
-## Problem Statement
+## Current Workflow
 
-Traditional BI tools require significant technical expertise to operate effectively. Business analysts and decision-makers often face barriers when trying to extract insights from their data:
+The main Phase 1 product workflow is:
 
-1. **SQL Knowledge Gap**: Writing accurate SQL queries requires specialized training that many business users lack.
-2. **Visualization Selection**: Choosing the right chart type for different data patterns is challenging and often leads to misleading presentations.
-3. **Time-Consuming Analysis**: The process of writing queries, debugging errors, and formatting results is slow and error-prone.
-4. **Tool Complexity**: Enterprise BI platforms have steep learning curves and require extensive configuration.
+1. Create or select a database connection.
+2. Open the chat screen and ask a question.
+3. The backend builds schema context and recent conversation context.
+4. The LLM generates SQL.
+5. The backend validates the SQL as read-only.
+6. The query executes with row limits and timeout handling.
+7. The UI shows explanation, SQL, result rows, and a chart recommendation.
+8. The result can be saved to the query library.
+9. The result can be added to a dashboard as a widget.
+10. The saved query or dashboard widget can be revisited later in the same running app session.
 
-InsightAI addresses these challenges by providing an intuitive, AI-powered interface that handles the technical complexity behind the scenes.
+## Phase 1 Scope
 
----
+Phase 1 is focused on workflow stability and contract consistency, not yet on full persistence or authentication.
 
-## Technical Architecture
+Phase 1 includes:
 
-### Multi-Agent System Design
+- Stable API request and response contracts
+- Shared frontend types for backend payloads
+- Consistent frontend HTTP error handling
+- Environment-based frontend API configuration
+- Defined screen-level workflows for chat, connections, library, and dashboard
+- Clean modular structure aligned with the existing backend domains
 
-InsightAI implements a sophisticated multi-agent architecture using LangGraph for workflow orchestration and CrewAI for agent management. Each agent specializes in a specific task, enabling modular, maintainable, and highly accurate processing.
+Phase 1 intentionally does not yet include:
 
-**Agent 1: SQL Architect**
-The SQL Architect agent receives natural language questions and generates syntactically correct, optimized SQL queries. It understands database schema, table relationships, and query optimization techniques. The agent handles:
-- Schema-aware query generation
-- JOIN optimization
-- Aggregation and grouping logic
-- Error recovery and query refinement
+- User authentication and authorization
+- Multi-tenant ownership rules
+- Persistent application state in a dedicated app database
+- Collaboration, sharing permissions, or audit history
 
-**Agent 2: Data Analyzer**
-The Data Analyzer examines query results to identify patterns, data types, and statistical characteristics. It provides insights that guide visualization selection:
-- Column type detection (numeric, categorical, temporal)
-- Data pattern identification (time series, comparisons, distributions)
-- Cardinality analysis
-- Outlier detection
+## Backend Design
 
-**Agent 3: Chart Selector**
-Based on the Data Analyzer's output and the original user question, the Chart Selector recommends the optimal visualization type. It considers:
-- Data structure and dimensionality
-- User intent (comparison, trend, composition, correlation)
-- Best practices in data visualization
-- Multi-metric scenarios
+The backend uses FastAPI as the API layer and keeps domain logic separated by module. The chat workflow is orchestrated in `backend/ai_core/graph.py`:
 
-**Agent 4: Visualization Generator**
-The final agent transforms raw query results into structured visualization configurations that the frontend can render. It handles data formatting, axis mapping, and chart-specific customizations.
+1. Build schema context from the selected connection.
+2. Build a prompt from schema and recent session history.
+3. Generate SQL from the LLM.
+4. Validate the SQL for safety.
+5. Execute the SQL with limits.
+6. Analyze the result shape.
+7. Produce an optional chart recommendation.
+8. Retry on certain failures by feeding execution errors back into the LLM.
 
----
+The backend now exposes explicit response models for the Phase 1 workflow and returns normalized error payloads through shared exception handlers in `backend/common`.
 
-## Technology Stack
+## Frontend Design
 
-### Backend Infrastructure
-- **FastAPI**: High-performance Python web framework providing REST API endpoints with automatic OpenAPI documentation
-- **LangGraph**: Stateful workflow orchestration enabling complex multi-agent interactions with error handling and retry logic
-- **CrewAI**: Agent framework providing role-based AI agents with specialized capabilities
-- **LiteLLM**: Unified LLM interface supporting multiple providers (Groq, OpenAI, Anthropic)
-- **PostgreSQL**: Production-grade relational database for storing business data
+The frontend is a React + Vite application with screen-level state inside `pages` and reusable UI inside `components`.
 
-### Frontend Application
-- **React 18**: Component-based UI library with hooks for state management
-- **Vite**: Next-generation build tool providing instant hot module replacement
-- **TypeScript**: Type-safe development preventing runtime errors
-- **Recharts**: Composable charting library built on React and D3
-- **TailwindCSS**: Utility-first CSS framework for rapid UI development
+Phase 1 frontend standards are:
 
-### AI/ML Components
-- **Groq**: Ultra-fast LLM inference provider with sub-second response times
-- **DeepSeek R1**: Advanced reasoning model optimized for complex analytical tasks
+- Shared API contracts live in `frontend/src/types/api.ts`
+- HTTP request behavior is centralized in `frontend/src/services/http.ts`
+- Feature APIs are centralized in `frontend/src/services/api.ts`
+- Runtime API base URL is configured through `VITE_API_BASE_URL`
 
----
+## Known Current Limits
 
-## Visualization Capabilities
+The product workflow is now standardized, but some enterprise capabilities are still intentionally deferred:
 
-InsightAI supports 15+ chart types, each optimized for specific data patterns:
+- Connections, sessions, dashboards, query history, and library items are still stored in memory on the backend.
+- A backend restart clears that application state.
+- Auth, ownership, and permanent app persistence are later phases.
 
-| Category | Chart Types | Use Cases |
-|----------|-------------|-----------|
-| **Comparison** | Bar, Clustered Bar, Clustered Column | Comparing values across categories |
-| **Composition** | Pie, Stacked Column, Stacked Bar, 100% Stacked | Showing parts of a whole |
-| **Trend** | Line, Area | Time series and sequential data |
-| **Relationship** | Scatter, Radar | Correlation and multi-dimensional analysis |
-| **Specialized** | Waterfall, Funnel, Combo (Dual Y-Axis) | Financial analysis, conversion funnels, multi-metric dashboards |
-| **Data Display** | Table | Detailed record viewing |
+## Next Phase Direction
 
-The system includes a **hybrid chart selector** that highlights recommended visualizations while allowing users to override with any available chart type.
+After Phase 1, the next major work should focus on:
 
----
-
-## Key Features
-
-### Intelligent Query Processing
-- Natural language understanding with context awareness
-- Automatic SQL query generation and optimization
-- Error detection with self-healing retry mechanisms
-- Support for complex aggregations, joins, and subqueries
-
-### Smart Visualization
-- AI-powered chart type recommendations
-- Dual Y-axis support for metrics on different scales
-- Automatic data formatting (currency, percentages, large numbers)
-- Interactive tooltips and legends
-
-### User Experience
-- Real-time step-by-step processing logs
-- Manual chart type override capability
-- Responsive glassmorphism design
-- Dark mode optimized interface
-
-### Enterprise Ready
-- RESTful API with OpenAPI documentation
-- Streaming responses for real-time updates
-- Extensible agent architecture
-- Environment-based configuration
-
----
-
-## Future Enhancements
-
-1. **Dashboard Builder**: Save and arrange multiple visualizations into persistent dashboards
-2. **Scheduled Reports**: Automated report generation and email delivery
-3. **Natural Language Refinement**: "Drill down into Electronics category" follow-up queries
-4. **Export Capabilities**: PDF, Excel, and image export for charts
-5. **Multi-Database Support**: Connect to MySQL, SQLite, MongoDB, and cloud data warehouses
-6. **Collaborative Features**: Share dashboards and annotations with team members
-
----
-
-## Conclusion
-
-InsightAI represents a significant advancement in making data accessible to non-technical users. By combining state-of-the-art language models with a carefully designed multi-agent architecture, the system delivers accurate, insightful, and visually compelling data analysis through simple conversational queries. The modular architecture ensures the system can evolve with advancing AI capabilities while maintaining reliability and performance.
+- hardening the chat-to-SQL workflow
+- improving query safety and observability
+- completing richer workflow behavior around saved queries and dashboards
+- introducing persistence and auth on top of the stable contracts now in place

@@ -1,14 +1,8 @@
 import { useState, useEffect } from 'react';
 import { T } from '../dashboard/tokens';
 import * as api from '../../services/api';
-
-interface SchemaColumn { name: string; type: string; nullable: boolean; primary_key?: boolean; }
-interface SchemaTable { name: string; columns: SchemaColumn[]; row_count?: number; }
-
-interface SchemaPanelProps {
-  connectionId: string;
-  visible: boolean;
-}
+import type { SchemaTable } from '../../types/api';
+import type { ChatSchemaPanelProps } from '../../types/chat';
 
 const typeColor: Record<string, { bg: string; color: string }> = {
   int: { bg: 'rgba(251,191,36,0.1)', color: '#fbbf24' },
@@ -45,7 +39,7 @@ function shortType(type: string): string {
   return type.slice(0, 4).toUpperCase();
 }
 
-export function SchemaPanel({ connectionId, visible }: SchemaPanelProps) {
+export function SchemaPanel({ connectionId, visible }: ChatSchemaPanelProps) {
   const [tables, setTables] = useState<SchemaTable[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
@@ -54,11 +48,10 @@ export function SchemaPanel({ connectionId, visible }: SchemaPanelProps) {
   useEffect(() => {
     if (!connectionId || !visible) return;
     setLoading(true);
-    api.getSchema(connectionId).then((data: { tables?: SchemaTable[] }) => {
-      const t = data.tables || [];
-      setTables(t);
-      const first = t.slice(0, 2).map((tbl: SchemaTable) => tbl.name);
-      setExpanded(new Set(first));
+    api.getSchema(connectionId).then((data) => {
+      const nextTables = data.tables;
+      setTables(nextTables);
+      setExpanded(new Set(nextTables.slice(0, 2).map((table) => table.name)));
     }).catch((err) => {
       console.error('Schema fetch failed:', err);
       setTables([]);
@@ -82,7 +75,6 @@ export function SchemaPanel({ connectionId, visible }: SchemaPanelProps) {
       width: 270, flexShrink: 0, background: T.s1, borderLeft: `1px solid ${T.border}`,
       display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden',
     }}>
-      {/* Top */}
       <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.border}` }}>
         <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.85rem', color: T.text, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span>Schema Explorer</span>
@@ -99,7 +91,6 @@ export function SchemaPanel({ connectionId, visible }: SchemaPanelProps) {
         />
       </div>
 
-      {/* Tree */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px' }}>
         {loading && (
           <div style={{ textAlign: 'center', padding: '24px 12px', color: T.text3, fontSize: '0.78rem', fontFamily: T.fontMono }}>

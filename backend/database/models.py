@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 
@@ -45,7 +45,7 @@ class TableInfo(BaseModel):
     """Info about a single table."""
     name: str
     columns: list[ColumnInfo]
-    foreign_keys: list[ForeignKeyInfo] = []
+    foreign_keys: list[ForeignKeyInfo] = Field(default_factory=list)
     row_count: Optional[int] = None
 
 
@@ -71,3 +71,16 @@ class TestConnectionResponse(BaseModel):
     success: bool
     message: str
     tables_found: Optional[int] = None
+
+
+class ActiveConnection(BaseModel):
+    """Summary of an active database connection."""
+    id: str
+    name: str
+    db_type: str
+    database: str
+    host: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    status: str
+    tables_count: int = 0

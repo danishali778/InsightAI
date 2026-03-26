@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 
+from common.models import StatusMessageResponse
 from database.models import (
+    ActiveConnection,
     ConnectionRequest,
     ConnectionResponse,
     TestConnectionRequest,
@@ -49,13 +51,13 @@ def connect_database(config: ConnectionRequest):
         raise HTTPException(status_code=400, detail=f"Connection failed: {str(e)}")
 
 
-@router.get("/connections")
+@router.get("/connections", response_model=list[ActiveConnection])
 def list_connections():
     """List all active database connections."""
     return connection_manager.get_all_connections()
 
 
-@router.delete("/connections/{connection_id}")
+@router.delete("/connections/{connection_id}", response_model=StatusMessageResponse)
 def disconnect_database(connection_id: str):
     """Disconnect from a database."""
     success = connection_manager.disconnect(connection_id)

@@ -1,218 +1,313 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DashboardSidebar } from '../components/dashboard/DashboardSidebar';
 import { DashboardTopbar } from '../components/dashboard/DashboardTopbar';
+import { DashboardCreateForm } from '../components/dashboard/DashboardCreateForm';
 import { WidgetRenderer } from '../components/dashboard/WidgetRenderer';
 import { T } from '../components/dashboard/tokens';
-import { listDashboards, createDashboard, deleteDashboard, listDashboardWidgets, deleteDashboardWidget, getDashboardStats } from '../services/api';
+import {
+  deleteDashboard,
+  listDashboardWidgets,
+  deleteDashboardWidget,
+  getDashboardStats,
+  updateDashboardWidget,
+} from '../services/api';
+import { useDashboardCatalog } from '../hooks/useDashboardCatalog';
+import type { DashboardItem, DashboardMetrics, DashboardWidgetItem } from '../types/dashboard';
+import type { UpdateDashboardWidgetRequest } from '../types/api';
+import { resolveWidgetSize } from '../types/dashboard';
 
-interface DashData { id: string; name: string; icon: string; widget_count: number; created_at: string }
+function DashboardRail({
+  dashboards,
+  activeDashId,
+  onSelect,
+  onDelete,
+  showCreateForm,
+  onShowCreateForm,
+  newDashName,
+  onNewDashNameChange,
+  onCreate,
+  onCancelCreate,
+  creating,
+}: {
+  dashboards: DashboardItem[];
+  activeDashId: string | null;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  showCreateForm: boolean;
+  onShowCreateForm: () => void;
+  newDashName: string;
+  onNewDashNameChange: (value: string) => void;
+  onCreate: () => void;
+  onCancelCreate: () => void;
+  creating: boolean;
+}) {
+  return (
+    <div style={{ width: 235, flexShrink: 0, background: T.s1, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ padding: '14px 14px 10px', borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.86rem', color: T.text, marginBottom: 4 }}>My Dashboards</div>
+        <div style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>{dashboards.length} dashboards</div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
+        {dashboards.map((dashboard) => {
+          const isActive = dashboard.id === activeDashId;
+          return (
+            <div
+              key={dashboard.id}
+              onClick={() => onSelect(dashboard.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                padding: '9px 10px',
+                borderRadius: 9,
+                cursor: 'pointer',
+                marginBottom: 2,
+                background: isActive ? T.accentDim : 'transparent',
+                border: `1px solid ${isActive ? 'rgba(0,229,255,0.18)' : 'transparent'}`,
+                color: isActive ? T.text : T.text3,
+              }}
+            >
+              <span style={{ fontSize: '0.9rem' }}>{dashboard.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dashboard.name}</div>
+                <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono }}>{dashboard.widget_count} widgets</div>
+              </div>
+              {isActive && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(dashboard.id); }}
+                  style={{ width: 18, height: 18, borderRadius: 4, background: 'transparent', border: '1px solid transparent', color: T.text3, fontSize: '0.6rem', cursor: 'pointer', flexShrink: 0 }}
+                >
+                  x
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        {!showCreateForm ? (
+          <button
+            onClick={onShowCreateForm}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '9px 10px',
+              borderRadius: 9,
+              border: `1px dashed ${T.border2}`,
+              background: 'transparent',
+              cursor: 'pointer',
+              width: '100%',
+              color: T.text3,
+              marginTop: 4,
+            }}
+          >
+            <span style={{ fontSize: '0.8rem' }}>+</span>
+            <span style={{ fontSize: '0.75rem' }}>New Dashboard</span>
+          </button>
+        ) : (
+          <DashboardCreateForm
+            value={newDashName}
+            onChange={onNewDashNameChange}
+            onCreate={onCreate}
+            onCancel={onCancelCreate}
+            creating={creating}
+            compact
+            ctaLabel="Add"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div style={{ border: `2px dashed ${T.border2}`, borderRadius: 18, padding: '80px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+      <div style={{ fontSize: '3rem', marginBottom: 16 }}>[]</div>
+      <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.3rem', color: T.text, marginBottom: 8 }}>
+        Create your first dashboard
+      </div>
+      <div style={{ fontSize: '0.88rem', color: T.text3, maxWidth: 440, lineHeight: 1.6 }}>
+        Click <strong style={{ color: T.accent }}>+ New Dashboard</strong> in the sidebar, then add widgets from Chat results using <strong style={{ color: T.accent }}>+ Dashboard</strong>.
+      </div>
+    </div>
+  );
+}
+
+function DashboardCanvas({
+  activeDash,
+  stats,
+  widgets,
+  onDeleteWidget,
+  onUpdateWidget,
+}: {
+  activeDash?: DashboardItem;
+  stats: DashboardMetrics;
+  widgets: DashboardWidgetItem[];
+  onDeleteWidget: (id: string) => void;
+  onUpdateWidget: (id: string, patch: UpdateDashboardWidgetRequest) => void;
+}) {
+  if (!activeDash) return <EmptyState />;
+
+  const getGridSpan = (widget: DashboardWidgetItem) => {
+    const size = resolveWidgetSize(widget.size, widget.viz_type, widget.rows.length);
+    return size === 'full' ? 'span 2' : 'span 1';
+  };
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+        <span style={{ fontSize: '1.35rem' }}>{activeDash.icon}</span>
+        <div>
+          <div style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.2rem', color: T.text }}>{activeDash.name}</div>
+          <div style={{ fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono }}>
+            {stats.total_widgets} widgets · Created {new Date(activeDash.created_at).toLocaleDateString()}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+        {['All Regions', 'All Products', 'Status: Completed'].map((chip) => (
+          <button key={chip} style={{ borderRadius: 999, border: `1px solid ${T.border}`, background: T.s1, color: chip === 'All Regions' ? T.accent : T.text2, padding: '7px 14px', fontFamily: T.fontMono, fontSize: '0.72rem' }}>
+            {chip}
+          </button>
+        ))}
+        <button style={{ borderRadius: 999, border: `1px solid ${T.border}`, background: T.s1, color: T.text2, padding: '7px 14px', fontFamily: T.fontMono, fontSize: '0.72rem' }}>+ Add Filter</button>
+        <span style={{ marginLeft: 'auto', fontFamily: T.fontMono, fontSize: '0.7rem', color: T.text3 }}>Ordered layout</span>
+      </div>
+
+      {stats.total_widgets > 0 && (
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+          {Object.entries(stats.viz_breakdown || {}).map(([key, value]) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 5, background: T.s1, border: `1px solid ${T.border}`, borderRadius: 8, padding: '5px 11px', fontSize: '0.7rem', fontFamily: T.fontMono }}>
+              <span style={{ color: T.text, fontWeight: 600 }}>{String(value)}</span>
+              <span style={{ color: T.text3 }}>{key}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {widgets.length > 0 ? (
+        <div style={{ paddingBottom: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, alignItems: 'stretch' }}>
+            {widgets.map((widget) => (
+              <div key={widget.id} style={{ gridColumn: getGridSpan(widget) }}>
+                <WidgetRenderer widget={widget} onDelete={onDeleteWidget} onUpdateWidget={onUpdateWidget} />
+              </div>
+            ))}
+          </div>
+          <div style={{ border: `2px dashed ${T.border2}`, borderRadius: 14, minHeight: 70, color: T.text3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', marginTop: 14 }}>
+            Add more widgets from Chat page using <strong style={{ color: T.accent, marginLeft: 5 }}>+ Dashboard</strong>
+          </div>
+        </div>
+      ) : (
+        <div style={{ border: `2px dashed ${T.border2}`, borderRadius: 18, padding: '60px 40px', textAlign: 'center' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: 14 }}>[=]</div>
+          <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.1rem', color: T.text, marginBottom: 6 }}>No widgets yet</div>
+          <div style={{ fontSize: '0.82rem', color: T.text3, maxWidth: 360, lineHeight: 1.6, margin: '0 auto' }}>
+            Run queries in Chat and add visualizations here.
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 export function DashboardPage() {
-  const [dashboards, setDashboards] = useState<DashData[]>([]);
+  const { dashboards, reloadDashboards, createNewDashboard, creating } = useDashboardCatalog();
   const [activeDashId, setActiveDashId] = useState<string | null>(null);
-  const [widgets, setWidgets] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>({ total_widgets: 0, viz_breakdown: {} });
+  const [widgets, setWidgets] = useState<DashboardWidgetItem[]>([]);
+  const [stats, setStats] = useState<DashboardMetrics>({ total_widgets: 0, viz_breakdown: {} });
   const [newDashName, setNewDashName] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const fetchDashboards = useCallback(async () => {
-    const d = await listDashboards();
-    setDashboards(d);
-    if (d.length > 0 && !activeDashId) setActiveDashId(d[0].id);
-  }, []);
-
   const fetchWidgets = useCallback(async () => {
-    if (!activeDashId) { setWidgets([]); setStats({ total_widgets: 0, viz_breakdown: {} }); return; }
-    const [w, s] = await Promise.all([listDashboardWidgets(activeDashId), getDashboardStats(activeDashId)]);
-    setWidgets(w);
-    setStats(s);
+    if (!activeDashId) {
+      setWidgets([]);
+      setStats({ total_widgets: 0, viz_breakdown: {} });
+      return;
+    }
+    const [widgetResult, statsResult] = await Promise.all([
+      listDashboardWidgets(activeDashId),
+      getDashboardStats(activeDashId),
+    ]);
+    setWidgets(widgetResult);
+    setStats(statsResult);
   }, [activeDashId]);
 
-  useEffect(() => { fetchDashboards(); }, [fetchDashboards]);
-  useEffect(() => { fetchWidgets(); }, [fetchWidgets]);
+  useEffect(() => {
+    if (dashboards.length > 0 && !activeDashId) {
+      setActiveDashId(dashboards[0].id);
+    }
+  }, [dashboards, activeDashId]);
+
+  useEffect(() => {
+    if (activeDashId && dashboards.every((dashboard) => dashboard.id !== activeDashId)) {
+      setActiveDashId(dashboards[0]?.id || null);
+    }
+  }, [dashboards, activeDashId]);
+
+  useEffect(() => {
+    fetchWidgets();
+  }, [fetchWidgets]);
 
   const handleDeleteWidget = async (id: string) => {
     await deleteDashboardWidget(id);
+    setWidgets((prev) => prev.filter((w) => w.id !== id));
     fetchWidgets();
-    fetchDashboards(); // update widget counts
+    reloadDashboards();
   };
+
+  const handleUpdateWidget = useCallback(async (id: string, patch: UpdateDashboardWidgetRequest) => {
+    setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
+    try {
+      await updateDashboardWidget(id, patch);
+    } catch {
+      fetchWidgets();
+    }
+  }, [fetchWidgets]);
 
   const handleCreateDash = async () => {
     if (!newDashName.trim()) return;
-    const d = await createDashboard({ name: newDashName.trim() });
+    const created = await createNewDashboard({ name: newDashName.trim() });
     setNewDashName('');
     setShowCreateForm(false);
-    await fetchDashboards();
-    setActiveDashId(d.id);
+    setActiveDashId(created.id);
   };
 
   const handleDeleteDash = async (id: string) => {
     await deleteDashboard(id);
-    await fetchDashboards();
-    setActiveDashId(prev => prev === id ? null : prev);
+    await reloadDashboards();
+    setActiveDashId((prev) => (prev === id ? null : prev));
   };
 
-  const activeDash = dashboards.find(d => d.id === activeDashId);
-  const halfWidgets = widgets.filter(w => w.size === 'half');
-  const fullWidgets = widgets.filter(w => w.size === 'full');
+  const activeDash = dashboards.find((dashboard) => dashboard.id === activeDashId);
 
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: '#060a12', fontFamily: "'DM Sans', sans-serif" }}>
       <DashboardSidebar />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
-        <DashboardTopbar />
+        <DashboardTopbar activeDashboard={activeDash} dashboardCount={dashboards.length} />
 
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* Dashboard List Panel */}
-          <div style={{ width: 220, flexShrink: 0, background: T.s1, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 14px 10px', borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.85rem', color: T.text, marginBottom: 4 }}>My Dashboards</div>
-              <div style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>{dashboards.length} dashboards</div>
-            </div>
+          <DashboardRail
+            dashboards={dashboards}
+            activeDashId={activeDashId}
+            onSelect={setActiveDashId}
+            onDelete={handleDeleteDash}
+            showCreateForm={showCreateForm}
+            onShowCreateForm={() => setShowCreateForm(true)}
+            newDashName={newDashName}
+            onNewDashNameChange={setNewDashName}
+            onCreate={handleCreateDash}
+            onCancelCreate={() => setShowCreateForm(false)}
+            creating={creating}
+          />
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
-              {dashboards.map(d => {
-                const isActive = d.id === activeDashId;
-                return (
-                  <div key={d.id} onClick={() => setActiveDashId(d.id)} style={{
-                    display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 9,
-                    cursor: 'pointer', transition: 'all 0.15s', marginBottom: 2,
-                    background: isActive ? T.accentDim : 'transparent',
-                    border: `1px solid ${isActive ? 'rgba(0,229,255,0.15)' : 'transparent'}`,
-                    color: isActive ? T.text : T.text3,
-                  }}
-                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
-                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = isActive ? T.accentDim : 'transparent'; e.currentTarget.style.color = isActive ? T.text : T.text3; } }}
-                  >
-                    <span style={{ fontSize: '0.9rem' }}>{d.icon}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
-                      <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono }}>{d.widget_count} widgets</div>
-                    </div>
-                    {isActive && (
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteDash(d.id); }} style={{
-                        width: 18, height: 18, borderRadius: 4, background: 'transparent', border: `1px solid transparent`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text3, fontSize: '0.6rem',
-                        cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0
-                      }}
-                        onMouseEnter={e => { e.currentTarget.style.color = T.red; e.currentTarget.style.background = T.redDim; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = T.text3; e.currentTarget.style.background = 'transparent'; }}
-                      >✕</button>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Create new */}
-              {!showCreateForm ? (
-                <button onClick={() => setShowCreateForm(true)} style={{
-                  display: 'flex', alignItems: 'center', gap: 7, padding: '9px 10px', borderRadius: 9,
-                  border: `1px dashed ${T.border2}`, background: 'transparent', cursor: 'pointer',
-                  transition: 'all 0.15s', width: '100%', fontFamily: T.fontBody, color: T.text3, marginTop: 4,
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; e.currentTarget.style.color = T.accent; e.currentTarget.style.background = T.accentDim; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.color = T.text3; e.currentTarget.style.background = 'transparent'; }}
-                >
-                  <span style={{ fontSize: '0.8rem' }}>＋</span>
-                  <span style={{ fontSize: '0.75rem' }}>New Dashboard</span>
-                </button>
-              ) : (
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, padding: '6px 4px' }}>
-                  <input autoFocus value={newDashName} onChange={e => setNewDashName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleCreateDash(); if (e.key === 'Escape') setShowCreateForm(false); }}
-                    placeholder="Dashboard name" style={{
-                      flex: 1, background: T.s3, border: `1px solid rgba(0,229,255,0.2)`, borderRadius: 6,
-                      padding: '6px 8px', color: T.text, fontFamily: T.fontBody, fontSize: '0.75rem', outline: 'none',
-                    }}
-                  />
-                  <button onClick={handleCreateDash} disabled={!newDashName.trim()} style={{
-                    padding: '5px 10px', borderRadius: 5, border: 'none', background: T.accent, color: '#000',
-                    fontSize: '0.68rem', fontWeight: 600, cursor: newDashName.trim() ? 'pointer' : 'not-allowed', opacity: newDashName.trim() ? 1 : 0.5
-                  }}>Add</button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '20px 24px 32px', background: '#060a12' }}>
-            {activeDash ? (
-              <>
-                {/* Dashboard header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <span style={{ fontSize: '1.4rem' }}>{activeDash.icon}</span>
-                  <div>
-                    <div style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.2rem', color: T.text }}>{activeDash.name}</div>
-                    <div style={{ fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono }}>
-                      {stats.total_widgets} widgets · Created {new Date(activeDash.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats bar */}
-                {stats.total_widgets > 0 && (
-                  <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-                    {Object.entries(stats.viz_breakdown || {}).map(([k, v]) => (
-                      <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 5, background: T.s1, border: `1px solid ${T.border}`, borderRadius: 8, padding: '5px 11px', fontSize: '0.7rem', fontFamily: T.fontMono }}>
-                        <span style={{ color: T.text, fontWeight: 600 }}>{String(v)}</span>
-                        <span style={{ color: T.text3 }}>{k}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {widgets.length > 0 ? (
-                  <>
-                    {fullWidgets.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 14 }}>
-                        {fullWidgets.map(w => <WidgetRenderer key={w.id} widget={w} onDelete={handleDeleteWidget} />)}
-                      </div>
-                    )}
-                    {halfWidgets.length > 0 && (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                        {halfWidgets.map(w => <WidgetRenderer key={w.id} widget={w} onDelete={handleDeleteWidget} />)}
-                      </div>
-                    )}
-                    {/* Add more prompt */}
-                    <div style={{
-                      border: `2px dashed ${T.border2}`, borderRadius: 14,
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      minHeight: 80, color: T.text3, padding: '16px',
-                    }}>
-                      <div style={{ fontSize: '0.78rem' }}>Add more widgets from the <strong style={{ color: T.accent }}>Chat page</strong></div>
-                    </div>
-                  </>
-                ) : (
-                  <div style={{
-                    border: `2px dashed ${T.border2}`, borderRadius: 18, padding: '60px 40px',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-                  }}>
-                    <div style={{ fontSize: '2.5rem', marginBottom: 14 }}>📊</div>
-                    <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.1rem', color: T.text, marginBottom: 6 }}>
-                      No widgets yet
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: T.text3, maxWidth: 360, lineHeight: 1.6 }}>
-                      Run queries in the Chat page and click <strong style={{ color: T.accent }}>➕ Dashboard</strong> to add visualizations here.
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              /* No dashboard selected */
-              <div style={{
-                border: `2px dashed ${T.border2}`, borderRadius: 18, padding: '80px 40px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-              }}>
-                <div style={{ fontSize: '3rem', marginBottom: 16 }}>📋</div>
-                <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.3rem', color: T.text, marginBottom: 8 }}>
-                  Create your first dashboard
-                </div>
-                <div style={{ fontSize: '0.88rem', color: T.text3, maxWidth: 400, lineHeight: 1.6, marginBottom: 20 }}>
-                  Click <strong style={{ color: T.accent }}>＋ New Dashboard</strong> in the sidebar to get started, then add widgets from your Chat queries.
-                </div>
-              </div>
-            )}
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '18px 22px 30px', background: '#060a12' }}>
+            <DashboardCanvas activeDash={activeDash} stats={stats} widgets={widgets} onDeleteWidget={handleDeleteWidget} onUpdateWidget={handleUpdateWidget} />
           </div>
         </div>
       </div>

@@ -7,29 +7,15 @@ import { ConnectionModal } from '../components/chat/ConnectionModal';
 import { SchemaPanel } from '../components/chat/SchemaPanel';
 import { T } from '../components/dashboard/tokens';
 import * as api from '../services/api';
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  sql?: string;
-  columns?: string[];
-  rows?: Record<string, unknown>[];
-  row_count?: number;
-  truncated?: boolean;
-  execution_time_ms?: number;
-  chart_recommendation?: { type: 'bar' | 'line' | 'pie' | 'scatter' | 'area'; x_column: string; y_columns: string[]; title: string; x_label: string; y_label: string; };
-  error?: string;
-}
-
-interface Session { id: string; connection_id: string; message_count: number; created_at: string; }
-interface Connection { id: string; db_type: string; database: string; host: string; status: string; }
+import type { ChatMessageView } from '../types/chat';
+import type { DatabaseConnection, SessionSummary } from '../types/api';
 
 export function ChatPage() {
-  const [connections, setConnections] = useState<Connection[]>([]);
+  const [connections, setConnections] = useState<DatabaseConnection[]>([]);
   const [activeConnectionId, setActiveConnectionId] = useState('');
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessageView[]>([]);
   const [loading, setLoading] = useState(false);
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [schemaOpen, setSchemaOpen] = useState(false);
@@ -48,13 +34,17 @@ export function ChatPage() {
     if (!activeSessionId) { setMessages([]); return; }
     if (skipNextFetch.current) { skipNextFetch.current = false; return; }
     api.getSessionMessages(activeSessionId).then(data => {
-      const msgs: Message[] = data.messages.map((m: Record<string, unknown>) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content as string,
-        sql: (m.sql as string) || undefined,
-        error: (m.error as string) || undefined,
+      const msgs: ChatMessageView[] = data.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+        sql: message.sql || undefined,
+        error: message.error || undefined,
       }));
       setMessages(msgs);
+      // Auto-switch to the session's last-used connection
+      if (data.last_connection_id && connections.some(c => c.id === data.last_connection_id)) {
+        setActiveConnectionId(data.last_connection_id);
+      }
     });
   }, [activeSessionId]);
 
@@ -62,14 +52,18 @@ export function ChatPage() {
 
   const handleSend = async (message: string) => {
     if (!activeConnectionId) return;
-    const userMsg: Message = { role: 'user', content: message };
+    const userMsg: ChatMessageView = { role: 'user', content: message };
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
     try {
       const r = await api.sendMessage({ connection_id: activeConnectionId, session_id: activeSessionId || undefined, message });
-      const assistantMsg: Message = {
-        role: 'assistant', content: r.message, sql: r.sql || undefined,
-        columns: r.columns, rows: r.rows, row_count: r.row_count,
+      const assistantMsg: ChatMessageView = {
+        role: 'assistant',
+        content: r.message,
+        sql: r.sql || undefined,
+        columns: r.columns,
+        rows: r.rows,
+        row_count: r.row_count,
         execution_time_ms: r.execution_time_ms,
         chart_recommendation: r.chart_recommendation || undefined,
         error: r.error || undefined,
@@ -91,6 +85,10 @@ export function ChatPage() {
     setSessions(prev => prev.filter(s => s.id !== sid));
     if (activeSessionId === sid) { setActiveSessionId(null); setMessages([]); }
   };
+  const handleRenameSession = async (sid: string, title: string) => {
+    await api.renameSession(sid, title);
+    setSessions(prev => prev.map(s => s.id === sid ? { ...s, title } : s));
+  };
   const handleRefreshConnections = () => {
     api.listConnections().then(conns => {
       setConnections(conns);
@@ -100,27 +98,27 @@ export function ChatPage() {
   };
 
   const activeConn = connections.find(c => c.id === activeConnectionId);
+  const activeSession = sessions.find(s => s.id === activeSessionId);
 
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: T.bg, fontFamily: T.fontBody }}>
       <Sidebar
         sessions={sessions} activeSessionId={activeSessionId}
         onSelectSession={setActiveSessionId} onNewChat={handleNewChat}
-        onDeleteSession={handleDeleteSession} onOpenConnect={() => setShowConnectModal(true)}
+        onDeleteSession={handleDeleteSession} onRenameSession={handleRenameSession}
+        onOpenConnect={() => setShowConnectModal(true)}
         connections={connections}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         <ChatTopbar
-          sessionId={activeSessionId} dbType={activeConn?.db_type} dbName={activeConn?.database}
+          sessionId={activeSessionId} sessionTitle={activeSession?.title}
+          dbType={activeConn?.db_type} dbName={activeConn?.database}
           onToggleSchema={() => setSchemaOpen(p => !p)} schemaOpen={schemaOpen}
         />
 
-        {/* Chat + Schema wrapper */}
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* Chat column */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-            {/* Messages */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0', display: 'flex', flexDirection: 'column', gap: 0 }}>
               {messages.length === 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 14 }}>
@@ -145,7 +143,6 @@ export function ChatPage() {
 
               {messages.map((msg, i) => <MessageBubble key={i} message={msg} connectionId={activeConnectionId} />)}
 
-              {/* Thinking indicator */}
               {loading && (
                 <div style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: 8 }}>
                   <div style={{
@@ -175,14 +172,12 @@ export function ChatPage() {
             />
           </div>
 
-          {/* Schema Panel */}
           <SchemaPanel connectionId={activeConnectionId} visible={schemaOpen} />
         </div>
       </div>
 
       <ConnectionModal isOpen={showConnectModal} onClose={() => setShowConnectModal(false)} onConnected={handleRefreshConnections} />
 
-      {/* Thinking animation keyframes */}
       <style>{`
         @keyframes thinkbounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-5px);opacity:1} }
       `}</style>
