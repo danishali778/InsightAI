@@ -23,6 +23,9 @@ export interface FolderSidebarProps {
   };
   activeFolder: string;
   activeTag: string | null;
+  search: string;
   onFolderChange: (folder: string) => void;
   onTagChange: (tag: string | null) => void;
+  onSearchChange: (value: string) => void;
+  onFolderCreated: () => void;
 }

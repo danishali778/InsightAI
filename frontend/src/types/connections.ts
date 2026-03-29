@@ -17,6 +17,8 @@ export interface ConnectionListItem {
   database?: string;
   username?: string;
   tables_count?: number;
+  ssl_mode?: string;
+  readonly?: boolean;
 }
 
 export interface ConnectionDetailData {

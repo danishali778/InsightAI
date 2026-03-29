@@ -3,7 +3,9 @@ from typing import Optional
 
 from common.models import MessageResponse
 from dashboard import store
-from dashboard.models import AddWidgetRequest, CreateDashboardRequest, Dashboard, DashboardStats, DashboardSummary, DashboardWidget, UpdateWidgetRequest
+from dashboard.models import AddWidgetRequest, CreateDashboardRequest, Dashboard, DashboardStats, DashboardSummary, DashboardWidget, UpdateWidgetRequest, RenameDashboardRequest
+from database import connection_manager
+from query_executor.executor import execute_query
 
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
@@ -21,6 +23,17 @@ def list_dashboards():
 def create_dashboard(req: CreateDashboardRequest):
     """Create a new dashboard."""
     dash = store.create_dashboard(req)
+    return dash.model_dump()
+
+
+@router.patch("/dashboards/{dashboard_id}", response_model=Dashboard)
+def rename_dashboard(dashboard_id: str, req: RenameDashboardRequest):
+    """Rename a dashboard."""
+    if not req.name.strip():
+        raise HTTPException(status_code=400, detail="Name cannot be empty.")
+    dash = store.rename_dashboard(dashboard_id, req.name)
+    if not dash:
+        raise HTTPException(status_code=404, detail="Dashboard not found.")
     return dash.model_dump()
 
 
@@ -69,6 +82,27 @@ def update_widget(widget_id: str, req: UpdateWidgetRequest):
     if not widget:
         raise HTTPException(status_code=404, detail="Widget not found.")
     return widget.model_dump()
+
+
+@router.post("/widgets/{widget_id}/refresh", response_model=DashboardWidget)
+def refresh_widget(widget_id: str):
+    """Re-run a widget's SQL and update its rows."""
+    widget = store.get_widget(widget_id)
+    if not widget:
+        raise HTTPException(status_code=404, detail="Widget not found.")
+    if not widget.sql:
+        raise HTTPException(status_code=400, detail="Widget has no SQL to refresh.")
+    if not widget.connection_id:
+        raise HTTPException(status_code=400, detail="Widget has no connection.")
+    engine = connection_manager.get_engine(widget.connection_id)
+    if not engine:
+        raise HTTPException(status_code=404, detail="Connection not found.")
+    result = execute_query(engine, widget.sql, row_limit=500, connection_id=widget.connection_id)
+    if not result.success:
+        raise HTTPException(status_code=500, detail=result.error or "Query failed.")
+    req = UpdateWidgetRequest(columns=result.columns, rows=result.rows)
+    updated = store.update_widget(widget_id, req)
+    return updated.model_dump()
 
 
 @router.get("/stats", response_model=DashboardStats)

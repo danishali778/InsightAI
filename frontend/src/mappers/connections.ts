@@ -26,5 +26,7 @@ export function mapConnectionRecord(apiConn: ConnectionApiRecord): ConnectionLis
     database: apiConn.database,
     username: apiConn.username ?? undefined,
     tables_count: apiConn.tables_count,
+    ssl_mode: apiConn.ssl_mode ?? 'disable',
+    readonly: apiConn.readonly ?? true,
   };
 }

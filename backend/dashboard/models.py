@@ -26,6 +26,11 @@ class CreateDashboardRequest(BaseModel):
     icon: str = "📊"
 
 
+class RenameDashboardRequest(BaseModel):
+    """Request body for renaming a dashboard."""
+    name: str
+
+
 class DashboardWidget(BaseModel):
     """A single widget on the dashboard."""
     id: str
@@ -34,6 +39,7 @@ class DashboardWidget(BaseModel):
     viz_type: str  # bar | line | donut | table | kpi
     size: str = "half"  # half | full
     connection_id: Optional[str] = None
+    sql: Optional[str] = None
     columns: list[str] = Field(default_factory=list)
     rows: list[dict] = Field(default_factory=list)
     chart_config: Optional[ChartConfig] = None
@@ -55,6 +61,7 @@ class AddWidgetRequest(BaseModel):
     viz_type: str = "table"
     size: str = "half"
     connection_id: Optional[str] = None
+    sql: Optional[str] = None
     columns: list[str] = Field(default_factory=list)
     rows: list[dict] = Field(default_factory=list)
     chart_config: Optional[ChartConfig] = None
@@ -72,6 +79,8 @@ class UpdateWidgetRequest(BaseModel):
     """Patchable widget fields for layout and preferences."""
     title: Optional[str] = None
     size: Optional[str] = None
+    columns: Optional[list[str]] = None
+    rows: Optional[list[dict]] = None
     x: Optional[int] = None
     y: Optional[int] = None
     w: Optional[int] = None

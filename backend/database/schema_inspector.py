@@ -2,6 +2,39 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 from .models import TableInfo, ColumnInfo, ForeignKeyInfo
 
+# Column name keywords that suggest low-cardinality enum-like values
+_ENUM_KEYWORDS = {
+    'type', 'status', 'category', 'tier', 'kind', 'mode', 'state',
+    'level', 'role', 'gender', 'priority', 'source', 'method', 'format',
+}
+
+
+def _is_enum_like(col_name: str, col_type: str) -> bool:
+    """Return True if this column is likely a low-cardinality enum-like field."""
+    type_lower = col_type.lower()
+    is_text = any(t in type_lower for t in ('varchar', 'text', 'character varying', 'char'))
+    name_lower = col_name.lower()
+    has_keyword = any(kw in name_lower for kw in _ENUM_KEYWORDS)
+    return is_text and has_keyword
+
+
+def _get_distinct_values(engine: Engine, table_name: str, col_name: str, max_values: int = 15) -> list[str]:
+    """Fetch distinct non-null values for a column if cardinality is low enough."""
+    try:
+        with engine.connect() as conn:
+            count_result = conn.execute(
+                text(f'SELECT COUNT(DISTINCT "{col_name}") FROM "{table_name}"')
+            )
+            count = count_result.scalar()
+            if count is None or count > max_values:
+                return []
+            rows = conn.execute(
+                text(f'SELECT DISTINCT "{col_name}" FROM "{table_name}" WHERE "{col_name}" IS NOT NULL ORDER BY "{col_name}"')
+            ).fetchall()
+            return [str(row[0]) for row in rows]
+    except Exception:
+        return []
+
 
 def get_table_names(engine: Engine) -> list[str]:
     """Get all table names from the database."""
@@ -28,11 +61,19 @@ def get_schema(engine: Engine) -> list[TableInfo]:
         # Get columns
         columns = []
         for col in inspector.get_columns(table_name):
+            col_name = col["name"]
+            col_type = str(col["type"])
+            sample_values = (
+                _get_distinct_values(engine, table_name, col_name)
+                if _is_enum_like(col_name, col_type)
+                else []
+            )
             columns.append(ColumnInfo(
-                name=col["name"],
-                type=str(col["type"]),
+                name=col_name,
+                type=col_type,
                 nullable=col.get("nullable", True),
-                primary_key=col["name"] in pk_columns,
+                primary_key=col_name in pk_columns,
+                sample_values=sample_values,
             ))
 
         # Get foreign keys

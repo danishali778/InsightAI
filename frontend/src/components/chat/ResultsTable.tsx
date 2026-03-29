@@ -1,10 +1,33 @@
 import { T } from '../dashboard/tokens';
 import type { ChatResultsTableProps } from '../../types/chat';
 
+function NullCell() {
+  return (
+    <span
+      title="This field is empty in the database"
+      style={{
+        color: T.text3,
+        fontStyle: 'italic',
+        fontSize: '0.72rem',
+        opacity: 0.6,
+        cursor: 'help',
+        userSelect: 'none',
+      }}
+    >
+      -- no value --
+    </span>
+  );
+}
+
 export function ResultsTable({ columns, rows, rowCount, executionTime, truncated }: ChatResultsTableProps) {
+  const isNull = (v: unknown) => v === null || v === undefined || v === '';
+
   const fmt = (v: unknown) => {
-    if (v === null || v === undefined) return '—';
-    if (typeof v === 'number') return v.toLocaleString();
+    if (typeof v === 'number') {
+      return Number.isInteger(v)
+        ? v.toLocaleString()
+        : parseFloat(v.toFixed(2)).toLocaleString();
+    }
     return String(v);
   };
 
@@ -73,7 +96,7 @@ export function ResultsTable({ columns, rows, rowCount, executionTime, truncated
                     color: typeof row[c] === 'number' ? T.text : T.text2,
                     fontFamily: T.fontMono, whiteSpace: 'nowrap',
                     fontWeight: typeof row[c] === 'number' ? 600 : 400,
-                  }}>{fmt(row[c])}</td>
+                  }}>{isNull(row[c]) ? <NullCell /> : fmt(row[c])}</td>
                 ))}
               </tr>
             ))}

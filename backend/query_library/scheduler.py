@@ -63,7 +63,8 @@ def _execute_scheduled_query(query_id: str) -> None:
         store.log_run(query_id=query_id, success=False, error="Connection not found", triggered_by="schedule")
         return
 
-    result = execute_query(engine, query.sql, row_limit=500, connection_id=query.connection_id)
+    result = execute_query(engine, query.sql, row_limit=500, connection_id=query.connection_id,
+                           readonly=connection_manager.get_readonly(query.connection_id))
     store.increment_run_count(query_id)
     store.log_run(
         query_id=query_id,

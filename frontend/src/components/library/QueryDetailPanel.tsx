@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { T } from '../dashboard/tokens';
-import { runSavedQuery, getQueryRunHistory, setQuerySchedule, removeQuerySchedule } from '../../services/api';
+import { runSavedQuery, getQueryRunHistory, setQuerySchedule, removeQuerySchedule, updateSavedQuery, listLibraryFolders } from '../../services/api';
 import { highlightSqlInline, extractTablesFromSql } from '../../utils/sqlHighlight';
 import type { LibraryQuery, LibraryRunResult } from '../../types/library';
-import type { QueryRunHistoryRecord, ScheduleConfig } from '../../types/api';
+import type { FolderSummary, QueryRunHistoryRecord, ScheduleConfig } from '../../types/api';
 
 const DAYS_OF_WEEK = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const;
 const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -26,6 +26,11 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
   const [runHistory, setRunHistory] = useState<QueryRunHistoryRecord[]>([]);
   const [schedDraft, setSchedDraft] = useState<ScheduleConfig>(defaultSchedule());
   const [schedSaving, setSchedSaving] = useState(false);
+  const [folders, setFolders] = useState<FolderSummary[]>([]);
+  const [folderDraft, setFolderDraft] = useState('');
+  const [newFolderMode, setNewFolderMode] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [folderSaving, setFolderSaving] = useState(false);
 
   useEffect(() => {
     if (!query) return;
@@ -35,6 +40,14 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
   useEffect(() => {
     if (!query) return;
     setSchedDraft(query.schedule ?? defaultSchedule());
+  }, [query?.id]);
+
+  useEffect(() => {
+    if (!query) return;
+    setFolderDraft(query.folder_name);
+    setNewFolderMode(false);
+    setNewFolderName('');
+    listLibraryFolders().then(setFolders).catch(() => {});
   }, [query?.id]);
 
   useEffect(() => {
@@ -62,6 +75,21 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
   const handleDelete = async () => {
     if (confirm('Delete this query?')) {
       onDelete?.(query.id);
+    }
+  };
+
+  const handleFolderSave = async () => {
+    const name = newFolderMode ? newFolderName.trim() : folderDraft;
+    if (!name || name === query.folder_name) { setNewFolderMode(false); return; }
+    setFolderSaving(true);
+    try {
+      await updateSavedQuery(query.id, { folder_name: name });
+      setNewFolderMode(false);
+      onRefresh?.();
+    } catch {
+      // silently handle
+    } finally {
+      setFolderSaving(false);
     }
   };
 
@@ -142,6 +170,68 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
               <InfoRow label="Last Rows" value={runHistory.length > 0 ? `${runHistory[0].row_count} rows returned` : '—'} />
               <InfoRow label="Database" value={query.connection_id || 'None'} color={query.connection_id ? T.accent : undefined} />
               {tables.length > 0 && <InfoRow label="Tables Used" value={tables.join(', ')} />}
+
+              {/* Editable folder row */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${T.border}` }}>
+                <span style={{ fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono, minWidth: 80, paddingTop: 2 }}>Folder</span>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                  {!newFolderMode ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <select
+                        value={folderDraft}
+                        onChange={e => {
+                          if (e.target.value === '__new__') { setNewFolderMode(true); }
+                          else { setFolderDraft(e.target.value); }
+                        }}
+                        style={{
+                          background: T.s2, border: `1px solid ${T.border}`, borderRadius: 6,
+                          padding: '3px 8px', color: T.text2, fontSize: '0.72rem',
+                          fontFamily: T.fontMono, outline: 'none', cursor: 'pointer',
+                        }}
+                      >
+                        <option value="Uncategorized">Uncategorized</option>
+                        {folders.filter(f => f.name !== 'Uncategorized' && f.name !== 'Public Library').map(f => (
+                          <option key={f.name} value={f.name}>{f.name}</option>
+                        ))}
+                        <option disabled>──────────</option>
+                        <option value="__new__">＋ New folder…</option>
+                      </select>
+                      {folderDraft !== query.folder_name && (
+                        <button onClick={handleFolderSave} disabled={folderSaving} style={{
+                          padding: '3px 8px', borderRadius: 6, fontSize: '0.65rem', fontFamily: T.fontMono,
+                          cursor: 'pointer', border: `1px solid rgba(0,229,255,0.3)`,
+                          background: T.accentDim, color: T.accent,
+                        }}>{folderSaving ? '…' : 'Move'}</button>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <input
+                        autoFocus
+                        value={newFolderName}
+                        onChange={e => setNewFolderName(e.target.value)}
+                        placeholder="Folder name"
+                        onKeyDown={e => { if (e.key === 'Enter') handleFolderSave(); if (e.key === 'Escape') setNewFolderMode(false); }}
+                        style={{
+                          background: T.s2, border: `1px solid rgba(0,229,255,0.3)`, borderRadius: 6,
+                          padding: '3px 8px', color: T.text, fontSize: '0.72rem',
+                          fontFamily: T.fontMono, outline: 'none', width: 120,
+                        }}
+                      />
+                      <button onClick={handleFolderSave} disabled={folderSaving} style={{
+                        padding: '3px 8px', borderRadius: 6, fontSize: '0.65rem', fontFamily: T.fontMono,
+                        cursor: 'pointer', border: `1px solid rgba(0,229,255,0.3)`,
+                        background: T.accentDim, color: T.accent,
+                      }}>{folderSaving ? '…' : 'Create'}</button>
+                      <button onClick={() => setNewFolderMode(false)} style={{
+                        padding: '3px 6px', borderRadius: 6, fontSize: '0.65rem', fontFamily: T.fontMono,
+                        cursor: 'pointer', border: `1px solid ${T.border}`,
+                        background: 'transparent', color: T.text3,
+                      }}>✕</button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </Section>
 
             {query.description && (
@@ -174,18 +264,20 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
             </Section>
 
             {/* Tags */}
-            <Section label="Tags">
-              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                {query.tags.map(t => {
-                  const colors = TAG_COLORS[t] || DEFAULT_TAG;
-                  return (
-                    <span key={t} style={{ padding: '1px 7px', borderRadius: 10, fontSize: '0.62rem', fontFamily: T.fontMono, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.color }}>{t}</span>
-                  );
-                })}
-                {/* STATIC — add tag button */}
-                <span title="Coming soon" style={{ cursor: 'pointer', fontSize: '0.62rem', fontFamily: T.fontMono, color: T.text3, padding: '2px 8px', border: `1px dashed ${T.border2}`, borderRadius: 10 }}>+ add tag</span>
-              </div>
-            </Section>
+            {query.tags.length > 0 && (
+              <Section label="Tags">
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                  {query.tags.map(t => {
+                    const colors = TAG_COLORS[t] || DEFAULT_TAG;
+                    return (
+                      <span key={t} style={{ padding: '1px 7px', borderRadius: 10, fontSize: '0.62rem', fontFamily: T.fontMono, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.color }}>
+                        {t}
+                      </span>
+                    );
+                  })}
+                </div>
+              </Section>
+            )}
 
             {/* Run Result */}
             {runResult && (
@@ -202,11 +294,8 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
         {activeTab === 'sql' && (
           <Section label="">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: 1, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono }}>Current SQL (v1)</span>
-              <div style={{ display: 'flex', gap: 5 }}>
-                <button onClick={() => navigator.clipboard.writeText(query.sql)} style={miniBtnStyle}>Copy</button>
-                <button title="Coming soon" style={miniBtnStyle}>Edit</button> {/* STATIC */}
-              </div>
+              <span style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: 1, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono }}>Current SQL</span>
+              <button onClick={() => navigator.clipboard.writeText(query.sql)} style={miniBtnStyle}>Copy</button>
             </div>
             <div style={{
               background: 'rgba(0,0,0,0.3)', border: `1px solid ${T.border}`, borderRadius: 9,
@@ -315,17 +404,26 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
                     {/* Time */}
                     <SettingsRow label="Time">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <select value={schedDraft.hour % 12 || 12} onChange={e => {
-                          const h12 = Number(e.target.value);
-                          const isPm = schedDraft.hour >= 12;
-                          setSchedDraft({ ...schedDraft, hour: isPm ? (h12 === 12 ? 12 : h12 + 12) : (h12 === 12 ? 0 : h12) });
-                        }} style={selectStyle}>
-                          {Array.from({ length: 12 }, (_, i) => i + 1).map(h => <option key={h} value={h}>{h}</option>)}
-                        </select>
+                        <input
+                          type="number" min={1} max={12}
+                          value={schedDraft.hour % 12 || 12}
+                          onChange={e => {
+                            const h12 = Math.min(12, Math.max(1, Number(e.target.value)));
+                            const isPm = schedDraft.hour >= 12;
+                            setSchedDraft({ ...schedDraft, hour: isPm ? (h12 === 12 ? 12 : h12 + 12) : (h12 === 12 ? 0 : h12) });
+                          }}
+                          style={{ ...selectStyle, width: 44, textAlign: 'center' }}
+                        />
                         <span style={{ color: T.text3, fontSize: '0.72rem' }}>:</span>
-                        <select value={schedDraft.minute} onChange={e => setSchedDraft({ ...schedDraft, minute: Number(e.target.value) })} style={selectStyle}>
-                          {[0, 15, 30, 45].map(m => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
-                        </select>
+                        <input
+                          type="number" min={0} max={59}
+                          value={String(schedDraft.minute).padStart(2, '0')}
+                          onChange={e => {
+                            const m = Math.min(59, Math.max(0, Number(e.target.value)));
+                            setSchedDraft({ ...schedDraft, minute: m });
+                          }}
+                          style={{ ...selectStyle, width: 44, textAlign: 'center' }}
+                        />
                         <button onClick={() => {
                           const isPm = schedDraft.hour >= 12;
                           setSchedDraft({ ...schedDraft, hour: isPm ? schedDraft.hour - 12 : schedDraft.hour + 12 });
@@ -434,7 +532,6 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
       {/* Action Buttons */}
       <div style={{ padding: '12px 18px', borderTop: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', gap: 7, flexShrink: 0 }}>
         <PanelBtn label={running ? 'Running...' : '▶  Run Query'} type="accent" onClick={handleRun} disabled={running} />
-        <PanelBtn label="📋  Duplicate Query" type="ghost" /> {/* STATIC */}
         <PanelBtn label="🗑  Delete Query" type="danger" onClick={handleDelete} />
       </div>
 

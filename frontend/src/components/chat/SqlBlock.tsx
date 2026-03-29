@@ -203,7 +203,7 @@ export function SqlBlock({
               display: 'grid',
               gap: isCard ? 4 : 6,
               position: 'relative',
-              overflowX: 'auto',
+              overflowX: isCard ? 'hidden' : 'auto',
             }}
           >
             {visibleLines.map((line, index) => (
@@ -233,7 +233,8 @@ export function SqlBlock({
                     fontSize: isCard ? '0.68rem' : '0.76rem',
                     fontFamily: T.fontMono,
                     lineHeight: isCard ? 1.5 : 1.7,
-                    whiteSpace: 'pre',
+                    whiteSpace: isCard ? 'pre-wrap' : 'pre',
+                    wordBreak: isCard ? 'break-word' : 'normal',
                   }}
                 >
                   {tokenizeSqlLine(line).map((token, tokenIndex) => (

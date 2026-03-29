@@ -48,9 +48,21 @@ def build_context(state: ChatState) -> dict:
     }
 
 
+_DESTRUCTIVE_KEYWORDS = {'delete', 'update', 'insert', 'drop', 'truncate', 'alter'}
+
+
 def generate_sql_node(state: ChatState) -> dict:
     """Node 2: Call LLM to generate SQL."""
     explanation, sql = generate_sql(state["llm_messages"])
+
+    # Prepend read-only notice if user asked for a destructive operation
+    user_msg = state["user_message"].lower()
+    if any(kw in user_msg for kw in _DESTRUCTIVE_KEYWORDS):
+        explanation = (
+            "QueryMind is read-only — data modification queries are not supported.\n\n"
+            + explanation
+        )
+
     return {
         "explanation": explanation,
         "sql": sql,
@@ -81,7 +93,8 @@ def execute_sql_node(state: ChatState) -> dict:
     print(f"[execute_sql] Running: {sql[:100]}...")
 
     # execute_query handles validation + row limiting internally
-    result = execute_query(engine, sql, row_limit=500, connection_id=state["connection_id"])
+    result = execute_query(engine, sql, row_limit=500, connection_id=state["connection_id"],
+                           readonly=connection_manager.get_readonly(state["connection_id"]))
 
     if result.success:
         print(f"[execute_sql] ✅ Success — {result.row_count} rows, {len(result.columns)} cols")

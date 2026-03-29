@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { LibrarySidebar } from '../components/library/LibrarySidebar';
+import { AppSidebar } from '../components/common/AppSidebar';
 import { LibraryTopbar } from '../components/library/LibraryTopbar';
 import { FolderSidebar } from '../components/library/FolderSidebar';
 import { QueryList } from '../components/library/QueryList';
@@ -16,6 +16,7 @@ export function LibraryPage() {
   const [activeFolder, setActiveFolder] = useState('All Queries');
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const fetchAll = useCallback(async () => {
     try {
@@ -36,6 +37,10 @@ export function LibraryPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  const filteredQueries = search.trim()
+    ? queries.filter(q => q.title.toLowerCase().includes(search.toLowerCase()) || q.sql.toLowerCase().includes(search.toLowerCase()))
+    : queries;
+
   const handleDelete = async (id: string) => {
     await deleteSavedQuery(id);
     if (selectedId === id) setSelectedId(null);
@@ -44,7 +49,7 @@ export function LibraryPage() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: T.bg, color: T.text, fontFamily: T.fontBody }}>
-      <LibrarySidebar />
+      <AppSidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         <LibraryTopbar stats={stats} />
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -54,16 +59,20 @@ export function LibraryPage() {
             stats={stats}
             activeFolder={activeFolder}
             activeTag={activeTag}
+            search={search}
             onFolderChange={(f: string) => { setActiveFolder(f); setSelectedId(null); }}
             onTagChange={(t: string | null) => { setActiveTag(t); setSelectedId(null); }}
+            onSearchChange={setSearch}
+            onFolderCreated={fetchAll}
           />
           <QueryList
-            queries={queries}
+            queries={filteredQueries}
             stats={stats}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onDelete={handleDelete}
             onRefresh={fetchAll}
+            activeFolder={activeFolder}
           />
         </div>
       </div>

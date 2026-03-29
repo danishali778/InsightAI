@@ -20,4 +20,5 @@ def execute_sql_query(request: QueryRequest):
         sql=request.sql,
         row_limit=request.row_limit or 500,
         connection_id=request.connection_id,
+        readonly=connection_manager.get_readonly(request.connection_id),
     )

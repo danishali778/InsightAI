@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.engine import URL
 from .models import ConnectionRequest, TableInfo
 from . import schema_inspector
 
@@ -18,13 +19,44 @@ def _build_connection_url(config: ConnectionRequest) -> str:
 
     if db_type == "postgresql":
         port = config.port or 5432
-        return f"postgresql://{config.username}:{config.password}@{config.host}:{port}/{config.database}"
+        return str(URL.create(
+            drivername="postgresql+psycopg2",
+            username=config.username,
+            password=config.password,
+            host=config.host,
+            port=port,
+            database=config.database,
+        ))
 
     if db_type == "mysql":
         port = config.port or 3306
-        return f"mysql+pymysql://{config.username}:{config.password}@{config.host}:{port}/{config.database}"
+        return str(URL.create(
+            drivername="mysql+pymysql",
+            username=config.username,
+            password=config.password,
+            host=config.host,
+            port=port,
+            database=config.database,
+        ))
 
     raise ValueError(f"Unsupported database type: {db_type}")
+
+
+def _build_engine(url: str, db_type: str, ssl_mode: str = "disable") -> Engine:
+    """Create an engine with conservative connection timeout and optional SSL."""
+    db_type = db_type.lower()
+    connect_args: dict = {}
+
+    if db_type == "postgresql":
+        connect_args["connect_timeout"] = 5
+        if ssl_mode in ("require", "verify-full"):
+            connect_args["sslmode"] = ssl_mode
+    elif db_type == "mysql":
+        connect_args["connect_timeout"] = 5
+        if ssl_mode in ("require", "verify-full"):
+            connect_args["ssl"] = {"ssl_verify_cert": ssl_mode == "verify-full"}
+
+    return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
 
 
 def test_connection(config: ConnectionRequest) -> tuple[bool, str, int]:
@@ -34,7 +66,7 @@ def test_connection(config: ConnectionRequest) -> tuple[bool, str, int]:
     """
     try:
         url = _build_connection_url(config)
-        engine = create_engine(url, pool_pre_ping=True)
+        engine = _build_engine(url, config.db_type, getattr(config, "ssl_mode", "disable"))
 
         # Try to connect and run a simple query
         with engine.connect() as conn:
@@ -58,7 +90,7 @@ def connect(config: ConnectionRequest) -> tuple[str, Engine]:
     Returns (connection_id, engine).
     """
     url = _build_connection_url(config)
-    engine = create_engine(url, pool_pre_ping=True)
+    engine = _build_engine(url, config.db_type, config.ssl_mode)
 
     # Verify it works
     with engine.connect() as conn:
@@ -80,6 +112,9 @@ def connect(config: ConnectionRequest) -> tuple[str, Engine]:
         "host": config.host,
         "port": config.port,
         "username": config.username,
+        "password": config.password,  # kept for engine rebuild on settings change
+        "ssl_mode": config.ssl_mode,
+        "readonly": config.readonly,
         "schema": cached_schema,  # cached for instant AI access
     }
 
@@ -100,6 +135,49 @@ def get_engine(connection_id: str) -> Engine | None:
     """Get the SQLAlchemy engine for a connection."""
     conn = _connections.get(connection_id)
     return conn["engine"] if conn else None
+
+
+def get_readonly(connection_id: str) -> bool:
+    """Return True if this connection enforces read-only mode."""
+    conn = _connections.get(connection_id)
+    return conn["readonly"] if conn else True  # safe default
+
+
+def update_settings(connection_id: str, ssl_mode: str | None, readonly: bool | None) -> bool:
+    """Update SSL mode and/or readonly flag. Rebuilds engine if ssl_mode changes."""
+    conn = _connections.get(connection_id)
+    if not conn:
+        return False
+
+    if readonly is not None:
+        conn["readonly"] = readonly
+
+    if ssl_mode is not None and ssl_mode != conn["ssl_mode"]:
+        conn["ssl_mode"] = ssl_mode
+        # Rebuild engine with new SSL settings
+        try:
+            old_engine = conn["engine"]
+            config = ConnectionRequest(
+                db_type=conn["db_type"],
+                host=conn["host"],
+                port=conn["port"],
+                database=conn["database"],
+                username=conn["username"],
+                password=conn["password"],
+                ssl_mode=ssl_mode,
+            )
+            url = _build_connection_url(config)
+            new_engine = _build_engine(url, conn["db_type"], ssl_mode)
+            with new_engine.connect() as c:
+                c.execute(text("SELECT 1"))
+            old_engine.dispose()
+            conn["engine"] = new_engine
+        except Exception:
+            conn["ssl_mode"] = _connections[connection_id]["ssl_mode"]  # revert on failure
+            return False
+
+    _connections[connection_id] = conn
+    return True
 
 
 def get_cached_schema(connection_id: str) -> list[TableInfo] | None:
@@ -139,7 +217,8 @@ def get_schema_for_ai(connection_id: str) -> str | None:
         for col in table.columns:
             pk_tag = " (PK)" if col.primary_key else ""
             null_tag = " NULL" if col.nullable else " NOT NULL"
-            lines.append(f"  - {col.name}: {col.type}{pk_tag}{null_tag}")
+            values_tag = f" [values: {', '.join(col.sample_values)}]" if col.sample_values else ""
+            lines.append(f"  - {col.name}: {col.type}{pk_tag}{null_tag}{values_tag}")
         for fk in table.foreign_keys:
             lines.append(f"  FK: {fk.column} -> {fk.referred_table}.{fk.referred_column}")
         lines.append("")
@@ -162,5 +241,7 @@ def get_all_connections() -> list[dict]:
             "username": info.get("username"),
             "status": "connected",
             "tables_count": table_count,
+            "ssl_mode": info.get("ssl_mode", "disable"),
+            "readonly": info.get("readonly", True),
         })
     return result

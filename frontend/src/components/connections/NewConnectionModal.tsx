@@ -5,7 +5,7 @@ import { connectDatabase } from '../../services/api';
 export function NewConnectionModal({ isOpen, onClose, onSaved }: { isOpen: boolean, onClose: () => void, onSaved?: () => void }) {
   const [step, setStep] = useState(1);
   const [selectedConnector, setSelectedConnector] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', host: 'localhost', port: '', database: '', username: '', password: '' });
+  const [formData, setFormData] = useState({ name: '', host: 'localhost', port: '', database: '', username: '', password: '', ssl_mode: 'disable', readonly: true });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,6 +76,33 @@ export function NewConnectionModal({ isOpen, onClose, onSaved }: { isOpen: boole
                 <ModalInput label="Username" placeholder="user" value={formData.username} onChange={v => setFormData(prev => ({...prev, username: v}))} />
                 <ModalInput label="Password" placeholder="••••••" value={formData.password} onChange={v => setFormData(prev => ({...prev, password: v}))} password />
               </div>
+
+              {/* Security options */}
+              <div style={{ height: 1, background: T.border, margin: '18px 0' }} />
+              <div style={{ fontSize: '0.68rem', fontWeight: 600, letterSpacing: '1.2px', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', marginBottom: 12 }}>Security</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: '0.72rem', color: T.text2, fontWeight: 600, fontFamily: T.fontMono }}>SSL Mode</label>
+                  <select value={formData.ssl_mode} onChange={e => setFormData(prev => ({...prev, ssl_mode: e.target.value}))} style={{ background: T.s3, border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 13px', color: T.text, fontFamily: T.fontBody, fontSize: '0.83rem', outline: 'none', cursor: 'pointer' }}
+                    onFocus={e => e.target.style.borderColor = 'rgba(0,229,255,0.3)'}
+                    onBlur={e => e.target.style.borderColor = T.border}
+                  >
+                    <option value="disable">Disable</option>
+                    <option value="require">Require</option>
+                    <option value="verify-full">Verify Full</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: '0.72rem', color: T.text2, fontWeight: 600, fontFamily: T.fontMono }}>Access Mode</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40 }}>
+                    <button type="button" onClick={() => setFormData(prev => ({...prev, readonly: !prev.readonly}))} style={{ width: 38, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', background: formData.readonly ? T.accent : T.s4, position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                      <div style={{ position: 'absolute', top: 2, left: formData.readonly ? 20 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                    </button>
+                    <span style={{ fontSize: '0.78rem', color: formData.readonly ? T.text : T.text3 }}>{formData.readonly ? 'Read-only' : 'Read/Write'}</span>
+                  </div>
+                </div>
+              </div>
+
               {error && <div style={{ marginTop: 12, padding: '9px 14px', borderRadius: 8, background: T.redDim, color: T.red, fontSize: '0.78rem', border: `1px solid rgba(248,113,113,0.2)` }}>{error}</div>}
             </div>
           )}
@@ -107,10 +134,12 @@ export function NewConnectionModal({ isOpen, onClose, onSaved }: { isOpen: boole
                 username: formData.username,
                 password: formData.password,
                 name: formData.name || undefined,
+                ssl_mode: formData.ssl_mode,
+                readonly: formData.readonly,
               } as any);
               onSaved?.();
               // Reset form
-              setStep(1); setSelectedConnector(null); setFormData({ name: '', host: 'localhost', port: '', database: '', username: '', password: '' });
+              setStep(1); setSelectedConnector(null); setFormData({ name: '', host: 'localhost', port: '', database: '', username: '', password: '', ssl_mode: 'disable', readonly: true });
             } catch (err: any) {
               setError(err.message || 'Failed to connect');
             } finally {

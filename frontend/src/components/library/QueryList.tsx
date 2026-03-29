@@ -2,11 +2,32 @@ import { useState } from 'react';
 import { T } from '../dashboard/tokens';
 import { QueryCard } from './QueryCard';
 import { QueryDetailPanel } from './QueryDetailPanel';
+import { PublicLibraryPanel } from './PublicLibraryPanel';
 import type { QueryListProps } from '../../types/library';
 
-export function QueryList({ queries, stats, selectedId, onSelect, onDelete, onRefresh }: QueryListProps) {
+type SortKey = 'last_run' | 'name_az' | 'most_run' | 'newest' | 'oldest';
+
+function sortQueries(queries: QueryListProps['queries'], key: SortKey) {
+  return [...queries].sort((a, b) => {
+    switch (key) {
+      case 'last_run': return (b.last_run_at ?? '').localeCompare(a.last_run_at ?? '');
+      case 'name_az': return a.title.localeCompare(b.title);
+      case 'most_run': return (b.run_count ?? 0) - (a.run_count ?? 0);
+      case 'newest': return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+      case 'oldest': return (a.created_at ?? '').localeCompare(b.created_at ?? '');
+      default: return 0;
+    }
+  });
+}
+
+export function QueryList({ queries, stats, selectedId, onSelect, onDelete, onRefresh, activeFolder }: QueryListProps & { activeFolder: string }) {
   const selectedQuery = queries.find(q => q.id === selectedId) || null;
   const [detailTab, setDetailTab] = useState<string | undefined>(undefined);
+  const [sortBy, setSortBy] = useState<SortKey>('last_run');
+
+  if (activeFolder === 'Public Library') {
+    return <PublicLibraryPanel onCloned={onRefresh} />;
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -15,30 +36,16 @@ export function QueryList({ queries, stats, selectedId, onSelect, onDelete, onRe
         {/* Toolbar */}
         <div style={{ padding: '14px 20px', background: T.s1, borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.78rem', color: T.text3, fontFamily: T.fontMono, flex: 1 }}>
-            <span>Library</span> <span style={{ opacity: 0.4 }}>›</span> <span style={{ color: T.text2 }}>All Queries</span>
+            <span>Library</span> <span style={{ opacity: 0.4 }}>›</span> <span style={{ color: T.text2 }}>{activeFolder}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginLeft: 'auto' }}>
-            <select style={{ background: T.s2, border: `1px solid ${T.border}`, borderRadius: 7, padding: '5px 10px', color: T.text2, fontSize: '0.72rem', fontFamily: T.fontMono, outline: 'none', cursor: 'pointer', appearance: 'none' as const }}>
-              <option>Sort: Last Run</option>
-              <option>Sort: Name A–Z</option>
-              <option>Sort: Most Run</option>
-              <option>Sort: Newest</option>
-              <option>Sort: Oldest</option>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)} style={{ background: T.s2, border: `1px solid ${T.border}`, borderRadius: 7, padding: '5px 10px', color: T.text2, fontSize: '0.72rem', fontFamily: T.fontMono, outline: 'none', cursor: 'pointer', appearance: 'none' as const }}>
+              <option value="last_run">Sort: Last Run</option>
+              <option value="name_az">Sort: Name A–Z</option>
+              <option value="most_run">Sort: Most Run</option>
+              <option value="newest">Sort: Newest</option>
+              <option value="oldest">Sort: Oldest</option>
             </select>
-            <div style={{ display: 'flex', border: `1px solid ${T.border}`, borderRadius: 7, overflow: 'hidden' }}>
-              <button style={{ width: 30, height: 28, background: T.s3, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text2, fontSize: '0.75rem' }}>⊞</button>
-              <button style={{ width: 30, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text3, fontSize: '0.75rem' }}>≡</button>
-            </div>
-            {/* Filter button — STATIC */}
-            <button title="Filter" style={{
-              width: 32, height: 32, borderRadius: 8, background: 'transparent', border: `1px solid ${T.border}`,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text3, transition: 'all 0.2s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = T.s2; e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.color = T.text2; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text3; }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-            </button>
           </div>
         </div>
 
@@ -50,24 +57,18 @@ export function QueryList({ queries, stats, selectedId, onSelect, onDelete, onRe
               { val: String(stats.total_queries), label: 'total queries' },
               { val: String(stats.scheduled), label: 'scheduled' },
               { val: String(stats.total_runs), label: 'total runs' },
-              { val: '4', label: 'shared' }, /* STATIC */
             ].map((s, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: T.s1, border: `1px solid ${T.border}`, borderRadius: 8, padding: '6px 12px', fontSize: '0.72rem', fontFamily: T.fontMono }}>
                 <span style={{ color: T.text, fontWeight: 600 }}>{s.val}</span>
                 <span style={{ color: T.text3 }}>{s.label}</span>
               </div>
             ))}
-            {/* Connection status — STATIC */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: T.s1, border: `1px solid ${T.border}`, borderRadius: 8, padding: '6px 12px', fontSize: '0.72rem', fontFamily: T.fontMono, marginLeft: 'auto' }}>
-              <span style={{ color: T.green, fontWeight: 600 }}>●</span>
-              <span style={{ color: T.text3 }}>prod-postgres connected</span>
-            </div>
           </div>
 
           {/* Grid / Empty State */}
           {queries.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
-              {queries.map((q, index) => (
+              {sortQueries(queries, sortBy).map((q, index) => (
                 <QueryCard
                   key={q.id}
                   data={q}

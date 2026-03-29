@@ -11,6 +11,8 @@ class ConnectionRequest(BaseModel):
     database: str
     username: Optional[str] = None
     password: Optional[str] = None
+    ssl_mode: str = "disable"   # disable | require | verify-full
+    readonly: bool = True
 
 
 class ConnectionResponse(BaseModel):
@@ -32,6 +34,7 @@ class ColumnInfo(BaseModel):
     type: str
     nullable: bool
     primary_key: bool
+    sample_values: list[str] = Field(default_factory=list)
 
 
 class ForeignKeyInfo(BaseModel):
@@ -64,6 +67,7 @@ class TestConnectionRequest(BaseModel):
     database: str
     username: Optional[str] = None
     password: Optional[str] = None
+    ssl_mode: str = "disable"
 
 
 class TestConnectionResponse(BaseModel):
@@ -84,3 +88,11 @@ class ActiveConnection(BaseModel):
     username: Optional[str] = None
     status: str
     tables_count: int = 0
+    ssl_mode: str = "disable"
+    readonly: bool = True
+
+
+class UpdateConnectionSettingsRequest(BaseModel):
+    """Patchable security settings for an existing connection."""
+    ssl_mode: Optional[str] = None   # disable | require | verify-full
+    readonly: Optional[bool] = None

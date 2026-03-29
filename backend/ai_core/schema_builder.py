@@ -30,6 +30,8 @@ def build_system_prompt(schema_context: str) -> str:
 6. If the question is ambiguous, make reasonable assumptions and explain them.
 7. Add ORDER BY when it makes sense for the query results.
 8. Use JOINs when columns from multiple tables are needed — refer to the foreign key relationships.
+9. Always wrap AVG(), SUM(), and ratio/percentage calculations in ROUND(..., 2) to avoid excessive decimal places in results.
+10. If the user asks for DELETE, UPDATE, INSERT, or DROP operations, start your explanation with "QueryMind is read-only — data modification queries are not supported." Then show the equivalent SELECT query so the user can see what would be affected.
 
 ## RESPONSE FORMAT
 Return your response in this exact format:

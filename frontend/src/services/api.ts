@@ -1,6 +1,7 @@
 import { jsonRequest, request } from './http';
 import type {
   AddDashboardWidgetRequest,
+  AnalyticsOverviewResponse,
   ApiMessageResponse,
   ChatRequest,
   ChatResponse,
@@ -13,6 +14,7 @@ import type {
   DatabaseConnection,
   FolderSummary,
   LibraryStats,
+  PublicTemplatesResponse,
   QueryRecord,
   QueryRunHistoryRecord,
   QueryStats,
@@ -45,6 +47,10 @@ export function listConnections() {
 
 export function disconnectDatabase(connectionId: string) {
   return request<ApiMessageResponse>(`/database/connections/${connectionId}`, { method: 'DELETE' });
+}
+
+export function updateConnectionSettings(connectionId: string, data: { ssl_mode?: string; readonly?: boolean }) {
+  return jsonRequest<DatabaseConnection>(`/database/connections/${connectionId}`, 'PATCH', data);
 }
 
 export function sendMessage(data: ChatRequest) {
@@ -135,12 +141,33 @@ export function listLibraryFolders() {
   return request<FolderSummary[]>('/library/folders');
 }
 
+export function createLibraryFolder(name: string) {
+  return request<{ name: string }>('/library/folders', { method: 'POST', body: JSON.stringify({ name }) });
+}
+
 export function listLibraryTags() {
   return request<string[]>('/library/tags');
 }
 
 export function getLibraryStats() {
   return request<LibraryStats>('/library/stats');
+}
+
+export function listPublicTemplates(connectionId?: string) {
+  const params = connectionId ? `?connection_id=${encodeURIComponent(connectionId)}` : '';
+  return request<PublicTemplatesResponse>(`/library/public${params}`);
+}
+
+export function triggerTemplateGeneration(connectionId: string) {
+  return request<{ message: string; connection_id: string }>(
+    `/library/public/generate?connection_id=${encodeURIComponent(connectionId)}`,
+    { method: 'POST' },
+  );
+}
+
+export function cloneTemplate(templateId: string, connectionId?: string) {
+  const params = connectionId ? `?connection_id=${encodeURIComponent(connectionId)}` : '';
+  return request<SaveQueryResponse>(`/library/public/${templateId}/clone${params}`, { method: 'POST' });
 }
 
 export function listDashboards() {
@@ -153,6 +180,14 @@ export function createDashboard(data: CreateDashboardRequest) {
 
 export function deleteDashboard(dashboardId: string) {
   return request<ApiMessageResponse>(`/dashboard/dashboards/${dashboardId}`, { method: 'DELETE' });
+}
+
+export function renameDashboard(dashboardId: string, name: string) {
+  return jsonRequest<DashboardSummary>(`/dashboard/dashboards/${dashboardId}`, 'PATCH', { name });
+}
+
+export function refreshDashboardWidget(widgetId: string) {
+  return request<DashboardWidget>(`/dashboard/widgets/${widgetId}/refresh`, { method: 'POST' });
 }
 
 export function listDashboardWidgets(dashboardId?: string) {
@@ -175,4 +210,8 @@ export function updateDashboardWidget(widgetId: string, data: UpdateDashboardWid
 export function getDashboardStats(dashboardId?: string) {
   const params = dashboardId ? `?dashboard_id=${dashboardId}` : '';
   return request<DashboardStats>(`/dashboard/stats${params}`);
+}
+
+export function getAnalyticsOverview() {
+  return request<AnalyticsOverviewResponse>('/analytics/overview');
 }

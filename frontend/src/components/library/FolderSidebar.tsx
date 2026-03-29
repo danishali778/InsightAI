@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { T } from '../dashboard/tokens';
+import { createLibraryFolder } from '../../services/api';
 import type { FolderSidebarProps } from '../../types/library';
 
 const TAG_COLORS: Record<string, string> = {
@@ -7,15 +8,39 @@ const TAG_COLORS: Record<string, string> = {
   weekly: '#f59e0b', critical: '#f87171', sales: '#ff6b35', funnel: '#c084fc',
 };
 
-export function FolderSidebar({ folders, tags, stats, activeFolder, activeTag, onFolderChange, onTagChange }: FolderSidebarProps) {
-  const [search, setSearch] = useState('');
+export function FolderSidebar({ folders, tags, stats, activeFolder, activeTag, search, onFolderChange, onTagChange, onSearchChange, onFolderCreated }: FolderSidebarProps) {
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const startCreating = () => {
+    setNewName('');
+    setCreating(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const commitFolder = async () => {
+    const name = newName.trim();
+    if (name) {
+      await createLibraryFolder(name);
+      onFolderCreated();
+      onFolderChange(name);
+    }
+    setCreating(false);
+    setNewName('');
+  };
+
+  const cancelCreating = () => {
+    setCreating(false);
+    setNewName('');
+  };
 
   const quickAccess = [
     { id: 'All Queries', icon: '⭐', count: stats.total_queries },
     { id: 'Recently Run', icon: '🕐', count: stats.recently_run ?? 0 },
     { id: 'Scheduled', icon: '📅', count: stats.scheduled },
-    { id: 'Shared with Me', icon: '👥', count: 4 },   /* STATIC */
-    { id: 'Public Library', icon: '🌐', count: 12 },   /* STATIC */
+    { id: 'Shared with Me', icon: '👥', count: 0 },
+    { id: 'Public Library', icon: '🌐', count: 0 },
   ];
 
   return (
@@ -31,7 +56,7 @@ export function FolderSidebar({ folders, tags, stats, activeFolder, activeTag, o
         </div>
         <div style={{ position: 'relative' }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: T.text3, pointerEvents: 'none' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input placeholder="Search queries..." value={search} onChange={e => setSearch(e.target.value)} style={{
+          <input placeholder="Search queries..." value={search} onChange={e => onSearchChange(e.target.value)} style={{
             width: '100%', background: T.s2, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 10px 7px 28px',
             color: T.text2, fontFamily: T.fontBody, fontSize: '0.76rem', outline: 'none', transition: 'border-color 0.2s'
           }}
@@ -90,17 +115,35 @@ export function FolderSidebar({ folders, tags, stats, activeFolder, activeTag, o
 
       {/* Footer */}
       <div style={{ padding: '10px 16px', borderTop: `1px solid ${T.border}`, marginTop: 'auto' }}>
-        <button style={{
-          width: '100%', padding: '7px 10px', borderRadius: 8, border: `1px dashed ${T.border2}`, background: 'transparent',
-          color: T.text3, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-          transition: 'all 0.2s', fontFamily: T.fontBody
-        }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; e.currentTarget.style.color = T.accent; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.color = T.text3; }}
-        >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Folder
-        </button>
+        {creating ? (
+          <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+            <input
+              ref={inputRef}
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') commitFolder(); else if (e.key === 'Escape') cancelCreating(); }}
+              onBlur={commitFolder}
+              placeholder="Folder name..."
+              style={{
+                flex: 1, background: T.s2, border: `1px solid rgba(0,229,255,0.3)`, borderRadius: 8,
+                padding: '6px 10px', color: T.text, fontFamily: T.fontBody, fontSize: '0.75rem', outline: 'none',
+              }}
+            />
+            <button onMouseDown={cancelCreating} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: T.text3, fontSize: '1rem', lineHeight: 1, padding: '0 2px' }}>×</button>
+          </div>
+        ) : (
+          <button onClick={startCreating} style={{
+            width: '100%', padding: '7px 10px', borderRadius: 8, border: `1px dashed ${T.border2}`, background: 'transparent',
+            color: T.text3, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+            transition: 'all 0.2s', fontFamily: T.fontBody
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; e.currentTarget.style.color = T.accent; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.color = T.text3; }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Folder
+          </button>
+        )}
       </div>
 
       <style>{`

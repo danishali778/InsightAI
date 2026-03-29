@@ -32,6 +32,8 @@ export interface DatabaseConnection {
   username?: string | null;
   status: string;
   tables_count: number;
+  ssl_mode?: string;
+  readonly?: boolean;
 }
 
 export interface ConnectDatabaseRequest {
@@ -42,6 +44,8 @@ export interface ConnectDatabaseRequest {
   database: string;
   username: string;
   password: string;
+  ssl_mode?: string;
+  readonly?: boolean;
 }
 
 export interface ConnectDatabaseResponse extends DatabaseConnection {
@@ -256,6 +260,26 @@ export interface LibraryStats {
   folders: number;
 }
 
+export interface PublicTemplate {
+  id: string;
+  connection_id: string;
+  title: string;
+  description: string;
+  sql: string;
+  category: string;
+  category_color: string;
+  tags: string[];
+  icon: string;
+  icon_bg: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+}
+
+export interface PublicTemplatesResponse {
+  status: 'not_started' | 'generating' | 'ready' | 'error';
+  connection_id: string | null;
+  templates: PublicTemplate[];
+}
+
 export interface CreateDashboardRequest {
   name: string;
   icon?: string;
@@ -284,6 +308,7 @@ export interface DashboardWidget {
   viz_type: string;
   size: string;
   connection_id?: string | null;
+  sql?: string | null;
   columns: string[];
   rows: Array<Record<string, unknown>>;
   chart_config?: DashboardChartConfig | null;
@@ -304,6 +329,7 @@ export interface AddDashboardWidgetRequest {
   viz_type: string;
   size: string;
   connection_id?: string;
+  sql?: string;
   columns: string[];
   rows: Array<Record<string, unknown>>;
   chart_config?: DashboardChartConfig;
@@ -320,6 +346,8 @@ export interface AddDashboardWidgetRequest {
 export interface UpdateDashboardWidgetRequest {
   title?: string;
   size?: string;
+  columns?: string[];
+  rows?: Array<Record<string, unknown>>;
   x?: number;
   y?: number;
   w?: number;
@@ -332,4 +360,66 @@ export interface UpdateDashboardWidgetRequest {
 export interface DashboardStats {
   total_widgets: number;
   viz_breakdown: Record<string, number>;
+}
+
+export interface AnalyticsOverview {
+  active_connections: number;
+  total_queries: number;
+  successful_queries: number;
+  failed_queries: number;
+  success_rate: number;
+  avg_time_ms: number;
+  saved_queries: number;
+  scheduled_queries: number;
+  dashboards: number;
+  total_widgets: number;
+}
+
+export interface AnalyticsTopConnection {
+  connection_id: string;
+  name: string;
+  database: string;
+  db_type: string;
+  query_count: number;
+}
+
+export interface AnalyticsRecentQuery {
+  id: string;
+  connection_id: string;
+  connection_name: string;
+  sql: string;
+  success: boolean;
+  error?: string | null;
+  execution_time_ms?: number | null;
+  row_count?: number | null;
+  timestamp: string;
+}
+
+export interface AnalyticsDashboardSummary {
+  id: string;
+  name: string;
+  icon: string;
+  created_at: string;
+  widget_count: number;
+}
+
+export interface AnalyticsDashboardSection {
+  total_dashboards: number;
+  total_widgets: number;
+  viz_breakdown: Record<string, number>;
+  items: AnalyticsDashboardSummary[];
+}
+
+export interface AnalyticsQueryHealth {
+  successful: number;
+  failed: number;
+}
+
+export interface AnalyticsOverviewResponse {
+  overview: AnalyticsOverview;
+  library: LibraryStats;
+  dashboards: AnalyticsDashboardSection;
+  query_health: AnalyticsQueryHealth;
+  top_connections: AnalyticsTopConnection[];
+  recent_queries: AnalyticsRecentQuery[];
 }

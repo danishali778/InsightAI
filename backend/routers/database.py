@@ -8,8 +8,10 @@ from database.models import (
     TestConnectionRequest,
     TestConnectionResponse,
     SchemaResponse,
+    UpdateConnectionSettingsRequest,
 )
 from database import connection_manager, schema_inspector
+from query_library import schema_recommender
 
 
 router = APIRouter(prefix="/api/database", tags=["Database"])
@@ -36,6 +38,11 @@ def connect_database(config: ConnectionRequest):
         schema = connection_manager.get_cached_schema(connection_id)
         tables_count = len(schema) if schema else 0
         name = config.name or f"{config.db_type}-{config.database}"
+        # Trigger background AI template generation for Public Library
+        schema_text = connection_manager.get_schema_for_ai(connection_id)
+        if schema_text:
+            schema_recommender.generate_in_background(connection_id, schema_text, config.db_type)
+
         return ConnectionResponse(
             id=connection_id,
             name=name,
@@ -57,12 +64,27 @@ def list_connections():
     return connection_manager.get_all_connections()
 
 
+@router.patch("/connections/{connection_id}", response_model=ActiveConnection)
+def update_connection_settings(connection_id: str, req: UpdateConnectionSettingsRequest):
+    """Update SSL mode and/or read-only flag for an existing connection."""
+    conn_list = connection_manager.get_all_connections()
+    conn_info = next((c for c in conn_list if c["id"] == connection_id), None)
+    if not conn_info:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    ok = connection_manager.update_settings(connection_id, req.ssl_mode, req.readonly)
+    if not ok:
+        raise HTTPException(status_code=500, detail="Failed to apply SSL settings — check the SSL mode is supported by your DB.")
+    updated = next(c for c in connection_manager.get_all_connections() if c["id"] == connection_id)
+    return updated
+
+
 @router.delete("/connections/{connection_id}", response_model=StatusMessageResponse)
 def disconnect_database(connection_id: str):
     """Disconnect from a database."""
     success = connection_manager.disconnect(connection_id)
     if not success:
         raise HTTPException(status_code=404, detail="Connection not found")
+    schema_recommender.clear_connection(connection_id)
     return {"message": f"Disconnected {connection_id}", "status": "disconnected"}
 
 

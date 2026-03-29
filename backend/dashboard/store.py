@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from .models import Dashboard, CreateDashboardRequest, DashboardWidget, AddWidgetRequest, UpdateWidgetRequest
+from .models import Dashboard, CreateDashboardRequest, DashboardWidget, AddWidgetRequest, UpdateWidgetRequest, RenameDashboardRequest
 
 
 # In-memory stores
@@ -39,6 +39,15 @@ def get_dashboard(dashboard_id: str) -> Optional[Dashboard]:
     return _dashboards.get(dashboard_id)
 
 
+def rename_dashboard(dashboard_id: str, name: str) -> Optional[Dashboard]:
+    dash = _dashboards.get(dashboard_id)
+    if not dash:
+        return None
+    dash.name = name.strip()
+    _dashboards[dashboard_id] = dash
+    return dash
+
+
 def delete_dashboard(dashboard_id: str) -> bool:
     if dashboard_id in _dashboards:
         del _dashboards[dashboard_id]
@@ -74,6 +83,7 @@ def add_widget(req: AddWidgetRequest) -> DashboardWidget:
         rows=req.rows,
         chart_config=req.chart_config,
         cadence=req.cadence,
+        sql=req.sql,
         x=req.x if req.x is not None else 0,
         y=req.y if req.y is not None else next_y,
         w=req.w if req.w is not None else layout_default["w"],

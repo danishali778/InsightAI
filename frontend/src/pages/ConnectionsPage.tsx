@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ConnectionsSidebar } from '../components/connections/ConnectionsSidebar';
+import { AppSidebar } from '../components/common/AppSidebar';
 import { ConnectionsTopbar } from '../components/connections/ConnectionsTopbar';
 import { ConnectionListPanel } from '../components/connections/ConnectionListPanel';
 import { ConnectionDetail } from '../components/connections/ConnectionDetail';
@@ -65,7 +65,7 @@ export function ConnectionsPage() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: T.bg, color: T.text, fontFamily: T.fontBody }}>
-      <ConnectionsSidebar />
+      <AppSidebar />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
         <ConnectionsTopbar onNewConnection={() => setIsModalOpen(true)} />

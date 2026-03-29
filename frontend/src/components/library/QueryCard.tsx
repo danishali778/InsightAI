@@ -99,14 +99,6 @@ export function QueryCard({ data, isSelected, onClick, onScheduleClick, index = 
             {folderLabel} · {connectionLabel}
           </div>
         </div>
-        {/* Menu button */}
-        <button style={{
-          width: 24, height: 24, borderRadius: 6, background: 'transparent',
-          border: `1px solid ${hovered ? T.border : 'transparent'}`,
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: T.text3, transition: 'all 0.15s', flexShrink: 0, fontSize: '0.8rem',
-          opacity: hovered ? 1 : 0,
-        }}>⋯</button>
       </div>
 
       {/* SQL Preview */}
@@ -168,10 +160,7 @@ export function QueryCard({ data, isSelected, onClick, onScheduleClick, index = 
 
       {/* Action bar */}
       <div style={{ display: 'flex', alignItems: 'center', borderTop: `1px solid ${T.border}`, background: T.s2 }}>
-        <ActionBtn label="Run" icon="▶" hoverColor={T.accent} />
-        <ActionBtn label="Edit" icon="✏" />
-        <ActionBtn label="Schedule" icon="📅" hoverColor={T.yellow} onClick={onScheduleClick} />
-        <ActionBtn label="Share" icon="🔗" hoverColor={T.purple} isLast />
+        <ActionBtn label="Schedule" icon="📅" hoverColor={T.yellow} onClick={onScheduleClick} isLast />
       </div>
 
       <style>{`

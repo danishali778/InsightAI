@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { T } from '../dashboard/tokens';
 import { StatusIndicator } from '../common/StatusIndicator';
-import { testConnection } from '../../services/api';
+import { testConnection, updateConnectionSettings } from '../../services/api';
 import type { ConnectionDetailProps, ConnectionDetailTab, ConnectionListItem } from '../../types/connections';
 import { ErdDiagram } from './ErdDiagram';
 
@@ -193,6 +193,24 @@ function OverviewTab({ connection, schema, queryHistory, onTabSwitch }: { connec
 function CredentialsTab({ connection }: { connection: ConnectionListItem }) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; tables_found?: number | null } | null>(null);
+  const [sslMode, setSslMode] = useState(connection.ssl_mode ?? 'disable');
+  const [readonly, setReadonly] = useState(connection.readonly ?? true);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+  const saveSettings = async () => {
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      await updateConnectionSettings(connection.id, { ssl_mode: sslMode, readonly });
+      setSaveMsg('Settings saved.');
+    } catch {
+      setSaveMsg('Failed to save settings.');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveMsg(null), 3000);
+    }
+  };
 
   const runTest = async () => {
     setTesting(true);
@@ -234,14 +252,33 @@ function CredentialsTab({ connection }: { connection: ConnectionListItem }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 14px', background: T.yellowDim, border: `1px solid rgba(245,158,11,0.2)`, borderRadius: 9, marginBottom: 14 }}>
         <span style={{ fontSize: '0.9rem', flexShrink: 0, marginTop: 1 }}>🔒</span>
         <span style={{ fontSize: '0.76rem', color: T.yellow, lineHeight: 1.5 }}>
-          All credentials are encrypted at rest. QueryMind connects in <strong>read-only mode</strong> by default — your data is never modified.
+          QueryMind connects in <strong>read-only mode</strong> by default — your data is never modified unless you disable it.
         </span>
       </div>
 
-      <div style={{ display: 'grid', gap: 10, marginBottom: 14 }}>
-        <ToggleRow label="Enable SSL" sub="Encrypt connection using SSL/TLS" on />
-        <ToggleRow label="SSH Tunnel" sub="Connect through a bastion / jump server" />
-        <ToggleRow label="Read-only Mode" sub="Block all INSERT, UPDATE, DELETE, DROP operations" on />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ fontSize: '0.72rem', color: T.text2, fontWeight: 600, fontFamily: T.fontMono }}>SSL Mode</label>
+          <select value={sslMode} onChange={e => setSslMode(e.target.value)} style={{ background: T.s3, border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 13px', color: T.text, fontFamily: T.fontBody, fontSize: '0.83rem', outline: 'none', cursor: 'pointer' }}
+            onFocus={e => e.target.style.borderColor = 'rgba(0,229,255,0.3)'}
+            onBlur={e => e.target.style.borderColor = T.border}
+          >
+            <option value="disable">Disable</option>
+            <option value="require">Require</option>
+            <option value="verify-full">Verify Full</option>
+          </select>
+          <span style={{ fontSize: '0.66rem', color: T.text3 }}>Encrypts the connection using SSL/TLS</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ fontSize: '0.72rem', color: T.text2, fontWeight: 600, fontFamily: T.fontMono }}>Access Mode</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40 }}>
+            <button type="button" onClick={() => setReadonly(r => !r)} style={{ width: 38, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', background: readonly ? T.accent : T.s4, position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+              <div style={{ position: 'absolute', top: 2, left: readonly ? 20 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+            </button>
+            <span style={{ fontSize: '0.83rem', color: readonly ? T.text : T.text3 }}>{readonly ? 'Read-only' : 'Read / Write'}</span>
+          </div>
+          <span style={{ fontSize: '0.66rem', color: T.text3 }}>Blocks INSERT, UPDATE, DELETE, DROP when on</span>
+        </div>
       </div>
 
       <div style={{ height: 1, background: T.border, margin: '18px 0' }} />
@@ -264,9 +301,12 @@ function CredentialsTab({ connection }: { connection: ConnectionListItem }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 9 }}>
-         <button style={{ padding: '10px 24px', borderRadius: 9, border: 'none', background: `linear-gradient(135deg, ${T.accent}, #00b8d4)`, color: '#000', fontSize: '0.83rem', fontWeight: 700, cursor: 'pointer', fontFamily: T.fontBody }}>💾 &nbsp;Save Changes</button>
+      <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+         <button onClick={saveSettings} disabled={saving} style={{ padding: '10px 24px', borderRadius: 9, border: 'none', background: `linear-gradient(135deg, ${T.accent}, #00b8d4)`, color: '#000', fontSize: '0.83rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: T.fontBody, opacity: saving ? 0.7 : 1 }}>
+           {saving ? '⏳ Saving...' : '💾 Save Changes'}
+         </button>
          <button onClick={runTest} disabled={testing} style={{ padding: '10px 20px', borderRadius: 9, border: `1px solid rgba(0,229,255,0.25)`, background: T.accentDim, color: T.accent, fontSize: '0.83rem', fontWeight: 600, cursor: testing ? 'not-allowed' : 'pointer', fontFamily: T.fontBody, opacity: testing ? 0.5 : 1 }}>{testing ? '⏳ Testing...' : '⚡ Test Connection'}</button>
+         {saveMsg && <span style={{ fontSize: '0.76rem', color: saveMsg.includes('Failed') ? T.red : T.green, fontFamily: T.fontMono }}>{saveMsg}</span>}
       </div>
 
     </>

@@ -11,24 +11,25 @@ from .safety import validate_query, sanitize_row_limit
 QUERY_TIMEOUT = 30
 
 
-def execute_query(engine: Engine, sql: str, row_limit: int = 500, connection_id: Optional[str] = None) -> QueryResult:
+def execute_query(engine: Engine, sql: str, row_limit: int = 500, connection_id: Optional[str] = None, readonly: bool = True) -> QueryResult:
     """
     Execute a SQL query safely against the given database engine.
 
     Safety checks:
-    - Read-only enforcement (blocks DROP, DELETE, UPDATE, INSERT, etc.)
+    - Read-only enforcement (when readonly=True, blocks DROP, DELETE, UPDATE, INSERT, etc.)
     - Row limit cap (default 500, auto-appends LIMIT if missing)
     - Timeout protection (30 seconds)
     - Graceful error handling
     """
 
-    # Step 1: Validate query is read-only
-    is_safe, error_msg = validate_query(sql)
-    if not is_safe:
-        return QueryResult(
-            success=False,
-            error=error_msg,
-        )
+    # Step 1: Validate query is read-only (only when readonly mode is enabled)
+    if readonly:
+        is_safe, error_msg = validate_query(sql)
+        if not is_safe:
+            return QueryResult(
+                success=False,
+                error=error_msg,
+            )
 
     # Step 2: Apply row limit
     safe_sql = sanitize_row_limit(sql, row_limit)

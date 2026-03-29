@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from typing import Optional
 
 from common.models import MessageResponse
@@ -15,7 +15,7 @@ from query_library.models import (
     ScheduleStatusResponse,
     UpdateQueryRequest,
 )
-from query_library import scheduler
+from query_library import scheduler, schema_recommender
 from database import connection_manager
 from query_executor.executor import execute_query
 
@@ -86,7 +86,8 @@ def run_query(query_id: str):
     if not engine:
         raise HTTPException(status_code=404, detail="Database connection not found.")
 
-    result = execute_query(engine, query.sql, row_limit=500, connection_id=query.connection_id)
+    result = execute_query(engine, query.sql, row_limit=500, connection_id=query.connection_id,
+                           readonly=connection_manager.get_readonly(query.connection_id))
     store.increment_run_count(query_id)
 
     # Log to run history
@@ -123,6 +124,16 @@ def get_run_history(query_id: str, limit: int = 20):
 def list_folders():
     """List all folders with query counts."""
     return store.list_folders()
+
+
+@router.post("/folders", status_code=201)
+def create_folder(name: str = Body(..., embed=True)):
+    """Create a new (possibly empty) folder."""
+    name = name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Folder name is required.")
+    store.create_folder(name)
+    return {"name": name}
 
 
 @router.get("/tags", response_model=list[str])
@@ -174,6 +185,71 @@ def set_schedule(query_id: str, config: ScheduleConfig):
         "schedule_label": updated.schedule_label if updated else None,
         "message": "Schedule updated." if config.enabled else "Schedule disabled.",
     }
+
+
+# ── Public Library endpoints ──────────────────────────
+
+@router.get("/public")
+def list_public_templates(connection_id: Optional[str] = None):
+    """Return AI-generated templates for a connection plus generation status."""
+    if not connection_id:
+        return {"status": "not_started", "connection_id": None, "templates": []}
+
+    status = schema_recommender.get_status(connection_id)
+    templates = schema_recommender.get_templates(connection_id)
+
+    return {
+        "status": status,
+        "connection_id": connection_id,
+        "templates": [
+            {
+                "id": t.id,
+                "connection_id": t.connection_id,
+                "title": t.title,
+                "description": t.description,
+                "sql": t.sql,
+                "category": t.category,
+                "category_color": t.category_color,
+                "tags": t.tags,
+                "icon": t.icon,
+                "icon_bg": t.icon_bg,
+                "difficulty": t.difficulty,
+            }
+            for t in templates
+        ],
+    }
+
+
+@router.post("/public/generate")
+def trigger_template_generation(connection_id: str):
+    """Manually trigger (or re-trigger) template generation for a connection."""
+    schema_text = connection_manager.get_schema_for_ai(connection_id)
+    if not schema_text:
+        raise HTTPException(status_code=404, detail="Connection not found.")
+    conn_info = connection_manager.get_all_connections()
+    db_type = next((c["db_type"] for c in conn_info if c["id"] == connection_id), "postgresql")
+    schema_recommender.generate_in_background(connection_id, schema_text, db_type)
+    return {"message": "Template generation started.", "connection_id": connection_id}
+
+
+@router.post("/public/{template_id}/clone", response_model=SaveQueryResponse)
+def clone_public_template(template_id: str, connection_id: Optional[str] = None):
+    """Clone an AI-generated template into the user's query library."""
+    template = schema_recommender.get_template_by_id(template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found.")
+    req = SaveQueryRequest(
+        title=template.title,
+        sql=template.sql,
+        description=template.description,
+        folder_name="Uncategorized",
+        connection_id=connection_id or template.connection_id,
+        icon=template.icon,
+        icon_bg=template.icon_bg,
+        tags=template.tags,
+    )
+    query, created = store.save_query(req)
+    return {**query.model_dump(), "created": created}
 
 
 @router.delete("/queries/{query_id}/schedule", response_model=ScheduleStatusResponse)

@@ -7,6 +7,7 @@ from .models import SavedQuery, SaveQueryRequest, UpdateQueryRequest, QueryRunRe
 # In-memory stores
 _queries: dict[str, SavedQuery] = {}
 _run_history: dict[str, list[QueryRunRecord]] = {}  # query_id -> runs (newest first)
+_explicit_folders: set[str] = set()  # user-created folders (may be empty)
 
 
 def _normalize_sql(sql: str) -> str:
@@ -115,9 +116,21 @@ def increment_run_count(query_id: str) -> Optional[SavedQuery]:
     return query
 
 
+def create_folder(name: str) -> bool:
+    """Register an explicit folder (may be empty). Returns False if already exists."""
+    name = name.strip()
+    if not name:
+        return False
+    already = name in _explicit_folders or any(q.folder_name == name for q in _queries.values())
+    _explicit_folders.add(name)
+    return not already
+
+
 def list_folders() -> list[dict]:
-    """Get unique folder names with counts."""
+    """Get unique folder names with counts (includes empty explicit folders)."""
     folders: dict[str, int] = {}
+    for name in _explicit_folders:
+        folders[name] = 0
     for q in _queries.values():
         folders[q.folder_name] = folders.get(q.folder_name, 0) + 1
     return [{"name": name, "count": count} for name, count in sorted(folders.items())]

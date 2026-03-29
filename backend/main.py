@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from common import register_exception_handlers
 from config import APP_HOST, APP_PORT, ALLOWED_ORIGINS
-from routers import database, query, chat, query_history, query_library, dashboard_widgets
+from routers import analytics, database, query, chat, query_history, query_library, dashboard_widgets
 
 
 @asynccontextmanager
@@ -42,6 +42,7 @@ app.include_router(chat.router)
 app.include_router(query_history.router)
 app.include_router(query_library.router)
 app.include_router(dashboard_widgets.router)
+app.include_router(analytics.router)
 
 
 @app.get("/api/health")

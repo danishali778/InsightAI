@@ -80,5 +80,6 @@ querymind-*.html
 # Playwright MCP screenshots
 .playwright-mcp/
 
-# Screenshots / reference images
+# Screenshots, extra assets, reference images
 *.png
+extra_assets/
