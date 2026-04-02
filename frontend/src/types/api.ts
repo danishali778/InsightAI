@@ -14,9 +14,13 @@ export interface ApiErrorResponse {
 }
 
 export interface ChartRecommendation {
-  type: 'bar' | 'line' | 'pie' | 'scatter' | 'area';
+  type: 'bar' | 'line' | 'pie' | 'scatter' | 'area' | 'table' | 'kpi';
   x_column: string;
   y_columns: string[];
+  color_column?: string | null;
+  tooltip_columns?: string[];
+  is_grouped?: boolean;
+  is_dual_axis?: boolean;
   title: string;
   x_label: string;
   y_label: string;
@@ -104,7 +108,9 @@ export interface ChatMessageRecord {
   content: string;
   connection_id?: string | null;
   sql?: string | null;
-  results?: { row_count?: number } | null;
+  columns?: string[] | null;
+  results?: { rows?: Array<Record<string, unknown>> } | null;
+  chart_recommendation?: ChartRecommendation | null;
   error?: string | null;
   timestamp: string;
 }
@@ -139,6 +145,10 @@ export interface ChatResponse {
   execution_time_ms: number;
   chart_recommendation?: ChartRecommendation | null;
   error?: string | null;
+  normalized: boolean;
+  column_metadata?: Record<string, string>;
+  xLabel?: string;
+  yLabel?: string;
 }
 
 export interface ChatUiMessage {
@@ -152,6 +162,7 @@ export interface ChatUiMessage {
   execution_time_ms?: number;
   chart_recommendation?: ChartRecommendation;
   error?: string;
+  column_metadata?: Record<string, string>;
 }
 
 export interface QueryRecord {
@@ -296,6 +307,8 @@ export interface DashboardSummary {
 export interface DashboardChartConfig {
   x_column?: string;
   y_columns?: string[];
+  color_column?: string | null;
+  is_grouped?: boolean;
   title?: string;
   x_label?: string;
   y_label?: string;
@@ -346,6 +359,7 @@ export interface AddDashboardWidgetRequest {
 export interface UpdateDashboardWidgetRequest {
   title?: string;
   size?: string;
+  viz_type?: string;
   columns?: string[];
   rows?: Array<Record<string, unknown>>;
   x?: number;

@@ -33,6 +33,7 @@ class SavedQuery(BaseModel):
     icon_bg: str = "rgba(0,229,255,0.1)"
     tags: list[str] = Field(default_factory=list)
     schedule: Optional[ScheduleConfig] = None
+    owner_id: str
     created_at: datetime
     updated_at: datetime
     run_count: int = 0
@@ -114,12 +115,15 @@ class RunSavedQueryResponse(BaseModel):
 class QueryRunRecord(BaseModel):
     """A single run-history entry for a saved query."""
     id: str
-    query_id: str
+    sql: str
+    connection_id: Optional[str] = None
+    query_id: Optional[str] = None
     success: bool
     row_count: int = 0
     execution_time_ms: float = 0.0
     error: Optional[str] = None
     triggered_by: str = "manual"  # "manual" or "schedule"
+    owner_id: str
     ran_at: datetime
 
 

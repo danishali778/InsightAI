@@ -38,6 +38,9 @@ export function ChatPage() {
         role: message.role,
         content: message.content,
         sql: message.sql || undefined,
+        columns: message.columns || undefined,
+        rows: message.results?.rows || undefined,
+        chart_recommendation: message.chart_recommendation || undefined,
         error: message.error || undefined,
       }));
       setMessages(msgs);
@@ -66,6 +69,7 @@ export function ChatPage() {
         row_count: r.row_count,
         execution_time_ms: r.execution_time_ms,
         chart_recommendation: r.chart_recommendation || undefined,
+        column_metadata: r.column_metadata || undefined,
         error: r.error || undefined,
       };
       setMessages(prev => [...prev, assistantMsg]);

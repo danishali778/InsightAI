@@ -1,136 +1,226 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from .models import Dashboard, CreateDashboardRequest, DashboardWidget, AddWidgetRequest, UpdateWidgetRequest, RenameDashboardRequest
-
-
-# In-memory stores
-_dashboards: dict[str, Dashboard] = {}
-_widgets: dict[str, DashboardWidget] = {}
+from dashboard.models import Dashboard, CreateDashboardRequest, DashboardWidget, AddWidgetRequest, UpdateWidgetRequest, DashboardSummary
+from database.supabase_client import supabase
 
 
 # ─── Dashboard CRUD ─────────────────────────────────────────
 
-def create_dashboard(req: CreateDashboardRequest) -> Dashboard:
-    """Create a new dashboard."""
-    dash = Dashboard(
-        id=str(uuid.uuid4())[:8],
-        name=req.name,
-        icon=req.icon,
-        created_at=datetime.now(timezone.utc),
-    )
-    _dashboards[dash.id] = dash
-    return dash
+def create_dashboard(user_id: str, req: CreateDashboardRequest) -> Dashboard:
+    """Create a new dashboard in Supabase."""
+    dash_id = str(uuid.uuid4())
+    data = {
+        "id": dash_id,
+        "owner_id": user_id,
+        "name": req.name,
+        "icon": req.icon,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    response = supabase.table("dashboards").insert(data).execute()
+    if not response.data:
+        raise Exception("Failed to create dashboard")
+        
+    return Dashboard(**response.data[0])
 
 
-def list_dashboards() -> list[dict]:
-    """List all dashboards with widget counts."""
+def list_dashboards(user_id: str) -> list[DashboardSummary]:
+    """List all dashboards for a user from Supabase with widget counts."""
+    # Using Supabase count feature
+    response = supabase.table("dashboards") \
+        .select("*, dashboard_widgets(count)") \
+        .eq("owner_id", user_id) \
+        .order("created_at", desc=False) \
+        .execute()
+        
     result = []
-    for d in sorted(_dashboards.values(), key=lambda x: x.created_at):
-        widget_count = sum(1 for w in _widgets.values() if w.dashboard_id == d.id)
-        result.append({
-            **d.model_dump(),
-            "widget_count": widget_count,
-        })
+    for d in response.data:
+        widget_count = d.get("dashboard_widgets", [{}])[0].get("count", 0)
+        result.append(DashboardSummary(
+            **d,
+            widget_count=widget_count
+        ))
     return result
 
 
-def get_dashboard(dashboard_id: str) -> Optional[Dashboard]:
-    return _dashboards.get(dashboard_id)
-
-
-def rename_dashboard(dashboard_id: str, name: str) -> Optional[Dashboard]:
-    dash = _dashboards.get(dashboard_id)
-    if not dash:
+def get_dashboard(user_id: str, dashboard_id: str) -> Optional[Dashboard]:
+    """Get a specific dashboard by ID and owner."""
+    response = supabase.table("dashboards") \
+        .select("*") \
+        .eq("id", dashboard_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    if not response.data:
         return None
-    dash.name = name.strip()
-    _dashboards[dashboard_id] = dash
-    return dash
+    return Dashboard(**response.data[0])
 
 
-def delete_dashboard(dashboard_id: str) -> bool:
-    if dashboard_id in _dashboards:
-        del _dashboards[dashboard_id]
-        # Also delete all widgets in this dashboard
-        to_delete = [wid for wid, w in _widgets.items() if w.dashboard_id == dashboard_id]
-        for wid in to_delete:
-            del _widgets[wid]
-        return True
-    return False
+def rename_dashboard(user_id: str, dashboard_id: str, name: str) -> Optional[Dashboard]:
+    """Rename a dashboard in Supabase."""
+    response = supabase.table("dashboards") \
+        .update({"name": name.strip()}) \
+        .eq("id", dashboard_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    if not response.data:
+        return None
+    return Dashboard(**response.data[0])
+
+
+def delete_dashboard(user_id: str, dashboard_id: str) -> bool:
+    """Delete a dashboard (cascading delete should be handled by DB)."""
+    response = supabase.table("dashboards") \
+        .delete() \
+        .eq("id", dashboard_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    return len(response.data) > 0
 
 
 # ─── Widget CRUD ────────────────────────────────────────────
 
-def add_widget(req: AddWidgetRequest) -> DashboardWidget:
-    """Add a new widget to a dashboard."""
-    # Keep size presets as defaults; layout remains user-overridable later.
+def add_widget(user_id: str, req: AddWidgetRequest) -> DashboardWidget:
+    """Add a new widget to a dashboard in Supabase."""
+    # 1. Calculate layout defaults
     size_defaults = {
         "half": {"w": 1, "h": 7, "minW": 1, "minH": 5},
         "full": {"w": 2, "h": 8, "minW": 2, "minH": 6},
     }
     layout_default = size_defaults.get(req.size, size_defaults["half"])
-    dash_widgets = [w for w in _widgets.values() if w.dashboard_id == req.dashboard_id]
-    next_y = max((w.y + w.h) for w in dash_widgets) if dash_widgets else 0
+    
+    # 2. Get current widgets for next_y calculation
+    current_widgets = list_widgets(user_id, dashboard_id=req.dashboard_id)
+    next_y = max((w.y + w.h) for w in current_widgets) if current_widgets else 0
 
-    widget = DashboardWidget(
-        id=str(uuid.uuid4())[:8],
-        dashboard_id=req.dashboard_id,
-        title=req.title,
-        viz_type=req.viz_type,
-        size=req.size,
-        connection_id=req.connection_id,
-        columns=req.columns,
-        rows=req.rows,
-        chart_config=req.chart_config,
-        cadence=req.cadence,
-        sql=req.sql,
-        x=req.x if req.x is not None else 0,
-        y=req.y if req.y is not None else next_y,
-        w=req.w if req.w is not None else layout_default["w"],
-        h=req.h if req.h is not None else layout_default["h"],
-        minW=req.minW if req.minW is not None else layout_default["minW"],
-        minH=req.minH if req.minH is not None else layout_default["minH"],
-        bar_orientation=req.bar_orientation or "horizontal",
-        created_at=datetime.now(timezone.utc),
-    )
-    _widgets[widget.id] = widget
-    return widget
+    widget_id = str(uuid.uuid4())
+    
+    # 3. Map Pydantic model fields to Supabase column names
+    # Table schema uses: viz_type, chart_config, layout_params (JSONB), sql, cadence
+    # x, y, w, h are in layout_params
+    
+    layout_params = {
+        "x": req.x if req.x is not None else 0,
+        "y": req.y if req.y is not None else next_y,
+        "w": req.w if req.w is not None else layout_default["w"],
+        "h": req.h if req.h is not None else layout_default["h"],
+        "minW": req.minW if req.minW is not None else layout_default["minW"],
+        "minH": req.minH if req.minH is not None else layout_default["minH"],
+        "bar_orientation": req.bar_orientation or "horizontal"
+    }
+
+    data = {
+        "id": widget_id,
+        "dashboard_id": req.dashboard_id,
+        "owner_id": user_id,
+        "title": req.title,
+        "viz_type": req.viz_type,
+        "size": req.size,
+        "connection_id": req.connection_id,
+        "sql": req.sql,
+        "chart_config": req.chart_config.dict() if req.chart_config else {},
+        "layout_params": layout_params,
+        "cadence": req.cadence,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "rows": req.rows if req.rows else [],
+        "columns": req.columns if req.columns else []
+    }
+    
+    response = supabase.table("dashboard_widgets").insert(data).execute()
+    if not response.data:
+        raise Exception("Failed to add widget")
+        
+    return _map_widget(response.data[0])
 
 
-def list_widgets(dashboard_id: Optional[str] = None) -> list[DashboardWidget]:
-    """List widgets, optionally filtered by dashboard."""
-    result = list(_widgets.values())
+def list_widgets(user_id: str, dashboard_id: Optional[str] = None) -> list[DashboardWidget]:
+    """List widgets for a user from Supabase."""
+    query = supabase.table("dashboard_widgets") \
+        .select("*") \
+        .eq("owner_id", user_id)
+        
     if dashboard_id:
-        result = [w for w in result if w.dashboard_id == dashboard_id]
-    return sorted(result, key=lambda w: w.created_at, reverse=True)
+        query = query.eq("dashboard_id", dashboard_id)
+        
+    response = query.order("created_at", desc=True).execute()
+    return [_map_widget(w) for w in response.data]
 
 
-def get_widget(widget_id: str) -> Optional[DashboardWidget]:
-    return _widgets.get(widget_id)
-
-
-def delete_widget(widget_id: str) -> bool:
-    if widget_id in _widgets:
-        del _widgets[widget_id]
-        return True
-    return False
-
-
-def update_widget(widget_id: str, req: UpdateWidgetRequest) -> Optional[DashboardWidget]:
-    """Update widget layout/preferences."""
-    widget = _widgets.get(widget_id)
-    if not widget:
+def get_widget(user_id: str, widget_id: str) -> Optional[DashboardWidget]:
+    """Get a specific widget by ID."""
+    response = supabase.table("dashboard_widgets") \
+        .select("*") \
+        .eq("id", widget_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    if not response.data:
         return None
-    update_data = req.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(widget, field, value)
-    _widgets[widget_id] = widget
-    return widget
+    return _map_widget(response.data[0])
 
 
-def get_stats(dashboard_id: Optional[str] = None) -> dict:
-    """Get dashboard statistics."""
-    widgets = list_widgets(dashboard_id)
+def delete_widget(user_id: str, widget_id: str) -> bool:
+    """Delete a widget from Supabase."""
+    response = supabase.table("dashboard_widgets") \
+        .delete() \
+        .eq("id", widget_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    return len(response.data) > 0
+
+
+def update_widget(user_id: str, widget_id: str, req: UpdateWidgetRequest) -> Optional[DashboardWidget]:
+    """Update widget metadata in Supabase."""
+    # 1. Fetch current widget to merge layout_params
+    current = get_widget(user_id, widget_id)
+    if not current:
+        return None
+        
+    update_data = {}
+    if req.title is not None: update_data["title"] = req.title
+    if req.size is not None: update_data["size"] = req.size
+    
+    # Merge layout_params
+    layout_params = {
+        "x": current.x, "y": current.y, "w": current.w, "h": current.h,
+        "minW": current.minW, "minH": current.minH, "bar_orientation": current.bar_orientation
+    }
+    
+    layout_fields = ["x", "y", "w", "h", "minW", "minH", "bar_orientation"]
+    layout_changed = False
+    for field in layout_fields:
+        val = getattr(req, field)
+        if val is not None:
+            layout_params[field] = val
+            layout_changed = True
+            
+    if layout_changed:
+        update_data["layout_params"] = layout_params
+        
+    if req.rows is not None: update_data["rows"] = req.rows
+    if req.columns is not None: update_data["columns"] = req.columns
+        
+    if not update_data:
+        return current
+        
+    response = supabase.table("dashboard_widgets") \
+        .update(update_data) \
+        .eq("id", widget_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    if not response.data:
+        return None
+    return _map_widget(response.data[0])
+
+
+def get_stats(user_id: str, dashboard_id: Optional[str] = None) -> dict:
+    """Get dashboard statistics from Supabase."""
+    widgets = list_widgets(user_id, dashboard_id=dashboard_id)
     viz_counts: dict[str, int] = {}
     for w in widgets:
         viz_counts[w.viz_type] = viz_counts.get(w.viz_type, 0) + 1
@@ -138,3 +228,30 @@ def get_stats(dashboard_id: Optional[str] = None) -> dict:
         "total_widgets": len(widgets),
         "viz_breakdown": viz_counts,
     }
+
+
+def _map_widget(data: dict) -> DashboardWidget:
+    """Map Supabase record to DashboardWidget Pydantic model."""
+    lp = data.get("layout_params", {})
+    return DashboardWidget(
+        id=data["id"],
+        owner_id=data["owner_id"],
+        dashboard_id=data["dashboard_id"],
+        title=data["title"],
+        viz_type=data["viz_type"],
+        size=data["size"],
+        connection_id=data.get("connection_id"),
+        sql=data.get("sql"),
+        chart_config=data.get("chart_config"),
+        cadence=data.get("cadence", "Manual only"),
+        x=lp.get("x", 0),
+        y=lp.get("y", 0),
+        w=lp.get("w", 1),
+        h=lp.get("h", 7),
+        minW=lp.get("minW", 1),
+        minH=lp.get("minH", 5),
+        bar_orientation=lp.get("bar_orientation", "horizontal"),
+        created_at=data["created_at"],
+        columns=data.get("columns", []),
+        rows=data.get("rows", [])
+    )

@@ -10,7 +10,9 @@ from routers import analytics, database, query, chat, query_history, query_libra
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from database.connection_manager import seed_dev_connection
     from query_library.scheduler import init_scheduler, restore_all_jobs, shutdown_scheduler
+    seed_dev_connection()
     init_scheduler()
     restore_all_jobs()
     yield

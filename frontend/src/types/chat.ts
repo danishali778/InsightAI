@@ -10,6 +10,7 @@ export interface ChatMessageView {
   truncated?: boolean;
   execution_time_ms?: number;
   chart_recommendation?: ChartRecommendation;
+  column_metadata?: Record<string, string>;
   error?: string;
 }
 
@@ -41,12 +42,14 @@ export interface AddToDashboardMessage {
   rows?: Array<Record<string, unknown>>;
   connectionId?: string;
   chart_recommendation?: ChartRecommendation;
+  column_metadata?: Record<string, string>;
 }
 
 export interface ChatChartBlockProps {
   recommendation: ChartRecommendation;
   rows: Array<Record<string, unknown>>;
   columns: string[];
+  column_metadata?: Record<string, string>;
 }
 
 export interface ChatResultsPanelProps {
@@ -56,6 +59,7 @@ export interface ChatResultsPanelProps {
   truncated?: boolean;
   executionTimeMs?: number;
   chartRecommendation?: ChartRecommendation;
+  column_metadata?: Record<string, string>;
   onClose: () => void;
   panelHeight: number;
   onResize: (height: number) => void;

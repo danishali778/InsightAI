@@ -7,6 +7,8 @@ class ChartConfig(BaseModel):
     """Configuration for chart rendering."""
     x_column: Optional[str] = None
     y_columns: list[str] = Field(default_factory=list)
+    color_column: Optional[str] = None
+    is_grouped: bool = False
     title: Optional[str] = None
     x_label: Optional[str] = None
     y_label: Optional[str] = None
@@ -15,6 +17,7 @@ class ChartConfig(BaseModel):
 class Dashboard(BaseModel):
     """A dashboard that holds widgets."""
     id: str
+    owner_id: str
     name: str
     icon: str = "📊"
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -34,6 +37,7 @@ class RenameDashboardRequest(BaseModel):
 class DashboardWidget(BaseModel):
     """A single widget on the dashboard."""
     id: str
+    owner_id: str
     dashboard_id: str
     title: str
     viz_type: str  # bar | line | donut | table | kpi

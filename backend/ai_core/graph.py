@@ -4,8 +4,7 @@ from langgraph.graph import StateGraph, END
 from database import connection_manager
 from query_executor.executor import execute_query
 from query_executor.safety import validate_query
-from visualization.analyzer import analyze_data_shape
-from visualization.recommender import recommend_chart
+from .visualization_agent import generate_visualization_blueprint
 from .schema_builder import build_schema_context, build_conversation_prompt
 from .sql_generator import generate_sql, generate_error_correction
 from .session_manager import get_history_for_llm
@@ -14,6 +13,7 @@ from .session_manager import get_history_for_llm
 # ─── State Definition ──────────────────────────────────────
 class ChatState(TypedDict):
     """State that flows through the LangGraph workflow."""
+    user_id: str
     connection_id: str
     session_id: str
     user_message: str
@@ -21,6 +21,7 @@ class ChatState(TypedDict):
     llm_messages: list[dict]
     explanation: str
     sql: str
+    column_metadata: dict
     columns: list[str]
     rows: list[dict]
     row_count: int
@@ -35,8 +36,8 @@ class ChatState(TypedDict):
 
 def build_context(state: ChatState) -> dict:
     """Node 1: Build schema context and conversation prompt."""
-    schema_context = build_schema_context(state["connection_id"])
-    history = get_history_for_llm(state["session_id"])
+    schema_context = build_schema_context(state["user_id"], state["connection_id"])
+    history = get_history_for_llm(state["user_id"], state["session_id"])
     llm_messages = build_conversation_prompt(
         schema_context=schema_context,
         history=history,
@@ -53,7 +54,7 @@ _DESTRUCTIVE_KEYWORDS = {'delete', 'update', 'insert', 'drop', 'truncate', 'alte
 
 def generate_sql_node(state: ChatState) -> dict:
     """Node 2: Call LLM to generate SQL."""
-    explanation, sql = generate_sql(state["llm_messages"])
+    explanation, metadata, sql = generate_sql(state["llm_messages"])
 
     # Prepend read-only notice if user asked for a destructive operation
     user_msg = state["user_message"].lower()
@@ -65,6 +66,7 @@ def generate_sql_node(state: ChatState) -> dict:
 
     return {
         "explanation": explanation,
+        "column_metadata": metadata,
         "sql": sql,
         "error": "" if sql else "LLM did not generate any SQL query.",
     }
@@ -85,7 +87,7 @@ def validate_sql_node(state: ChatState) -> dict:
 
 def execute_sql_node(state: ChatState) -> dict:
     """Node 4: Execute the SQL against the database."""
-    engine = connection_manager.get_engine(state["connection_id"])
+    engine = connection_manager.get_engine(state["user_id"], state["connection_id"])
     if not engine:
         return {"error": "Database connection not found."}
 
@@ -93,8 +95,8 @@ def execute_sql_node(state: ChatState) -> dict:
     print(f"[execute_sql] Running: {sql[:100]}...")
 
     # execute_query handles validation + row limiting internally
-    result = execute_query(engine, sql, row_limit=500, connection_id=state["connection_id"],
-                           readonly=connection_manager.get_readonly(state["connection_id"]))
+    result = execute_query(state["user_id"], engine, sql, row_limit=500, connection_id=state["connection_id"],
+                           readonly=connection_manager.get_readonly(state["user_id"], state["connection_id"]))
 
     if result.success:
         print(f"[execute_sql] ✅ Success — {result.row_count} rows, {len(result.columns)} cols")
@@ -118,27 +120,33 @@ def analyze_results_node(state: ChatState) -> dict:
     if not columns or not rows:
         return {"chart_recommendation": None}
 
-    analysis = analyze_data_shape(columns, rows)
-    recommendation = recommend_chart(analysis, columns, rows)
+    preview = rows[:5]
+    blueprint = generate_visualization_blueprint(
+        user_message=state.get("user_message", ""),
+        sql=state.get("sql", ""),
+        preview_rows=preview,
+        column_metadata=state.get("column_metadata", {})
+    )
 
-    if recommendation:
-        print(f"[analyze] 📊 Recommending: {recommendation['type']} chart — {recommendation['title']}")
+    if blueprint:
+        print(f"[analyze] 📊 AI Recommended: {blueprint.get('type')} chart — {blueprint.get('title')}")
     else:
-        print(f"[analyze] 📊 No chart recommended for this data shape")
+        print(f"[analyze] 📊 AI No chart recommended for this query")
 
-    return {"chart_recommendation": recommendation}
+    return {"chart_recommendation": blueprint}
 
 
 def handle_error_node(state: ChatState) -> dict:
     """Node 5: Feed error back to LLM for self-correction."""
     retry_count = state["retry_count"] + 1
-    explanation, corrected_sql = generate_error_correction(
+    explanation, metadata, corrected_sql = generate_error_correction(
         messages=state["llm_messages"],
         sql=state["sql"],
         error=state["error"],
     )
     return {
         "explanation": explanation,
+        "column_metadata": metadata,
         "sql": corrected_sql,
         "retry_count": retry_count,
         "error": "" if corrected_sql else "LLM could not generate a corrected query.",
@@ -221,12 +229,13 @@ def build_chat_graph() -> StateGraph:
 chat_graph = build_chat_graph()
 
 
-def run_chat(connection_id: str, session_id: str, user_message: str) -> ChatState:
+def run_chat(user_id: str, connection_id: str, session_id: str, user_message: str) -> ChatState:
     """
     Run the full Text-to-SQL pipeline.
     Returns the final state with SQL, results, or error.
     """
     initial_state: ChatState = {
+        "user_id": user_id,
         "connection_id": connection_id,
         "session_id": session_id,
         "user_message": user_message,
@@ -234,6 +243,7 @@ def run_chat(connection_id: str, session_id: str, user_message: str) -> ChatStat
         "llm_messages": [],
         "explanation": "",
         "sql": "",
+        "column_metadata": {},
         "columns": [],
         "rows": [],
         "row_count": 0,

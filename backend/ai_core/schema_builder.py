@@ -1,12 +1,12 @@
 from database import connection_manager
 
 
-def build_schema_context(connection_id: str) -> str:
+def build_schema_context(user_id: str, connection_id: str) -> str:
     """
     Get the cached schema and format it into a clean context string for the LLM.
     This is what tells the AI about your database structure.
     """
-    schema_text = connection_manager.get_schema_for_ai(connection_id)
+    schema_text = connection_manager.get_schema_for_ai(user_id, connection_id)
     if not schema_text:
         return "No schema available. Please connect to a database first."
     return schema_text
@@ -32,11 +32,25 @@ def build_system_prompt(schema_context: str) -> str:
 8. Use JOINs when columns from multiple tables are needed — refer to the foreign key relationships.
 9. Always wrap AVG(), SUM(), and ratio/percentage calculations in ROUND(..., 2) to avoid excessive decimal places in results.
 10. If the user asks for DELETE, UPDATE, INSERT, or DROP operations, start your explanation with "QueryMind is read-only — data modification queries are not supported." Then show the equivalent SELECT query so the user can see what would be affected.
+11. Whenever you select columns, you MUST provide a Semantic Tag for each column to help the frontend visualize it properly.
+    - `categorical`: For grouping attributes (e.g. Country, Department, Status, Cohort). Ideal for X-Axes.
+    - `identifier`: For unique labels or raw text (e.g. Name, Email, UUID, Address, Description). Will NOT be grouped or charted.
+    - `numeric`: For generic numbers (e.g. Counts, Quantities, Scores).
+    - `currency`: For financial values (e.g. Revenue, Cost, Price, Salary) -> Format with `$`.
+    - `date`: For time-series analysis (e.g. Created At, Month).
 
 ## RESPONSE FORMAT
 Return your response in this exact format:
 
 EXPLANATION: Brief explanation of what the query does
+METADATA:
+```json
+{{
+  "column_name": "categorical",
+  "total_sales": "currency",
+  "customer_name": "identifier"
+}}
+```
 ```sql
 YOUR SQL QUERY HERE
 ```

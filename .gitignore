@@ -68,18 +68,20 @@ htmlcov/
 # Jupyter
 .ipynb_checkpoints/
 
-# Local mockups
+# Local mockups & metadata
 querymind-*.html
-
-# Claude Code
 .claude/
-
-# MCP config
 .mcp.json
-
-# Playwright MCP screenshots
 .playwright-mcp/
 
-# Screenshots, extra assets, reference images
+# Assets & media (typically not committed if generated or large)
 *.png
 extra_assets/
+
+# Local/Temporary/Scripts
+backend/pip_list.txt
+CHAT_TEST_GUIDE.md
+*.seed.sql
+*.bak
+*.tmp
+*.temp

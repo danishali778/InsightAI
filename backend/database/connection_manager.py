@@ -1,13 +1,15 @@
 import uuid
+from typing import Optional
 from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine
-from sqlalchemy.engine import URL
-from .models import ConnectionRequest, TableInfo
+from sqlalchemy.engine import Engine, URL, make_url
+from .models import ConnectionRequest, TableInfo, ActiveConnection
 from . import schema_inspector
+from .supabase_client import supabase
 
 
-# In-memory storage of active connections
-_connections: dict[str, dict] = {}
+# In-memory session cache for SQLAlchemy engines only
+# Keyed by (user_id, connection_id)
+_engines: dict[tuple[str, str], Engine] = {}
 
 
 def _build_connection_url(config: ConnectionRequest) -> str:
@@ -15,6 +17,7 @@ def _build_connection_url(config: ConnectionRequest) -> str:
     db_type = config.db_type.lower()
 
     if db_type == "sqlite":
+        # SQLite storage needs careful path handling in persistent envs
         return f"sqlite:///{config.database}"
 
     if db_type == "postgresql":
@@ -84,9 +87,9 @@ def test_connection(config: ConnectionRequest) -> tuple[bool, str, int]:
         return False, f"Connection failed: {str(e)}", 0
 
 
-def connect(config: ConnectionRequest) -> tuple[str, Engine]:
+def connect(user_id: str, config: ConnectionRequest) -> tuple[str, Engine]:
     """
-    Create a persistent connection, auto-inspect schema, and store everything.
+    Create a persistent connection in Supabase, auto-inspect schema.
     Returns (connection_id, engine).
     """
     url = _build_connection_url(config)
@@ -96,117 +99,176 @@ def connect(config: ConnectionRequest) -> tuple[str, Engine]:
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
 
-    # Auto-inspect & cache schema on connect
-    cached_schema = schema_inspector.get_schema(engine)
-
     # Generate a human-friendly name if not provided
     name = config.name or f"{config.db_type}-{config.database}"
 
-    # Store with a unique ID
-    connection_id = str(uuid.uuid4())[:8]
-    _connections[connection_id] = {
-        "engine": engine,
+    # Persistent storage in Supabase
+    conn_data = {
+        "owner_id": user_id,
         "name": name,
         "db_type": config.db_type,
-        "database": config.database,
         "host": config.host,
         "port": config.port,
+        "database": config.database,
         "username": config.username,
-        "password": config.password,  # kept for engine rebuild on settings change
+        "password": config.password, # Note: Encrypt in production
         "ssl_mode": config.ssl_mode,
-        "readonly": config.readonly,
-        "schema": cached_schema,  # cached for instant AI access
+        "readonly": config.readonly
     }
+    
+    response = supabase.table("database_connections").insert(conn_data).execute()
+    if not response.data:
+        raise Exception("Failed to save connection to database")
+        
+    connection_id = response.data[0]["id"]
+    
+    # Store engine in cache
+    _engines[(user_id, connection_id)] = engine
 
     return connection_id, engine
 
 
-def disconnect(connection_id: str) -> bool:
-    """Remove a stored connection."""
-    if connection_id not in _connections:
-        return False
-
-    _connections[connection_id]["engine"].dispose()
-    del _connections[connection_id]
-    return True
-
-
-def get_engine(connection_id: str) -> Engine | None:
-    """Get the SQLAlchemy engine for a connection."""
-    conn = _connections.get(connection_id)
-    return conn["engine"] if conn else None
-
-
-def get_readonly(connection_id: str) -> bool:
-    """Return True if this connection enforces read-only mode."""
-    conn = _connections.get(connection_id)
-    return conn["readonly"] if conn else True  # safe default
-
-
-def update_settings(connection_id: str, ssl_mode: str | None, readonly: bool | None) -> bool:
-    """Update SSL mode and/or readonly flag. Rebuilds engine if ssl_mode changes."""
-    conn = _connections.get(connection_id)
-    if not conn:
-        return False
-
-    if readonly is not None:
-        conn["readonly"] = readonly
-
-    if ssl_mode is not None and ssl_mode != conn["ssl_mode"]:
-        conn["ssl_mode"] = ssl_mode
-        # Rebuild engine with new SSL settings
-        try:
-            old_engine = conn["engine"]
-            config = ConnectionRequest(
-                db_type=conn["db_type"],
-                host=conn["host"],
-                port=conn["port"],
-                database=conn["database"],
-                username=conn["username"],
-                password=conn["password"],
-                ssl_mode=ssl_mode,
-            )
-            url = _build_connection_url(config)
-            new_engine = _build_engine(url, conn["db_type"], ssl_mode)
-            with new_engine.connect() as c:
-                c.execute(text("SELECT 1"))
-            old_engine.dispose()
-            conn["engine"] = new_engine
-        except Exception:
-            conn["ssl_mode"] = _connections[connection_id]["ssl_mode"]  # revert on failure
-            return False
-
-    _connections[connection_id] = conn
-    return True
+def get_all_connections(user_id: str) -> list[ActiveConnection]:
+    """List all active database connections for a user from Supabase."""
+    response = supabase.table("database_connections").select("*").eq("owner_id", user_id).execute()
+    
+    connections = []
+    for row in response.data:
+        # We don't verify connection health for EVERY list call for performance
+        # but we could add status mapping here.
+        connections.append(ActiveConnection(
+            id=row["id"],
+            owner_id=row["owner_id"],
+            name=row["name"],
+            db_type=row["db_type"],
+            database=row["database"],
+            host=row.get("host"),
+            port=row.get("port"),
+            username=row.get("username"),
+            status="saved", # Simple status for listed connections
+            ssl_mode=row.get("ssl_mode", "disable"),
+            readonly=row.get("readonly", True)
+        ))
+    return connections
 
 
-def get_cached_schema(connection_id: str) -> list[TableInfo] | None:
-    """Get the cached schema for a connection (instant, no DB call)."""
-    conn = _connections.get(connection_id)
-    return conn["schema"] if conn else None
-
-
-def refresh_schema(connection_id: str) -> list[TableInfo] | None:
-    """Re-inspect and update the cached schema."""
-    conn = _connections.get(connection_id)
-    if not conn:
+def get_engine(user_id: str, connection_id: str) -> Engine | None:
+    """Get the SQLAlchemy engine for a connection, rebuilding it from Supabase if not in cache."""
+    # Check cache first
+    engine = _engines.get((user_id, connection_id))
+    if engine:
+        return engine
+        
+    # Not in cache, fetch from Supabase and rebuild
+    response = supabase.table("database_connections") \
+        .select("*") \
+        .eq("id", connection_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    if not response.data:
         return None
-    fresh_schema = schema_inspector.get_schema(conn["engine"])
-    conn["schema"] = fresh_schema
-    return fresh_schema
+        
+    row = response.data[0]
+    config = ConnectionRequest(
+        db_type=row["db_type"],
+        host=row["host"],
+        port=row["port"],
+        database=row["database"],
+        username=row["username"],
+        password=row["password"],
+        ssl_mode=row.get("ssl_mode", "disable"),
+        readonly=row.get("readonly", True)
+    )
+    
+    url = _build_connection_url(config)
+    new_engine = _build_engine(url, config.db_type, config.ssl_mode)
+    _engines[(user_id, connection_id)] = new_engine
+    return new_engine
 
 
-def get_schema_for_ai(connection_id: str) -> str | None:
-    """
-    Get schema as a formatted string ready to inject into an AI prompt.
-    Example output:
-        Table: users (1500 rows)
-          - id: INTEGER (PK)
-          - name: VARCHAR
-          - email: VARCHAR
-          FK: user_id -> orders.id
-    """
-    schema = get_cached_schema(connection_id)
+def disconnect(user_id: str, connection_id: str) -> bool:
+    """Remove a connection from Supabase and dispose the engine."""
+    # Dispose engine if in cache
+    engine = _engines.pop((user_id, connection_id), None)
+    if engine:
+        engine.dispose()
+        
+    # Remove from Supabase
+    response = supabase.table("database_connections") \
+        .delete() \
+        .eq("id", connection_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    return len(response.data) > 0
+
+
+def update_settings(user_id: str, connection_id: str, ssl_mode: str | None, readonly: bool | None) -> bool:
+    """Update settings in Supabase and rebuild engine if needed."""
+    updates = {}
+    if ssl_mode is not None:
+        updates["ssl_mode"] = ssl_mode
+    if readonly is not None:
+        updates["readonly"] = readonly
+        
+    if not updates:
+        return True
+        
+    response = supabase.table("database_connections") \
+        .update(updates) \
+        .eq("id", connection_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    if not response.data:
+        return False
+        
+    # Rebuild engine to apply new settings
+    _engines.pop((user_id, connection_id), None)
+    get_engine(user_id, connection_id) # Rebuilds into cache
+    return True
+
+
+def get_cached_schema(user_id: str, connection_id: str) -> list[TableInfo] | None:
+    """Get the schema for a connection."""
+    engine = get_engine(user_id, connection_id)
+    if not engine:
+        return None
+    # We could persist schema in Supabase too, but for now we re-inspect if not in engine cache
+    # In a full prod app, we'd store the JSON schema in Supabase dashboard_widgets or similar
+    return schema_inspector.get_schema(engine)
+
+
+def refresh_schema(user_id: str, connection_id: str) -> list[TableInfo] | None:
+    """Re-inspect and return schema."""
+    engine = get_engine(user_id, connection_id)
+    if not engine:
+        return None
+    return schema_inspector.get_schema(engine)
+
+def get_readonly(user_id: str, connection_id: str) -> bool:
+    """Get the read-only status for a connection from Supabase."""
+    try:
+        response = supabase.table("database_connections") \
+            .select("readonly") \
+            .eq("id", connection_id) \
+            .eq("owner_id", user_id) \
+            .execute()
+            
+        if not response.data:
+            return True # Default to safe
+            
+        return response.data[0].get("readonly", True)
+    except Exception as e:
+        print(f"Error fetching readonly status for {connection_id}: {e}")
+        return True # Default to safe
+
+
+
+def get_schema_for_ai(user_id: str, connection_id: str) -> str | None:
+    """Get schema as formatted AI prompt text."""
+    schema = get_cached_schema(user_id, connection_id)
     if not schema:
         return None
 
@@ -226,22 +288,49 @@ def get_schema_for_ai(connection_id: str) -> str | None:
     return "\n".join(lines)
 
 
-def get_all_connections() -> list[dict]:
-    """List all active connections with enriched metadata."""
-    result = []
-    for conn_id, info in _connections.items():
-        table_count = len(info.get("schema", []))
-        result.append({
-            "id": conn_id,
-            "name": info.get("name", info["database"]),
-            "db_type": info["db_type"],
-            "database": info["database"],
-            "host": info.get("host", "N/A"),
-            "port": info.get("port"),
-            "username": info.get("username"),
-            "status": "connected",
-            "tables_count": table_count,
-            "ssl_mode": info.get("ssl_mode", "disable"),
-            "readonly": info.get("readonly", True),
-        })
-    return result
+def seed_dev_connection() -> str | None:
+    """
+    DEV ONLY: Ensures the Dev connection exists in Supabase for the mock user.
+    """
+    import os
+    from common.auth import MOCK_USER
+    url = os.getenv("DATABASE_URL")
+    dev_mode = os.getenv("VITE_DEV_MODE", "true").lower() == "true"
+    
+    if not url or not dev_mode:
+        return None
+
+    try:
+        parsed = make_url(url)
+        db_type = parsed.drivername.split("+")[0]
+        
+        # Check if already exists in Supabase
+        existing = supabase.table("database_connections") \
+            .select("id") \
+            .eq("owner_id", MOCK_USER.id) \
+            .eq("name", f"Dev — {parsed.database}") \
+            .execute()
+            
+        if existing.data:
+            print(f"[dev] ✅ Found existing dev connection '{existing.data[0]['id']}'")
+            return existing.data[0]["id"]
+
+        # If not, create it
+        config = ConnectionRequest(
+            db_type=db_type,
+            host=str(parsed.host or "localhost"),
+            port=parsed.port,
+            database=str(parsed.database or ""),
+            username=str(parsed.username or ""),
+            password=str(parsed.password or ""),
+            name=f"Dev — {parsed.database}",
+            readonly=False,
+        )
+
+        connection_id, _ = connect(MOCK_USER.id, config)
+        print(f"[dev] ✅ Seeded dev connection → connection_id = '{connection_id}'")
+        return connection_id
+
+    except Exception as e:
+        print(f"[dev] ❌ Auto-connect failed: {e}")
+        return None

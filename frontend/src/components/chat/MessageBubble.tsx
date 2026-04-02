@@ -2,22 +2,85 @@ import { useState } from 'react';
 import { T } from '../dashboard/tokens';
 import { SqlBlock } from './SqlBlock';
 import { ResultsTable } from './ResultsTable';
-import { ChartBlock } from './ChartBlock';
+import { BaseChartContainer } from '../charts/BaseChartContainer';
 import { AddToDashboardModal } from './AddToDashboardModal';
 import { SaveQueryModal } from './SaveQueryModal';
+import { useToast } from '../common/ToastProvider';
+import { useDashboardCatalog } from '../../hooks/useDashboardCatalog';
+import { addDashboardWidget } from '../../services/api';
+import { inferViz, autoTitle, layoutDims } from '../../utils/dashboardUtils';
 import type { ChatMessageView } from '../../types/chat';
 
 export function MessageBubble({ message, connectionId }: { message: ChatMessageView, connectionId?: string }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [saveLabel, setSaveLabel] = useState<string | null>(null);
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
+  
+  const { addToast } = useToast();
+  const { dashboards } = useDashboardCatalog({ autoLoad: true });
 
   const handleSaved = (created: boolean) => {
     setSaveLabel(created ? '✅ Saved!' : '📌 Already saved');
     setTimeout(() => setSaveLabel(null), 3000);
   };
 
+  const handleDashboardClick = async () => {
+    const lastDashId = localStorage.getItem('lastUsedDashboardId');
+    const targetDash = dashboards.find(d => d.id === lastDashId) || dashboards[0];
+
+    if (!targetDash) {
+      // No dashboards exist yet - open modal to create one
+      setModalOpen(true);
+      return;
+    }
+
+    // Quick add to last used or first dashboard
+    setIsQuickAdding(true);
+    try {
+      const vizType = inferViz(message);
+      const size = vizType === 'table' || (vizType === 'bar' && (message.rows?.length || 0) > 6) ? 'full' : 'half';
+      const dims = layoutDims(size);
+
+      await addDashboardWidget({
+        dashboard_id: targetDash.id,
+        title: autoTitle(message),
+        viz_type: vizType,
+        size,
+        connection_id: connectionId,
+        sql: message.sql,
+        columns: message.columns || [],
+        rows: (message.rows || []) as Array<Record<string, unknown>>,
+        chart_config: message.chart_recommendation ? {
+          x_column: message.chart_recommendation.x_column,
+          y_columns: message.chart_recommendation.y_columns,
+          color_column: message.chart_recommendation.color_column,
+          is_grouped: message.chart_recommendation.is_grouped,
+          title: message.chart_recommendation.title,
+          x_label: message.chart_recommendation.x_label,
+          y_label: message.chart_recommendation.y_label,
+        } : undefined,
+        cadence: 'Manual only',
+        w: dims.w, h: dims.h, minW: dims.minW, minH: dims.minH,
+        bar_orientation: 'horizontal',
+      });
+
+      localStorage.setItem('lastUsedDashboardId', targetDash.id);
+      
+      addToast(`Added to ${targetDash.name}`, 'success', {
+        label: 'Settings',
+        onClick: () => setModalOpen(true)
+      });
+    } catch (err) {
+      addToast('Failed to add to dashboard', 'error');
+      setModalOpen(true); // Fallback to modal on error
+    } finally {
+      setIsQuickAdding(false);
+    }
+  };
+
   if (message.role === 'user') {
+    // ... (rest of user bubble)
     return (
       <div style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
         <div style={{
@@ -98,12 +161,13 @@ export function MessageBubble({ message, connectionId }: { message: ChatMessageV
           </div>
         )}
 
-        {/* Chart */}
-        {message.chart_recommendation && message.rows && message.columns && (
-          <ChartBlock
+        {/* Chart Section */}
+        {message.chart_recommendation && message.chart_recommendation.type !== 'table' && message.rows && message.columns && (
+          <BaseChartContainer
             recommendation={message.chart_recommendation}
             rows={message.rows}
             columns={message.columns}
+            column_metadata={message.column_metadata}
           />
         )}
 
@@ -126,18 +190,20 @@ export function MessageBubble({ message, connectionId }: { message: ChatMessageV
               {saveLabel || '📌 Save Query'}
             </button>
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={handleDashboardClick}
+              disabled={isQuickAdding}
               style={{
                 padding: '5px 12px', borderRadius: 6, border: `1px solid ${T.border}`,
                 background: 'transparent',
                 color: T.text3,
-                fontSize: '0.72rem', cursor: 'pointer', fontFamily: T.fontBody,
+                fontSize: '0.72rem', cursor: isQuickAdding ? 'default' : 'pointer', fontFamily: T.fontBody,
                 display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s',
+                opacity: isQuickAdding ? 0.7 : 1,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; }}
+              onMouseEnter={e => { if (!isQuickAdding) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
+              onMouseLeave={e => { if (!isQuickAdding) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; } }}
             >
-              ➕ Dashboard
+              {isQuickAdding ? '⏳ Adding...' : '➕ Dashboard'}
             </button>
             <button
               style={{
@@ -177,6 +243,7 @@ export function MessageBubble({ message, connectionId }: { message: ChatMessageV
             rows: message.rows,
             connectionId: connectionId,
             chart_recommendation: message.chart_recommendation,
+            column_metadata: message.column_metadata,
           }}
         />
       </div>

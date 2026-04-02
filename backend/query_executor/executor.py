@@ -11,7 +11,7 @@ from .safety import validate_query, sanitize_row_limit
 QUERY_TIMEOUT = 30
 
 
-def execute_query(engine: Engine, sql: str, row_limit: int = 500, connection_id: Optional[str] = None, readonly: bool = True) -> QueryResult:
+def execute_query(user_id: str, engine: Engine, sql: str, row_limit: int = 500, connection_id: Optional[str] = None, readonly: bool = True) -> QueryResult:
     """
     Execute a SQL query safely against the given database engine.
 
@@ -91,6 +91,7 @@ def _log_and_return(result: QueryResult, connection_id: Optional[str], sql: str)
         try:
             from query_history.store import log_query
             log_query(
+                user_id=user_id,
                 connection_id=connection_id,
                 sql=sql,
                 success=result.success,

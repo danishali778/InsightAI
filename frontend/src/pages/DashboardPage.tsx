@@ -15,7 +15,6 @@ import {
 import { useDashboardCatalog } from '../hooks/useDashboardCatalog';
 import type { DashboardItem, DashboardMetrics, DashboardWidgetItem } from '../types/dashboard';
 import type { UpdateDashboardWidgetRequest } from '../types/api';
-import { resolveWidgetSize } from '../types/dashboard';
 
 /* ── SVG Icons ─────────────────────────────────────────────────── */
 
@@ -465,8 +464,27 @@ function DashboardCanvas({
   if (!activeDash) return <EmptyState />;
 
   const getGridSpan = (widget: DashboardWidgetItem) => {
-    const size = resolveWidgetSize(widget.size, widget.viz_type, widget.rows.length);
-    return size === 'full' ? 'span 2' : 'span 1';
+    const rawSize = widget.size;
+    const isPie = widget.viz_type === 'pie' || widget.viz_type === 'donut';
+
+    if (widget.viz_type === 'kpi') return 'span 5';
+
+    if (isPie) {
+      // Group A (Pie/Donut):
+      // - 'half' -> 50% (10 columns)
+      // - 'three-quarter' (or anything else) -> 35% (7 columns)
+      if (rawSize === 'half') return 'span 10';
+      return 'span 7';
+    } else {
+      // Group B (Bar/Line/Area/Table):
+      // - 'full' -> 100% (20 columns)
+      // - 'three-quarter' -> 65% (13 columns)
+      // - 'half' (or anything else) -> 50% (10 columns)
+      if (widget.viz_type === 'table' || rawSize === 'full') return 'span 20';
+      if (rawSize === 'three-quarter') return 'span 13';
+      if (rawSize === 'quarter') return 'span 5';
+      return 'span 10';
+    }
   };
 
   return (
@@ -537,7 +555,7 @@ function DashboardCanvas({
         <div className="dash-section dash-section-d2" style={{ paddingBottom: 14 }}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gridTemplateColumns: 'repeat(20, minmax(0, 1fr))',
             gap: 16, alignItems: 'stretch',
           }}>
             {widgets.map((widget, index) => (

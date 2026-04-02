@@ -4,13 +4,13 @@ from query_history import store as query_history_store
 from query_library import store as library_store
 
 
-def build_analytics_overview() -> dict:
-    """Return workspace-level analytics aggregated from existing in-memory stores."""
-    connections = connection_manager.get_all_connections()
-    history = query_history_store.get_history(limit=500)
-    library_stats = library_store.get_stats()
-    dashboards = dashboard_store.list_dashboards()
-    dashboard_stats = dashboard_store.get_stats()
+def build_analytics_overview(user_id: str) -> dict:
+    """Return workspace-level analytics aggregated from existing persistent stores."""
+    connections = connection_manager.get_all_connections(user_id)
+    history = query_history_store.get_history(user_id, limit=500)
+    library_stats = library_store.get_stats(user_id)
+    dashboards = dashboard_store.list_dashboards(user_id)
+    dashboard_stats = dashboard_store.get_stats(user_id)
 
     successful = [record for record in history if record.success]
     failed = [record for record in history if not record.success]

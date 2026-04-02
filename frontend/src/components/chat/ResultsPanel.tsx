@@ -1,11 +1,19 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ResultsTable } from './ResultsTable';
-import { ChartBlock } from './ChartBlock';
+import { BaseChartContainer } from '../charts/BaseChartContainer';
 import type { ChatResultsPanelProps } from '../../types/chat';
 
 export function ResultsPanel({
-    columns, rows, rowCount, truncated, executionTimeMs,
-    chartRecommendation, onClose, panelHeight, onResize
+    rows,
+    columns,
+    rowCount,
+    truncated,
+    executionTimeMs,
+    chartRecommendation,
+    onClose,
+    panelHeight,
+    onResize,
+    column_metadata
 }: ChatResultsPanelProps) {
     const [activeTab, setActiveTab] = useState<'table' | 'chart'>(
         chartRecommendation ? 'chart' : 'table'
@@ -14,11 +22,11 @@ export function ResultsPanel({
     const startY = useRef(0);
     const startHeight = useRef(0);
 
-    const hasChart = chartRecommendation && rows.length > 1;
+    const hasChart = chartRecommendation && (rows.length > 1 || chartRecommendation.type === 'kpi');
 
     // Reset active tab when data changes
     useEffect(() => {
-        setActiveTab(chartRecommendation && rows.length > 1 ? 'chart' : 'table');
+        setActiveTab(chartRecommendation && (rows.length > 1 || chartRecommendation.type === 'kpi') ? 'chart' : 'table');
     }, [chartRecommendation, rows]);
 
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -194,10 +202,11 @@ export function ResultsPanel({
 
                 {activeTab === 'chart' && hasChart && (
                     <div style={{ padding: '0' }}>
-                        <ChartBlock
-                            recommendation={chartRecommendation}
+                        <BaseChartContainer
+                            recommendation={chartRecommendation!}
                             rows={rows}
                             columns={columns}
+                            column_metadata={column_metadata}
                         />
                     </div>
                 )}

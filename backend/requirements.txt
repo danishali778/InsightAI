@@ -4,7 +4,7 @@
 fastapi
 uvicorn[standard]
 python-dotenv
-pydantic
+pydantic>=2.11.9
 
 # Database Drivers
 sqlalchemy
@@ -19,3 +19,9 @@ langchain
 langchain-core
 langchain-groq
 langgraph
+
+# Supabase & Auth
+supabase
+python-jose[cryptography]
+pydantic-settings
+pyjwt>=2.10.1

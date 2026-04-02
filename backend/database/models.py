@@ -4,6 +4,7 @@ from typing import Optional
 
 class ConnectionRequest(BaseModel):
     """Request to connect to a database."""
+    owner_id: Optional[str] = None  # UUID from auth.users
     name: Optional[str] = None  # User-friendly label, e.g. "prod-postgres"
     db_type: str  # "postgresql", "mysql", "sqlite"
     host: Optional[str] = "localhost"
@@ -80,6 +81,7 @@ class TestConnectionResponse(BaseModel):
 class ActiveConnection(BaseModel):
     """Summary of an active database connection."""
     id: str
+    owner_id: str
     name: str
     db_type: str
     database: str

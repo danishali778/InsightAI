@@ -3,40 +3,14 @@ import { T } from '../dashboard/tokens';
 import { addDashboardWidget } from '../../services/api';
 import { DashboardCreateForm } from '../dashboard/DashboardCreateForm';
 import { useDashboardCatalog } from '../../hooks/useDashboardCatalog';
+import { inferViz, autoTitle, layoutDims } from '../../utils/dashboardUtils';
 import type { AddToDashboardModalProps } from '../../types/chat';
-import type { WidgetSize, WidgetVizType } from '../../types/dashboard';
-
-/* ─── helpers ─── */
-function isNumericValue(v: unknown) {
-  return typeof v === 'number' || (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v)));
-}
-
-function inferViz(message: AddToDashboardModalProps['message']): WidgetVizType {
-  const cols = message.columns || [];
-  const rows = message.rows || [];
-  if (rows.length === 1 && cols.some(c => rows.some(r => isNumericValue(r[c])))) return 'kpi';
-  const rec = message.chart_recommendation?.type;
-  if (rec === 'bar') return 'bar';
-  if (rec === 'line') return 'line';
-  if (rec === 'area') return 'area';
-  if (rec === 'pie') return 'donut';
-  return 'table';
-}
-
-function autoTitle(message: AddToDashboardModalProps['message']) {
-  return message.title || message.chart_recommendation?.title || 'Untitled Widget';
-}
-
-function layoutDims(size: WidgetSize) {
-  return size === 'full'
-    ? { w: 2, h: 8, minW: 2, minH: 6 }
-    : { w: 1, h: 7, minW: 1, minH: 5 };
-}
+import type { WidgetSize } from '../../types/dashboard';
 
 /* ─── Compact Popover Modal ─── */
 export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboardModalProps) {
   const { dashboards, loading, creating, error, createNewDashboard } = useDashboardCatalog({ autoLoad: isOpen });
-  const [selectedDashId, setSelectedDashId] = useState<string | null>(null);
+  const [selectedDashId, setSelectedDashId] = useState<string | null>(() => localStorage.getItem('lastUsedDashboardId'));
   const [showNewForm, setShowNewForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [title, setTitle] = useState('');
@@ -47,18 +21,20 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
   const rows = message.rows || [];
   const columns = message.columns || [];
   const vizType = useMemo(() => inferViz(message), [message]);
-  const size: WidgetSize = vizType === 'table' || (vizType === 'bar' && rows.length > 6) ? 'full' : 'half';
+  const [size, setSize] = useState<WidgetSize>('half');
 
   // Reset when opening
   useEffect(() => {
     if (!isOpen) return;
+    const initialSize: WidgetSize = vizType === 'kpi' ? 'quarter' : (vizType === 'table' || (vizType === 'bar' && rows.length > 6) ? 'full' : 'half');
+    setSize(initialSize);
     setTitle(autoTitle(message));
     setShowNewForm(false);
     setNewName('');
     setSaving(false);
     setStatus('idle');
     setErrorMsg('');
-  }, [isOpen, message]);
+  }, [isOpen, message, vizType, rows.length]);
 
   // Auto-select first dashboard
   useEffect(() => {
@@ -79,6 +55,7 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
     try {
       const created = await createNewDashboard({ name: newName.trim(), icon: '[]' });
       setSelectedDashId(created.id);
+      localStorage.setItem('lastUsedDashboardId', created.id);
       setNewName('');
       setShowNewForm(false);
     } catch { /* hook exposes error */ }
@@ -102,6 +79,8 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
         chart_config: message.chart_recommendation ? {
           x_column: message.chart_recommendation.x_column,
           y_columns: message.chart_recommendation.y_columns,
+          color_column: message.chart_recommendation.color_column,
+          is_grouped: message.chart_recommendation.is_grouped,
           title: message.chart_recommendation.title,
           x_label: message.chart_recommendation.x_label,
           y_label: message.chart_recommendation.y_label,
@@ -110,6 +89,7 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
         w: dims.w, h: dims.h, minW: dims.minW, minH: dims.minH,
         bar_orientation: 'horizontal',
       });
+      localStorage.setItem('lastUsedDashboardId', selectedDashId);
       setStatus('saved');
       setTimeout(() => { onClose(); setStatus('idle'); }, 900);
     } catch (err) {
@@ -248,21 +228,52 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
             )}
           </div>
 
+          {/* Size picker - Hide for KPIs */}
+          {vizType !== 'kpi' && (
+            <div>
+              <label style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: T.text3, fontFamily: T.fontMono, marginBottom: 8, display: 'block' }}>
+                Widget Size
+              </label>
+              <div style={{ display: 'flex', gap: 8, background: T.s1, padding: 4, borderRadius: 12, border: `1px solid ${T.border}` }}>
+                {(['half', 'full'] as const).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setSize(s)}
+                    style={{
+                      flex: 1, padding: '8px 4px', borderRadius: 8, border: 'none',
+                      background: size === s ? 'rgba(0,229,255,0.1)' : 'transparent',
+                      color: size === s ? T.accent : T.text3,
+                      cursor: 'pointer', fontSize: '0.74rem', fontWeight: size === s ? 700 : 400,
+                      transition: 'all 0.2s', fontFamily: T.fontBody,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2
+                    }}
+                  >
+                    <span style={{ fontSize: '0.9rem' }}>{s === 'half' ? '🌓' : '🌕'}</span>
+                    {s.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Smart info strip */}
           <div style={{
-            display: 'flex', gap: 10, padding: '8px 12px',
-            background: 'rgba(0,229,255,0.04)', borderRadius: 10,
-            border: '1px solid rgba(0,229,255,0.08)',
+            display: 'flex', justifyContent: 'space-between', padding: '10px 14px',
+            background: 'rgba(0,229,255,0.03)', borderRadius: 12,
+            border: `1px solid ${T.border}`,
           }}>
-            <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>
-              Type: <span style={{ color: T.accent }}>{vizType}</span>
-            </span>
-            <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>
-              Size: <span style={{ color: T.accent }}>{size}</span>
-            </span>
-            <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>
-              Refresh: <span style={{ color: T.text2 }}>Manual</span>
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: '0.55rem', color: T.text3, textTransform: 'uppercase', letterSpacing: 0.5 }}>Type</span>
+              <span style={{ fontSize: '0.74rem', color: T.text2, fontWeight: 600 }}>{vizType.toUpperCase()}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: '0.55rem', color: T.text3, textTransform: 'uppercase', letterSpacing: 0.5 }}>Refresh</span>
+              <span style={{ fontSize: '0.74rem', color: T.text2, fontWeight: 600 }}>MANUAL</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: '0.55rem', color: T.text3, textTransform: 'uppercase', letterSpacing: 0.5 }}>Rows</span>
+              <span style={{ fontSize: '0.74rem', color: T.text2, fontWeight: 600 }}>{rows.length}</span>
+            </div>
           </div>
         </div>
 

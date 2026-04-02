@@ -1,91 +1,188 @@
 import uuid
-from .models import ChatSession, ChatMessage
+from typing import Optional
+from datetime import datetime
+from ai_core.models import ChatSession, ChatMessage, SessionSummary
+from database.supabase_client import supabase
 
 
-# In-memory session storage
-_sessions: dict[str, ChatSession] = {}
+def create_session(user_id: str, connection_id: str | None = None) -> ChatSession:
+    """Create a new chat session in Supabase."""
+    session_id = str(uuid.uuid4())
+    
+    data = {
+        "id": session_id,
+        "owner_id": user_id,
+        "connection_ids": [connection_id] if connection_id else [],
+        "last_connection_id": connection_id,
+        "title": "New Chat",
+        "created_at": datetime.now().isoformat()
+    }
+    
+    response = supabase.table("chat_sessions").insert(data).execute()
+    
+    if not response.data:
+        raise Exception("Failed to create chat session")
+        
+    return ChatSession(**response.data[0], messages=[])
 
 
-def create_session(connection_id: str | None = None) -> ChatSession:
-    """Create a new chat session."""
-    session_id = str(uuid.uuid4())[:8]
-    session = ChatSession(
-        id=session_id,
-        connection_ids=[connection_id] if connection_id else [],
-        last_connection_id=connection_id,
-    )
-    _sessions[session_id] = session
-    return session
+def get_session(user_id: str, session_id: str) -> Optional[ChatSession]:
+    """Get a session by ID and owner from Supabase."""
+    # 1. Fetch session metadata
+    session_resp = supabase.table("chat_sessions") \
+        .select("*") \
+        .eq("id", session_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    if not session_resp.data:
+        return None
+        
+    session_data = session_resp.data[0]
+    
+    # 2. Fetch messages
+    messages_resp = supabase.table("chat_messages") \
+        .select("*") \
+        .eq("session_id", session_id) \
+        .order("created_at", desc=False) \
+        .execute()
+        
+    messages = [ChatMessage(**m) for m in messages_resp.data]
+    
+    return ChatSession(**session_data, messages=messages)
 
 
-def get_session(session_id: str) -> ChatSession | None:
-    """Get a session by ID."""
-    return _sessions.get(session_id)
+def delete_session(user_id: str, session_id: str) -> bool:
+    """Delete a session from Supabase."""
+    response = supabase.table("chat_sessions") \
+        .delete() \
+        .eq("id", session_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    return len(response.data) > 0
 
 
-def delete_session(session_id: str) -> bool:
-    """Delete a session."""
-    if session_id in _sessions:
-        del _sessions[session_id]
-        return True
-    return False
+def list_sessions(user_id: str) -> list[SessionSummary]:
+    """List all sessions for a user from Supabase."""
+    # Fetch sessions with message counts (simplified: just list sessions)
+    response = supabase.table("chat_sessions") \
+        .select("*, chat_messages(count)") \
+        .eq("owner_id", user_id) \
+        .order("created_at", desc=True) \
+        .execute()
+        
+    sessions = []
+    for item in response.data:
+        # Pydantic handles mapping if keys match
+        msg_count = item.get("chat_messages", [{}])[0].get("count", 0)
+        sessions.append(SessionSummary(
+            id=item["id"],
+            owner_id=item["owner_id"],
+            connection_ids=item["connection_ids"],
+            last_connection_id=item["last_connection_id"],
+            title=item["title"],
+            message_count=msg_count,
+            created_at=item["created_at"]
+        ))
+        
+    return sessions
 
 
-def list_sessions() -> list[dict]:
-    """List all sessions."""
-    return [
-        {
-            "id": s.id,
-            "connection_ids": s.connection_ids,
-            "last_connection_id": s.last_connection_id,
-            "title": s.title,
-            "message_count": len(s.messages),
-            "created_at": s.created_at,
-        }
-        for s in _sessions.values()
-    ]
+def track_connection(user_id: str, session_id: str, connection_id: str | None) -> None:
+    """Track a connection used in a session. Safe for side-effect usage."""
+    if not connection_id:
+        return
+        
+    try:
+        # Get current connection_ids
+        session_resp = supabase.table("chat_sessions") \
+            .select("connection_ids") \
+            .eq("id", session_id) \
+            .eq("owner_id", user_id) \
+            .execute()
+            
+        if not session_resp.data:
+            return
+            
+        conn_ids = session_resp.data[0].get("connection_ids") or []
+        if connection_id not in conn_ids:
+            conn_ids.append(connection_id)
+            
+        supabase.table("chat_sessions") \
+            .update({
+                "connection_ids": conn_ids,
+                "last_connection_id": connection_id
+            }) \
+            .eq("id", session_id) \
+            .eq("owner_id", user_id) \
+            .execute()
+    except Exception as e:
+        print(f"Error tracking connection (side-effect): {str(e)}")
 
 
-def track_connection(session_id: str, connection_id: str) -> None:
-    """Track a connection used in a session."""
-    session = _sessions.get(session_id)
-    if session:
-        if connection_id not in session.connection_ids:
-            session.connection_ids.append(connection_id)
-        session.last_connection_id = connection_id
-
-
-def rename_session(session_id: str, title: str) -> bool:
-    """Rename a session. Returns False if session not found."""
-    session = _sessions.get(session_id)
-    if not session:
+def rename_session(user_id: str, session_id: str, title: str) -> bool:
+    """Rename a session. Returns False if session not found. Safe for side-effect usage."""
+    try:
+        response = supabase.table("chat_sessions") \
+            .update({"title": title}) \
+            .eq("id", session_id) \
+            .eq("owner_id", user_id) \
+            .execute()
+        return bool(response.data)
+    except Exception as e:
+        print(f"Error renaming session (side-effect): {str(e)}")
         return False
-    session.title = title
-    return True
 
 
-def add_message(session_id: str, message: ChatMessage) -> None:
-    """Add a message to a session."""
-    session = _sessions.get(session_id)
-    if session:
-        session.messages.append(message)
+def add_message(user_id: str, session_id: str, message: ChatMessage) -> None:
+    """Add a single message to session history."""
+    try:
+        # Use JSON serialization then reload to ensure a clean, Supabase-safe dictionary
+        import json
+        msg_dict = json.loads(message.json())
+        msg_dict["session_id"] = session_id
+        msg_dict["owner_id"] = user_id
+        
+        # Remove any empty/None keys that might cause Supabase issues with default values
+        clean_dict = {k: v for k, v in msg_dict.items() if v is not None}
+        
+        result = supabase.table("chat_messages").insert(clean_dict).execute()
+        if hasattr(result, 'error') and result.error:
+            print(f"❌ Supabase Error inserting message: {result.error}")
+    except Exception as e:
+        print(f"❌ Error adding message to Supabase: {str(e)}")
+        # Don't raise, we want the chat to continue even if history save fails
 
 
-def get_history_for_llm(session_id: str) -> list[dict]:
+def get_history_for_llm(user_id: str, session_id: str) -> list[dict]:
     """
-    Get conversation history formatted for LLM input.
+    Get conversation history formatted for LLM input from Supabase.
     Returns list of {"role": ..., "content": ...} dicts.
     """
-    session = _sessions.get(session_id)
-    if not session:
+    try:
+        response = supabase.table("chat_messages") \
+            .select("role", "content", "sql") \
+            .eq("session_id", session_id) \
+            .eq("owner_id", user_id) \
+            .order("created_at", desc=False) \
+            .execute()
+            
+        if not response.data:
+            return []
+
+        history = []
+        for msg in response.data:
+            role = msg["role"]
+            content = msg["content"]
+            
+            # For assistant messages, include the SQL that was generated
+            if role == "assistant" and msg.get("sql"):
+                content = f"{content}\n```sql\n{msg['sql']}\n```"
+                
+            history.append({"role": role, "content": content})
+
+        return history
+    except Exception as e:
+        print(f"Error fetching history from Supabase (side-effect): {str(e)}")
         return []
-
-    history = []
-    for msg in session.messages:
-        content = msg.content
-        # For assistant messages, include the SQL that was generated
-        if msg.role == "assistant" and msg.sql:
-            content = f"{msg.content}\n```sql\n{msg.sql}\n```"
-        history.append({"role": msg.role, "content": content})
-
-    return history

@@ -1,5 +1,6 @@
 import re
 import os
+import json
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 
@@ -22,10 +23,10 @@ def get_llm() -> ChatGroq:
     return _llm
 
 
-def generate_sql(messages: list[dict]) -> tuple[str, str]:
+def generate_sql(messages: list[dict]) -> tuple[str, dict, str]:
     """
     Send conversation to LLM and get SQL back.
-    Returns (explanation, sql_query).
+    Returns (explanation, metadata_dict, sql_query).
     """
     llm = get_llm()
 
@@ -44,11 +45,12 @@ def generate_sql(messages: list[dict]) -> tuple[str, str]:
     response = llm.invoke(lc_messages)
     response_text = response.content
 
-    # Extract SQL and explanation
+    # Extract SQL, explanation, and metadata
     sql = extract_sql(response_text)
     explanation = extract_explanation(response_text)
+    metadata = extract_metadata(response_text)
 
-    return explanation, sql
+    return explanation, metadata, sql
 
 
 def extract_sql(text: str) -> str:
@@ -103,10 +105,30 @@ def extract_explanation(text: str) -> str:
     return "Here's the SQL query for your question."
 
 
-def generate_error_correction(messages: list[dict], sql: str, error: str) -> tuple[str, str]:
+def extract_metadata(text: str) -> dict:
+    """Extract the metadata JSON part from the LLM response."""
+    match = re.search(r'METADATA:\s*```json\s*(.*?)\s*```', text, re.DOTALL | re.IGNORECASE)
+    if match:
+        try:
+            return json.loads(match.group(1).strip())
+        except json.JSONDecodeError:
+            pass
+    
+    # Fallback to look for just a JSON block preceded by METADATA
+    match = re.search(r'METADATA:.*?({.*?})', text, re.DOTALL | re.IGNORECASE)
+    if match:
+        try:
+            return json.loads(match.group(1).strip())
+        except json.JSONDecodeError:
+            pass
+            
+    return {}
+
+
+def generate_error_correction(messages: list[dict], sql: str, error: str) -> tuple[str, dict, str]:
     """
     Feed the error back to the LLM for self-correction.
-    Returns (explanation, corrected_sql).
+    Returns (explanation, metadata, corrected_sql).
     """
     error_message = {
         "role": "user",
