@@ -1,6 +1,7 @@
 import './index.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ToastProvider } from './components/common/ToastProvider';
+import { AuthProvider } from './context/AuthContext';
 import { LandingPage } from './pages/LandingPage';
 import { ChatPage } from './pages/ChatPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -11,8 +12,9 @@ import { SettingsPage } from './pages/SettingsPage';
 
 function App() {
   return (
-    <ToastProvider>
-      <BrowserRouter>
+    <AuthProvider>
+      <ToastProvider>
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/chat" element={<ChatPage />} />
@@ -22,8 +24,9 @@ function App() {
           <Route path="/connections" element={<ConnectionsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
-      </BrowserRouter>
-    </ToastProvider>
+        </BrowserRouter>
+      </ToastProvider>
+    </AuthProvider>
   );
 }
 

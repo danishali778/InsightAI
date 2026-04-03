@@ -17,6 +17,7 @@ def execute_sql_query(request: QueryRequest, current_user: User = Depends(get_cu
         raise HTTPException(status_code=404, detail="Connection not found. Connect to a database first.")
 
     return execute_query(
+        current_user.id,
         engine=engine,
         sql=request.sql,
         row_limit=request.row_limit or 500,

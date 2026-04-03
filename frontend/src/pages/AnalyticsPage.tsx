@@ -11,6 +11,61 @@ import type { AnalyticsOverviewResponse } from '../types/api';
 const HEALTH_COLORS = [T.green, T.red];
 const BAR_COLOR = '#33d4ff';
 
+function AnalyticsEmptyState() {
+  return (
+    <div style={{ 
+      border: `1px solid ${T.border}`, 
+      borderRadius: 18, 
+      padding: '80px 40px', 
+      background: T.s1, 
+      textAlign: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 20
+    }}>
+      <div style={{ 
+        width: 64, 
+        height: 64, 
+        borderRadius: 20, 
+        background: `rgba(0,229,255,0.1)`, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        fontSize: '1.8rem'
+      }}>
+        📊
+      </div>
+      <div style={{ maxWidth: 460 }}>
+        <h2 style={{ fontFamily: T.fontHead, fontSize: '1.4rem', color: T.text, marginBottom: 12 }}>No activity recorded yet</h2>
+        <p style={{ color: T.text2, lineHeight: 1.6, fontSize: '0.94rem', marginBottom: 24 }}>
+          Your analytics dashboard is calculated on-the-fly based on your query history and dashboard activity. 
+          Run your first query in Chat to start seeing performance insights here.
+        </p>
+        <a 
+          href="/chat" 
+          style={{ 
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '12px 24px',
+            borderRadius: 12,
+            background: T.accent,
+            color: '#000',
+            fontWeight: 600,
+            textDecoration: 'none',
+            fontSize: '0.9rem',
+            transition: 'transform 0.2s ease'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
+          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          Start Chatting
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +112,8 @@ export function AnalyticsPage() {
           <div style={{ border: `1px solid rgba(248,113,113,0.2)`, borderRadius: 18, padding: '24px 22px', background: T.s1, color: T.red }}>
             {error}
           </div>
+        ) : overview && overview.total_queries === 0 ? (
+          <AnalyticsEmptyState />
         ) : overview ? (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>

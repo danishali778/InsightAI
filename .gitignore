@@ -50,6 +50,7 @@ frontend/build/
 # OS
 .DS_Store
 Thumbs.db
+.gemini/
 
 # Logs
 *.log
@@ -58,6 +59,7 @@ logs/
 # Database
 *.db
 *.sqlite3
+seed_demo_db.sql
 
 # Testing
 .coverage
@@ -80,6 +82,8 @@ extra_assets/
 
 # Local/Temporary/Scripts
 backend/pip_list.txt
+backend/test_*.py
+test_*.py
 CHAT_TEST_GUIDE.md
 *.seed.sql
 *.bak

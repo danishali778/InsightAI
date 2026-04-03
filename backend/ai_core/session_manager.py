@@ -53,7 +53,15 @@ def get_session(user_id: str, session_id: str) -> Optional[ChatSession]:
 
 
 def delete_session(user_id: str, session_id: str) -> bool:
-    """Delete a session from Supabase."""
+    """Delete a session and its messages from Supabase."""
+    # 1. Delete messages first
+    supabase.table("chat_messages") \
+        .delete() \
+        .eq("session_id", session_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    # 2. Delete session
     response = supabase.table("chat_sessions") \
         .delete() \
         .eq("id", session_id) \

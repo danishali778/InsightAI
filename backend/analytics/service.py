@@ -16,7 +16,7 @@ def build_analytics_overview(user_id: str) -> dict:
     failed = [record for record in history if not record.success]
     durations = [record.execution_time_ms for record in history if record.execution_time_ms is not None]
 
-    connection_lookup = {conn["id"]: conn for conn in connections}
+    connection_lookup = {conn.id: conn for conn in connections}
     usage_counts: dict[str, int] = {}
     for record in history:
         usage_counts[record.connection_id] = usage_counts.get(record.connection_id, 0) + 1
@@ -24,30 +24,28 @@ def build_analytics_overview(user_id: str) -> dict:
     top_connections = [
         {
             "connection_id": connection_id,
-            "name": connection_lookup.get(connection_id, {}).get("name", "Unknown"),
-            "database": connection_lookup.get(connection_id, {}).get("database", "Unknown"),
-            "db_type": connection_lookup.get(connection_id, {}).get("db_type", "unknown"),
+            "name": getattr(connection_lookup.get(connection_id), "name", "Unknown") if connection_lookup.get(connection_id) else "Unknown",
+            "database": getattr(connection_lookup.get(connection_id), "database", "Unknown") if connection_lookup.get(connection_id) else "Unknown",
+            "db_type": getattr(connection_lookup.get(connection_id), "db_type", "unknown") if connection_lookup.get(connection_id) else "unknown",
             "query_count": query_count,
         }
         for connection_id, query_count in sorted(usage_counts.items(), key=lambda item: item[1], reverse=True)[:5]
     ]
 
-    recent_queries = [
-        {
+    recent_queries = []
+    for record in history[:10]:
+        conn = connection_lookup.get(record.connection_id)
+        recent_queries.append({
             "id": record.id,
             "connection_id": record.connection_id,
-            "connection_name": connection_lookup.get(record.connection_id, {}).get("name")
-            or connection_lookup.get(record.connection_id, {}).get("database")
-            or "Unknown",
+            "connection_name": getattr(conn, "name", None) or getattr(conn, "database", None) or "Unknown" if conn else "Unknown",
             "sql": record.sql,
             "success": record.success,
             "error": record.error,
             "execution_time_ms": record.execution_time_ms,
             "row_count": record.row_count,
-            "timestamp": record.timestamp,
-        }
-        for record in history[:10]
-    ]
+            "timestamp": record.timestamp.isoformat(),
+        })
 
     return {
         "overview": {

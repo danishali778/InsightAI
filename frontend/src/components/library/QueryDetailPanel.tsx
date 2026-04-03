@@ -18,9 +18,7 @@ function defaultSchedule(): ScheduleConfig {
 }
 
 export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialTab }: { query: LibraryQuery | null, onClose: () => void, onDelete?: (id: string) => void, onRefresh?: () => void, initialTab?: string }) {
-  const [activeTab, setActiveTab] = useState<'info'|'sql'|'history'|'schedule'|'share'>('info');
-  const [emailEnabled, setEmailEnabled] = useState(true);
-  const [slackEnabled, setSlackEnabled] = useState(true);
+  const [activeTab, setActiveTab] = useState<'info'|'sql'|'history'|'schedule'>('info');
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<LibraryRunResult | null>(null);
   const [runHistory, setRunHistory] = useState<QueryRunHistoryRecord[]>([]);
@@ -31,6 +29,8 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
   const [newFolderMode, setNewFolderMode] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [folderSaving, setFolderSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (!query) return;
@@ -51,7 +51,7 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
   }, [query?.id]);
 
   useEffect(() => {
-    if (initialTab && ['info','sql','history','schedule','share'].includes(initialTab)) {
+    if (initialTab && ['info','sql','history','schedule'].includes(initialTab)) {
       setActiveTab(initialTab as typeof activeTab);
     }
   }, [initialTab, query?.id]);
@@ -64,18 +64,38 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
     try {
       const result = await runSavedQuery(query.id);
       setRunResult(result);
+      if (result.success) {
+        // Proactively refresh history so it shows up immediately
+        getQueryRunHistory(query.id).then(setRunHistory).catch(() => {});
+        // Automatically switch to history to show the result was logged
+        setActiveTab('history');
+      } else {
+        // Switch to info to show the error
+        setActiveTab('info');
+      }
       onRefresh?.();
     } catch (err: any) {
-      setRunResult({ success: false, error: err.message });
+      const errorResult = { success: false, error: err.message };
+      setRunResult(errorResult);
+      setActiveTab('info');
     } finally {
       setRunning(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (confirm('Delete this query?')) {
-      onDelete?.(query.id);
-    }
+  const handleCopy = () => {
+    navigator.clipboard.writeText(query.sql);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete?.(query.id);
+    setShowDeleteConfirm(false);
   };
 
   const handleFolderSave = async () => {
@@ -142,7 +162,7 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.s2 }}>
-        {(['info','sql','history','schedule','share'] as const).map((t) => (
+        {(['info','sql','history','schedule'] as const).map((t) => (
           <div key={t} onClick={() => setActiveTab(t)} style={{
             flex: 1, padding: '9px 6px', textAlign: 'center', fontSize: '0.72rem', fontFamily: T.fontMono,
             color: activeTab === t ? T.accent : T.text3, cursor: 'pointer', borderBottom: `2px solid ${activeTab === t ? T.accent : 'transparent'}`,
@@ -242,26 +262,6 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
               </Section>
             )}
 
-            {/* Run Frequency Chart — STATIC */}
-            <Section label="Run Frequency (last 30 days)">
-              <div style={{ height: 50, marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: '100%' }}>
-                  {[30,50,40,70,55,80,60,90,75,100,85,70,95,80].map((h, i) => (
-                    <div key={i} style={{
-                      display: 'inline-block', width: 8, borderRadius: '2px 2px 0 0',
-                      background: T.accent, opacity: h === 100 ? 1 : 0.5, height: `${h}%`,
-                      transition: 'opacity 0.15s', cursor: 'pointer', verticalAlign: 'bottom',
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
-                      onMouseLeave={e => { if (h !== 100) e.currentTarget.style.opacity = '0.5'; }}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono }}>
-                {query.run_count} total runs · avg {Math.max(0.1, query.run_count / 30).toFixed(1)}/day
-              </div>
-            </Section>
 
             {/* Tags */}
             {query.tags.length > 0 && (
@@ -294,13 +294,38 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
         {activeTab === 'sql' && (
           <Section label="">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: 1, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono }}>Current SQL</span>
-              <button onClick={() => navigator.clipboard.writeText(query.sql)} style={miniBtnStyle}>Copy</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: 1, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono }}>Current SQL</span>
+                <button 
+                  onClick={() => setActiveTab('info')}
+                  style={{ ...miniBtnStyle, border: 'none', padding: 0, textDecoration: 'underline', opacity: 0.7 }}
+                >
+                  (View Info)
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {runResult && (
+                  <span style={{ fontSize: '0.6rem', color: runResult.success ? T.green : T.red, fontFamily: T.fontMono }}>
+                    {runResult.success ? `${runResult.row_count} rows` : 'Last run failed'}
+                  </span>
+                )}
+                <button 
+                  onClick={handleCopy} 
+                  style={{ 
+                    ...miniBtnStyle, 
+                    borderColor: copied ? T.green : T.border,
+                    color: copied ? T.green : T.text3,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
             </div>
             <div style={{
               background: 'rgba(0,0,0,0.3)', border: `1px solid ${T.border}`, borderRadius: 9,
               padding: '12px 14px', fontFamily: T.fontMono, fontSize: '0.72rem', lineHeight: 1.8,
-              maxHeight: 200, overflowY: 'auto',
+              maxHeight: 280, overflowY: 'auto',
             }} className="custom-scroll">
               {highlightSqlInline(query.sql, 'panel')}
             </div>
@@ -491,42 +516,9 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
               )}
             </Section>
 
-            {/* STATIC — Send Results To */}
-            <Section label="Send Results To">
-              <div style={{ background: T.s2, border: `1px solid ${T.border}`, borderRadius: 9, padding: '12px 14px' }}>
-                <SettingsRow label="Email">
-                  <Toggle on={emailEnabled} onToggle={() => setEmailEnabled(!emailEnabled)} />
-                </SettingsRow>
-                <SettingsRow label="Slack">
-                  <Toggle on={slackEnabled} onToggle={() => setSlackEnabled(!slackEnabled)} />
-                </SettingsRow>
-                <SettingsRow label="Format"><span style={{ fontSize: '0.72rem', fontFamily: T.fontMono, color: T.accent }}>CSV + Chart PNG</span></SettingsRow>
-              </div>
-            </Section>
           </>
         )}
 
-        {/* SHARE TAB — STATIC user list */}
-        {activeTab === 'share' && (
-          <Section label="Shared With">
-            {[
-              { initials: 'SR', name: 'Sarah Rahman', role: 'Can Edit', roleType: 'edit' as const, gradient: 'linear-gradient(135deg, #22d3a5, #7c3aff)' },
-              { initials: 'MK', name: 'Mike Karim', role: 'View Only', roleType: 'view' as const, gradient: 'linear-gradient(135deg, #f59e0b, #ff6b35)' },
-              { initials: 'LJ', name: 'Lisa Johansson', role: 'View Only', roleType: 'view' as const, gradient: 'linear-gradient(135deg, #f87171, #7c3aff)' },
-            ].map((user, i, arr) => (
-              <div key={user.initials} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: i < arr.length - 1 ? `1px solid ${T.border}` : 'none' }}>
-                <div style={{ width: 26, height: 26, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 700, color: '#fff', flexShrink: 0, background: user.gradient }}>{user.initials}</div>
-                <span style={{ fontSize: '0.78rem', color: T.text2, flex: 1 }}>{user.name}</span>
-                <span style={{
-                  fontSize: '0.65rem', fontFamily: T.fontMono, padding: '2px 7px', borderRadius: 4,
-                  ...(user.roleType === 'edit'
-                    ? { background: T.purpleDim, color: T.purple, border: '1px solid rgba(124,58,255,0.2)' }
-                    : { background: T.s3, color: T.text3, border: `1px solid ${T.border}` }),
-                }}>{user.role}</span>
-              </div>
-            ))}
-          </Section>
-        )}
       </div>
 
       {/* Action Buttons */}
@@ -535,9 +527,66 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
         <PanelBtn label="🗑  Delete Query" type="danger" onClick={handleDelete} />
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: 20
+        }} onClick={() => setShowDeleteConfirm(false)}>
+          <div style={{
+            width: '100%', maxWidth: 300, background: T.s2, borderRadius: 16,
+            border: `1px solid ${T.border}`, boxShadow: T.shadow.xl,
+            padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16,
+            transform: 'scale(1)', animation: 'popIn 0.2s ease-out'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: '50%', background: T.redDim,
+                color: T.red, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.4rem', margin: '0 auto 12px', border: '1px solid rgba(248,113,113,0.2)'
+              }}>⚠️</div>
+              <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.05rem', color: T.text, marginBottom: 6 }}>Delete Query?</div>
+              <div style={{ fontSize: '0.8rem', color: T.text3, lineHeight: 1.5 }}>
+                Are you sure you want to remove <span style={{ color: T.text2, fontWeight: 500 }}>"{query.title}"</span>? This action cannot be undone.
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button 
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: 10, border: `1px solid ${T.border}`,
+                  background: 'transparent', color: T.text2, fontSize: '0.85rem', cursor: 'pointer',
+                  fontFamily: T.fontBody, fontWeight: 500, transition: 'all 0.15s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = T.s3; e.currentTarget.style.borderColor = T.border2; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = T.border; }}
+              >Cancel</button>
+              <button 
+                onClick={confirmDelete}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: 10, border: 'none',
+                  background: T.red, color: '#fff', fontSize: '0.85rem', cursor: 'pointer',
+                  fontFamily: T.fontBody, fontWeight: 600, boxShadow: '0 4px 12px rgba(248,113,113,0.3)',
+                  transition: 'all 0.1s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(248,113,113,0.4)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(248,113,113,0.3)'; }}
+              >Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .custom-scroll::-webkit-scrollbar { width: 3px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: ${T.s4}; border-radius: 2px; }
+        @keyframes popIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
       `}</style>
     </div>
   );

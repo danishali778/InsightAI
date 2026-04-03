@@ -60,7 +60,7 @@ def execute_query(user_id: str, engine: Engine, sql: str, row_limit: int = 500, 
                 row_count=len(rows),
                 truncated=truncated,
                 execution_time_ms=round(elapsed, 2),
-            ), connection_id, safe_sql)
+            ), user_id, connection_id, safe_sql)
 
     except Exception as e:
         elapsed = (time.time() - start_time) * 1000
@@ -82,10 +82,10 @@ def execute_query(user_id: str, engine: Engine, sql: str, row_limit: int = 500, 
             success=False,
             execution_time_ms=round(elapsed, 2),
             error=friendly,
-        ), connection_id, sql)
+        ), user_id, connection_id, sql)
 
 
-def _log_and_return(result: QueryResult, connection_id: Optional[str], sql: str) -> QueryResult:
+def _log_and_return(result: QueryResult, user_id: str, connection_id: Optional[str], sql: str) -> QueryResult:
     """Log the query to history and return the result."""
     if connection_id:
         try:

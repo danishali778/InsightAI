@@ -102,6 +102,7 @@ def refresh_widget(widget_id: str, current_user: User = Depends(get_current_user
         raise HTTPException(status_code=404, detail="Connection not found.")
     
     result = execute_query(
+        user_id,
         engine, 
         widget.sql, 
         row_limit=500, 

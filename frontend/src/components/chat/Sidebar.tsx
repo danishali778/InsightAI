@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { T } from '../dashboard/tokens';
 import type { ChatSidebarProps } from '../../types/chat';
+import { DeleteSessionModal } from './DeleteSessionModal';
 
 export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession, onRenameSession, onOpenConnect, connections }: ChatSidebarProps) {
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const today = new Date().toDateString();
   const yesterday = new Date(Date.now() - 86400000).toDateString();
@@ -94,10 +97,13 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
                     style={{
                       display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 8,
                       cursor: 'pointer', marginBottom: 1, border: `1px solid ${isActive ? 'rgba(0,229,255,0.15)' : 'transparent'}`,
-                      background: isActive ? T.s2 : 'transparent', position: 'relative', transition: 'background 0.15s',
+                      background: isActive || hoveredId === s.id ? T.s2 : 'transparent', position: 'relative', transition: 'background 0.15s',
                     }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.s2; }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                    onMouseEnter={() => {
+                      setHoveredId(s.id);
+                      // Fallback for logic that directly modifies style
+                    }}
+                    onMouseLeave={() => setHoveredId(null)}
                   >
                     {isActive && <div style={{ position: 'absolute', left: -1, top: '20%', bottom: '20%', width: 2, borderRadius: 2, background: T.accent }} />}
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.green, flexShrink: 0, boxShadow: '0 0 5px rgba(34,211,165,0.5)' }} />
@@ -127,11 +133,25 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
                       </span>
                     )}
                     <span style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono, flexShrink: 0 }}>{timeAgo(s.created_at)}</span>
-                    <button onClick={e => { e.stopPropagation(); onDeleteSession(s.id); }}
-                      style={{ background: 'none', border: 'none', color: T.text3, cursor: 'pointer', fontSize: '0.65rem', padding: '0 2px', opacity: 0, transition: 'opacity 0.2s', flexShrink: 0 }}
-                      onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = T.red; }}
-                      onMouseLeave={e => { e.currentTarget.style.opacity = '0'; e.currentTarget.style.color = T.text3; }}
-                    >✕</button>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        setDeleteId(s.id);
+                      }}
+                      title="Delete chat"
+                      style={{
+                        background: 'none', border: 'none', color: T.text3, cursor: 'pointer',
+                        fontSize: '0.9rem', padding: '2px 6px',
+                        opacity: hoveredId === s.id ? 1 : 0,
+                        transition: 'all 0.2s', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: 4,
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.color = T.red; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = T.text3; e.currentTarget.style.background = 'none'; }}
+                    >
+                      <span style={{ transform: 'translateY(-1px)' }}>×</span>
+                    </button>
                   </div>
                 );
               })}
@@ -143,6 +163,15 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
           </div>
         )}
       </div>
+
+      <DeleteSessionModal
+        isOpen={deleteId !== null}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => {
+          if (deleteId) onDeleteSession(deleteId);
+        }}
+        sessionTitle={sessions.find(s => s.id === deleteId)?.title || undefined}
+      />
 
       {/* Connections */}
       <div style={{ padding: '10px 14px', borderTop: `1px solid ${T.border}` }}>

@@ -17,6 +17,7 @@ from query_library.models import (
 )
 from query_library import scheduler, schema_recommender
 from query_executor.executor import execute_query
+from database import connection_manager
 from common.auth import get_current_user, User
 from fastapi import Depends
 
@@ -99,7 +100,7 @@ def run_query(query_id: str, current_user: User = Depends(get_current_user)):
     if not engine:
         raise HTTPException(status_code=404, detail="Database connection not found.")
 
-    result = execute_query(engine, query.sql, row_limit=500, connection_id=query.connection_id,
+    result = execute_query(current_user.id, engine, query.sql, row_limit=500, connection_id=query.connection_id,
                            readonly=connection_manager.get_readonly(current_user.id, query.connection_id))
     store.increment_run_count(current_user.id, query_id)
 
