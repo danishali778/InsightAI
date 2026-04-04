@@ -104,14 +104,20 @@ export interface ChatRequest {
 }
 
 export interface ChatMessageRecord {
+  id: string;
   role: 'user' | 'assistant';
   content: string;
   connection_id?: string | null;
   sql?: string | null;
   columns?: string[] | null;
-  results?: { rows?: Array<Record<string, unknown>> } | null;
+  results?: { 
+    rows?: Array<Record<string, unknown>>;
+    row_count?: number;
+    execution_time_ms?: number;
+  } | null;
   chart_recommendation?: ChartRecommendation | null;
   error?: string | null;
+  is_pinned?: boolean;
   timestamp: string;
 }
 
@@ -137,6 +143,8 @@ export interface UpdateSessionRequest {
 
 export interface ChatResponse {
   session_id: string;
+  message_id: string;
+  user_message_id: string;
   message: string;
   sql?: string | null;
   columns: string[];
@@ -152,6 +160,7 @@ export interface ChatResponse {
 }
 
 export interface ChatUiMessage {
+  id: string;
   role: 'user' | 'assistant';
   content: string;
   sql?: string;
@@ -163,6 +172,12 @@ export interface ChatUiMessage {
   chart_recommendation?: ChartRecommendation;
   error?: string;
   column_metadata?: Record<string, string>;
+  is_pinned?: boolean;
+}
+
+export interface EditSqlRequest {
+  sql: string;
+  connection_id: string;
 }
 
 export interface QueryRecord {
@@ -300,8 +315,15 @@ export interface DashboardSummary {
   id: string;
   name: string;
   icon: string;
+  filters: Record<string, any>;
   created_at: string;
   widget_count: number;
+}
+
+export interface UpdateDashboardRequest {
+  name?: string;
+  icon?: string;
+  filters?: Record<string, any>;
 }
 
 export interface DashboardChartConfig {
@@ -333,6 +355,7 @@ export interface DashboardWidget {
   minW: number;
   minH: number;
   bar_orientation: 'horizontal' | 'vertical';
+  order_index: number;
   created_at: string;
 }
 
@@ -354,6 +377,7 @@ export interface AddDashboardWidgetRequest {
   minW?: number;
   minH?: number;
   bar_orientation?: 'horizontal' | 'vertical';
+  order_index?: number;
 }
 
 export interface UpdateDashboardWidgetRequest {
@@ -369,6 +393,7 @@ export interface UpdateDashboardWidgetRequest {
   minW?: number;
   minH?: number;
   bar_orientation?: 'horizontal' | 'vertical';
+  order_index?: number;
 }
 
 export interface DashboardStats {

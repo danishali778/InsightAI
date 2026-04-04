@@ -93,9 +93,9 @@ export function ResultsTable({ columns, rows, rowCount, executionTime, truncated
                 {columns.map(c => (
                   <td key={c} style={{
                     padding: '8px 16px', borderBottom: `1px solid ${T.border}`,
-                    color: typeof row[c] === 'number' ? T.text : T.text2,
+                    color: (typeof row[c] === 'number' || row[c] === '0') ? T.text : T.text2,
                     fontFamily: T.fontMono, whiteSpace: 'nowrap',
-                    fontWeight: typeof row[c] === 'number' ? 600 : 400,
+                    fontWeight: (typeof row[c] === 'number' || row[c] === '0') ? 600 : 400,
                   }}>{isNull(row[c]) ? <NullCell /> : fmt(row[c])}</td>
                 ))}
               </tr>

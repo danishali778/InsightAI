@@ -1,6 +1,7 @@
 import type { ChartRecommendation, DatabaseConnection, SessionSummary } from './api';
 
 export interface ChatMessageView {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   sql?: string;
@@ -12,6 +13,7 @@ export interface ChatMessageView {
   chart_recommendation?: ChartRecommendation;
   column_metadata?: Record<string, string>;
   error?: string;
+  is_pinned?: boolean;
 }
 
 export interface ChatSidebarProps {

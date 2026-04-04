@@ -35,13 +35,18 @@ export function ChatPage() {
     if (skipNextFetch.current) { skipNextFetch.current = false; return; }
     api.getSessionMessages(activeSessionId).then(data => {
       const msgs: ChatMessageView[] = data.messages.map((message) => ({
-        role: message.role,
+        id: message.id,
+        role: message.role as any,
         content: message.content,
         sql: message.sql || undefined,
-        columns: message.columns || undefined,
-        rows: message.results?.rows || undefined,
+        columns: message.columns || message.results?.columns || undefined,
+        rows: message.rows || message.results?.rows || undefined,
+        row_count: message.row_count ?? message.results?.row_count,
+        execution_time_ms: message.execution_time_ms ?? message.results?.execution_time_ms,
         chart_recommendation: message.chart_recommendation || undefined,
+        column_metadata: message.column_metadata || undefined,
         error: message.error || undefined,
+        is_pinned: message.is_pinned ?? false,
       }));
       setMessages(msgs);
       // Auto-switch to the session's last-used connection
@@ -49,9 +54,43 @@ export function ChatPage() {
         setActiveConnectionId(data.last_connection_id);
       }
     });
-  }, [activeSessionId]);
+  }, [activeSessionId, connections]); // Added connections to deps to ensure switch works when conns load
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  const handleSqlSave = async (messageId: string, newSql: string) => {
+    if (!activeSessionId || !activeConnectionId) return;
+    try {
+      const updatedMsg = await api.editSql(activeSessionId, messageId, {
+        sql: newSql,
+        connection_id: activeConnectionId
+      });
+      
+      setMessages(prev => prev.map(m => m.id === messageId ? {
+        ...m,
+        sql: (updatedMsg as any).sql || undefined,
+        rows: (updatedMsg as any).rows || (updatedMsg as any).results?.rows || undefined,
+        columns: (updatedMsg as any).columns || (updatedMsg as any).results?.columns || undefined,
+        chart_recommendation: (updatedMsg as any).chart_recommendation || undefined,
+        execution_time_ms: (updatedMsg as any).execution_time_ms || (updatedMsg as any).results?.execution_time_ms || undefined,
+        error: (updatedMsg as any).error || undefined,
+        content: (updatedMsg as any).content || m.content, 
+        is_pinned: (updatedMsg as any).is_pinned ?? m.is_pinned,
+      } : m));
+    } catch (err) {
+      console.error('Failed to save SQL:', err);
+    }
+  };
+
+  const handleTogglePin = async (messageId: string, isPinned: boolean) => {
+    if (!activeSessionId) return;
+    try {
+      await api.toggleMessagePin(activeSessionId, messageId, isPinned);
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, is_pinned: isPinned } : m));
+    } catch (err) {
+      console.error('Failed to toggle pin:', err);
+    }
+  };
 
   const handleSend = async (message: string) => {
     if (!activeConnectionId) return;
@@ -61,18 +100,29 @@ export function ChatPage() {
     try {
       const r = await api.sendMessage({ connection_id: activeConnectionId, session_id: activeSessionId || undefined, message });
       const assistantMsg: ChatMessageView = {
+        id: r.message_id,
         role: 'assistant',
         content: r.message,
         sql: r.sql || undefined,
-        columns: r.columns,
-        rows: r.rows,
+        columns: r.columns || [],
+        rows: r.rows || [],
         row_count: r.row_count,
         execution_time_ms: r.execution_time_ms,
         chart_recommendation: r.chart_recommendation || undefined,
         column_metadata: r.column_metadata || undefined,
         error: r.error || undefined,
+        is_pinned: r.is_pinned ?? false,
       };
-      setMessages(prev => [...prev, assistantMsg]);
+      
+      setMessages(prev => {
+        const updated = [...prev];
+        // The last message in 'prev' is the user message we just added
+        if (updated.length > 0 && updated[updated.length - 1].role === 'user') {
+          updated[updated.length - 1] = { ...updated[updated.length - 1], id: r.user_message_id };
+        }
+        return [...updated, assistantMsg];
+      });
+
       if (!activeSessionId && r.session_id) {
         skipNextFetch.current = true;
         setActiveSessionId(r.session_id);
@@ -123,7 +173,41 @@ export function ChatPage() {
 
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0', display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {/* Pinned Messages Bar */}
+              {messages.some(m => m.is_pinned) && (
+                <div style={{ padding: '0 24px 16px', borderBottom: `1px solid ${T.border}`, marginBottom: 16 }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: T.accent }}>📍</span> Pinned Results
+                  </div>
+                  <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
+                    {messages.filter(m => m.is_pinned).map(m => (
+                      <div 
+                        key={m.id} 
+                        onClick={() => {
+                          const el = document.getElementById(`msg-${m.id}`);
+                          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                        style={{
+                          minWidth: 160, maxWidth: 220, background: T.s2, border: `1px solid ${T.border}`,
+                          borderRadius: 8, padding: '10px 12px', cursor: 'pointer', transition: 'all 0.2s',
+                          display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = 'translateY(0)'; }}
+                      >
+                        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {m.content.length > 30 ? m.content.substring(0, 30) + '...' : m.content}
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono }}>
+                          {m.rows?.length || 0} rows • {m.columns?.length || 0} cols
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {messages.length === 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 14 }}>
                   <div style={{ width: 56, height: 56, borderRadius: 14, background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800, color: '#000', boxShadow: '0 4px 20px rgba(0,229,255,0.25)', marginBottom: 8, fontFamily: T.fontHead }}>Q</div>
@@ -145,7 +229,15 @@ export function ChatPage() {
                 </div>
               )}
 
-              {messages.map((msg, i) => <MessageBubble key={i} message={msg} connectionId={activeConnectionId} />)}
+              {messages.map((msg, i) => (
+                <MessageBubble 
+                  key={msg.id || i} 
+                  message={msg} 
+                  connectionId={activeConnectionId}
+                  onSqlSave={handleSqlSave}
+                  onTogglePin={handleTogglePin}
+                />
+              ))}
 
               {loading && (
                 <div style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: 8 }}>

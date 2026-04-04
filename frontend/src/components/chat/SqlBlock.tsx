@@ -10,6 +10,8 @@ interface SqlBlockProps {
   maxVisibleLines?: number;
   title?: string;
   trailingMeta?: string;
+  onSave?: (newSql: string) => void;
+  isSaving?: boolean;
 }
 
 function tokenStyle(kind: TokenKind): React.CSSProperties {
@@ -39,9 +41,13 @@ export function SqlBlock({
   maxVisibleLines,
   title,
   trailingMeta,
+  onSave,
+  isSaving,
 }: SqlBlockProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [localSql, setLocalSql] = useState(sql);
 
   const lines = useMemo(() => sql.replace(/\r\n/g, '\n').split('\n'), [sql]);
   const visibleLines = maxVisibleLines ? lines.slice(0, maxVisibleLines) : lines;
@@ -168,36 +174,124 @@ export function SqlBlock({
             >
               {title || 'SQL PREVIEW'}
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {!collapsible && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {onSave && !isEditing && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                style={{
+                  padding: '3px 10px',
+                  borderRadius: 6,
+                  border: `1px solid ${T.accent}`,
+                  background: 'rgba(0,229,255,0.05)',
+                  color: T.accent,
+                  fontSize: '0.62rem',
+                  fontFamily: T.fontMono,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,229,255,0.1)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,229,255,0.05)'; }}
+              >
+                EDIT SQL
+              </button>
+            )}
+            {isEditing && (
+              <div style={{ display: 'flex', gap: 6 }}>
                 <button
-                  onClick={handleCopy}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (onSave) onSave(localSql);
+                    setIsEditing(false);
+                  }}
+                  disabled={isSaving}
                   style={{
-                    padding: '3px 8px',
-                    borderRadius: 999,
+                    padding: '3px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: T.accent,
+                    color: '#000',
+                    fontSize: '0.62rem',
+                    fontWeight: 700,
+                    fontFamily: T.fontMono,
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                    opacity: isSaving ? 0.6 : 1,
+                  }}
+                >
+                  {isSaving ? 'SAVING...' : 'SAVE & RUN'}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsEditing(false); setLocalSql(sql); }}
+                  style={{
+                    padding: '3px 10px',
+                    borderRadius: 6,
                     border: `1px solid ${T.border}`,
-                    background: 'rgba(255,255,255,0.02)',
-                    color: copied ? T.green : T.text3,
-                    fontSize: '0.58rem',
+                    background: 'transparent',
+                    color: T.text3,
+                    fontSize: '0.62rem',
                     fontFamily: T.fontMono,
                     cursor: 'pointer',
                   }}
                 >
-                  {copied ? 'copied' : 'copy'}
+                  CANCEL
                 </button>
-              )}
-              <span
-                style={{
-                  fontSize: isCard ? '0.56rem' : '0.6rem',
-                  fontFamily: T.fontMono,
-                  color: T.text3,
-                }}
-              >
-                {trailingMeta || `${Math.min(sql.length, 200)} chars`}
-              </span>
-            </div>
+              </div>
+            )}
+            {!isEditing && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {!collapsible && (
+                  <button
+                    onClick={handleCopy}
+                    style={{
+                      padding: '3px 8px',
+                      borderRadius: 999,
+                      border: `1px solid ${T.border}`,
+                      background: 'rgba(255,255,255,0.02)',
+                      color: copied ? T.green : T.text3,
+                      fontSize: '0.58rem',
+                      fontFamily: T.fontMono,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {copied ? 'copied' : 'copy'}
+                  </button>
+                )}
+                <span
+                  style={{
+                    fontSize: isCard ? '0.56rem' : '0.6rem',
+                    fontFamily: T.fontMono,
+                    color: T.text3,
+                  }}
+                >
+                  {trailingMeta || `${Math.min(sql.length, 200)} chars`}
+                </span>
+              </div>
+            )}
           </div>
+        </div>
 
+        {isEditing ? (
+          <textarea
+            value={localSql}
+            onChange={(e) => setLocalSql(e.target.value)}
+            style={{
+              width: '100%',
+              minHeight: 180,
+              background: 'rgba(0,0,0,0.3)',
+              border: `1px solid ${T.accent}44`,
+              borderRadius: 8,
+              padding: 12,
+              color: T.text,
+              fontFamily: T.fontMono,
+              fontSize: '0.8rem',
+              lineHeight: 1.6,
+              resize: 'vertical',
+              outline: 'none',
+              transition: 'border-color 0.2s',
+            }}
+            onFocus={(e) => e.target.style.borderColor = T.accent}
+            onBlur={(e) => e.target.style.borderColor = `${T.accent}44`}
+          />
+        ) : (
           <div
             style={{
               display: 'grid',
@@ -246,8 +340,9 @@ export function SqlBlock({
               </div>
             ))}
           </div>
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    )}
+  </div>
+);
 }

@@ -30,8 +30,19 @@ import type {
   TestConnectionRequest,
   TestConnectionResponse,
   UpdateDashboardWidgetRequest,
+  UpdateDashboardRequest,
   UpdateSavedQueryRequest,
+  EditSqlRequest,
+  ChatMessageRecord,
 } from '../types/api';
+
+export function editSql(sessionId: string, messageId: string, data: EditSqlRequest) {
+  return jsonRequest<ChatMessageRecord>(`/chat/${sessionId}/message/${messageId}/edit-sql`, 'POST', data);
+}
+
+export function toggleMessagePin(sessionId: string, messageId: string, isPinned: boolean) {
+  return request<ApiMessageResponse>(`/chat/${sessionId}/message/${messageId}/pin?is_pinned=${isPinned}`, { method: 'POST' });
+}
 
 export function connectDatabase(config: ConnectDatabaseRequest) {
   return jsonRequest<ConnectDatabaseResponse>('/database/connect', 'POST', config);
@@ -187,6 +198,10 @@ export function renameDashboard(dashboardId: string, name: string) {
   return jsonRequest<DashboardSummary>(`/dashboard/dashboards/${dashboardId}`, 'PATCH', { name });
 }
 
+export function updateDashboard(dashboardId: string, data: UpdateDashboardRequest) {
+  return jsonRequest<DashboardSummary>(`/dashboard/dashboards/${dashboardId}/update`, 'PATCH', data);
+}
+
 export function refreshDashboardWidget(widgetId: string) {
   return request<DashboardWidget>(`/dashboard/widgets/${widgetId}/refresh`, { method: 'POST' });
 }
@@ -206,6 +221,10 @@ export function deleteDashboardWidget(widgetId: string) {
 
 export function updateDashboardWidget(widgetId: string, data: UpdateDashboardWidgetRequest) {
   return jsonRequest<DashboardWidget>(`/dashboard/widgets/${widgetId}`, 'PATCH', data);
+}
+
+export function getWidgetInsight(widgetId: string) {
+  return request<{ insight: string }>(`/dashboard/widgets/${widgetId}/insight`, { method: 'POST' });
 }
 
 export function getDashboardStats(dashboardId?: string) {

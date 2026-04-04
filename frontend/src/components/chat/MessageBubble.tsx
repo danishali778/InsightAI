@@ -11,11 +11,23 @@ import { addDashboardWidget } from '../../services/api';
 import { inferViz, autoTitle, layoutDims } from '../../utils/dashboardUtils';
 import type { ChatMessageView } from '../../types/chat';
 
-export function MessageBubble({ message, connectionId }: { message: ChatMessageView, connectionId?: string }) {
+export function MessageBubble({ 
+  message, 
+  connectionId,
+  onSqlSave,
+  onTogglePin
+}: { 
+  message: ChatMessageView, 
+  connectionId?: string,
+  onSqlSave?: (messageId: string, newSql: string) => Promise<void>,
+  onTogglePin?: (messageId: string, isPinned: boolean) => Promise<void>
+}) {
   const [modalOpen, setModalOpen] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [saveLabel, setSaveLabel] = useState<string | null>(null);
   const [isQuickAdding, setIsQuickAdding] = useState(false);
+  const [isSavingSql, setIsSavingSql] = useState(false);
+  const [isPinning, setIsPinning] = useState(false);
   
   const { addToast } = useToast();
   const { dashboards } = useDashboardCatalog({ autoLoad: true });
@@ -99,7 +111,7 @@ export function MessageBubble({ message, connectionId }: { message: ChatMessageV
 
   // Assistant
   return (
-    <div style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: 8 }}>
+    <div id={message.id ? `msg-${message.id}` : undefined} style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: 8 }}>
       <div style={{
         maxWidth: 820, width: '100%', background: T.s1, border: `1px solid ${T.border}`,
         borderRadius: '4px 14px 14px 14px', overflow: 'hidden',
@@ -127,6 +139,15 @@ export function MessageBubble({ message, connectionId }: { message: ChatMessageV
             sql={message.sql}
             defaultOpen
             title="GENERATED SQL"
+            onSave={onSqlSave && message.id ? async (newSql) => {
+              setIsSavingSql(true);
+              try {
+                await onSqlSave(message.id!, newSql);
+              } finally {
+                setIsSavingSql(false);
+              }
+            } : undefined}
+            isSaving={isSavingSql}
           />
         )}
 
@@ -205,6 +226,33 @@ export function MessageBubble({ message, connectionId }: { message: ChatMessageV
             >
               {isQuickAdding ? '⏳ Adding...' : '➕ Dashboard'}
             </button>
+            {onTogglePin && message.id && (
+              <button
+                onClick={async () => {
+                  if (onTogglePin && message.id) {
+                    setIsPinning(true);
+                    try {
+                      await onTogglePin(message.id, !message.is_pinned);
+                    } finally {
+                      setIsPinning(false);
+                    }
+                  }
+                }}
+                disabled={isPinning}
+                style={{
+                  padding: '5px 12px', borderRadius: 6, 
+                  border: `1px solid ${message.is_pinned ? T.accent : T.border}`,
+                  background: message.is_pinned ? T.accentDim : 'transparent',
+                  color: message.is_pinned ? T.accent : T.text3,
+                  fontSize: '0.72rem', cursor: isPinning ? 'default' : 'pointer', fontFamily: T.fontBody,
+                  display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { if (!isPinning && !message.is_pinned) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
+                onMouseLeave={e => { if (!isPinning && !message.is_pinned) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; } }}
+              >
+                {isPinning ? '...' : (message.is_pinned ? '📍 Pinned' : '📌 Pin Chat')}
+              </button>
+            )}
             <button
               style={{
                 padding: '5px 12px', borderRadius: 6, border: `1px solid rgba(0,229,255,0.25)`,
