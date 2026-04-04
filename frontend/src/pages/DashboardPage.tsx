@@ -1,12 +1,17 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
+import 'react-grid-layout/css/styles.css';
 import { AppSidebar } from '../components/common/AppSidebar';
 import { DashboardTopbar } from '../components/dashboard/DashboardTopbar';
 import { DashboardCreateForm } from '../components/dashboard/DashboardCreateForm';
 import { WidgetRenderer } from '../components/dashboard/WidgetRenderer';
 import { T } from '../components/dashboard/tokens';
+import { DashboardFilterBar } from '../components/dashboard/DashboardFilterBar';
 import {
   deleteDashboard,
   renameDashboard,
+  updateDashboard,
+  refreshDashboardWidget,
   listDashboardWidgets,
   deleteDashboardWidget,
   getDashboardStats,
@@ -444,7 +449,7 @@ function EmptyState() {
       {/* Hint */}
       <div style={{
         marginTop: 32, display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 16px', borderRadius: 8,
+        padding: '8px 166px', borderRadius: 8, // Fixed padding from previous broken state
         background: 'rgba(0,229,255,0.04)',
         border: '1px solid rgba(0,229,255,0.08)',
       }}>
@@ -454,6 +459,18 @@ function EmptyState() {
       </div>
     </div>
   );
+}
+
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
+interface GridLayoutItem {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  minH?: number;
 }
 
 /* ── Dashboard Canvas ─────────────────────────────────────────── */
@@ -473,33 +490,81 @@ function DashboardCanvas({
 }) {
   if (!activeDash) return <EmptyState />;
 
-  const getGridSpan = (widget: DashboardWidgetItem) => {
-    const rawSize = widget.size;
-    const isPie = widget.viz_type === 'pie' || widget.viz_type === 'donut';
+  const [localFilters, setLocalFilters] = useState<Record<string, unknown>>(activeDash.filters || {});
+  const [refreshInterval, setRefreshInterval] = useState<number | null>(null); // null = off, otherwise ms
 
-    if (widget.viz_type === 'kpi') return 'span 5';
+  useEffect(() => {
+    setLocalFilters(activeDash.filters || {});
+  }, [activeDash.id, activeDash.filters]);
 
-    if (isPie) {
-      // Group A (Pie/Donut):
-      // - 'half' -> 50% (10 columns)
-      // - 'three-quarter' (or anything else) -> 35% (7 columns)
-      if (rawSize === 'half') return 'span 10';
-      return 'span 7';
-    } else {
-      // Group B (Bar/Line/Area/Table):
-      // - 'full' -> 100% (20 columns)
-      // - 'three-quarter' -> 65% (13 columns)
-      // - 'half' (or anything else) -> 50% (10 columns)
-      if (widget.viz_type === 'table' || rawSize === 'full') return 'span 20';
-      if (rawSize === 'three-quarter') return 'span 13';
-      if (rawSize === 'quarter') return 'span 5';
-      return 'span 10';
+  useEffect(() => {
+    if (!refreshInterval) return;
+
+    const interval = setInterval(() => {
+      console.log('Live Refreshing Dashboard...');
+      widgets.forEach(w => {
+        if (w.sql) {
+          refreshDashboardWidget(w.id).then((updated) => {
+            onUpdateWidget(w.id, { columns: updated.columns, rows: updated.rows } as UpdateDashboardWidgetRequest);
+          }).catch((err: unknown) => console.error('Refresh fail:', err));
+        }
+      });
+    }, refreshInterval);
+
+    return () => clearInterval(interval);
+  }, [refreshInterval, widgets, onUpdateWidget]);
+
+  const handleApplyFilters = async () => {
+    try {
+      await updateDashboard(activeDash.id, { filters: localFilters });
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to apply filters:', err);
     }
+  };
+
+  const layouts = useMemo(() => {
+    return {
+      lg: widgets.map((w): GridLayoutItem => {
+        // Ironclad Safeguard: Charts are strictly 7 units tall
+        const isStandardChart = w.viz_type !== 'table' && w.viz_type !== 'kpi';
+        const safeH = isStandardChart ? 7 : w.h;
+        return {
+          i: w.id,
+          x: w.x,
+          y: w.y,
+          w: w.w,
+          h: safeH,
+          minW: w.minW,
+          minH: safeH // Prevent grid from shrinking it further
+        };
+      })
+    };
+  }, [widgets]);
+
+  const handleLayoutChange = (currentLayout: readonly GridLayoutItem[]) => {
+    console.log('🔍 GRID TRIGGERED:', currentLayout.map(i => ({ id: i.i, h: i.h })));
+    currentLayout.forEach((item) => {
+      const widget = widgets.find(w => w.id === item.i);
+      if (widget) {
+        // Ironclad Safeguard: Don't save a tall height if it's a chart
+        const isStandardChart = widget.viz_type !== 'table' && widget.viz_type !== 'kpi';
+        const finalH = isStandardChart ? 7 : item.h;
+
+        if (widget.x !== item.x || widget.y !== item.y || widget.w !== item.w || widget.h !== finalH) {
+          onUpdateWidget(item.i, {
+            x: item.x,
+            y: item.y,
+            w: item.w,
+            h: finalH
+          });
+        }
+      }
+    });
   };
 
   return (
     <>
-      {/* Dashboard header */}
       <div className="dash-section" style={{
         display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14,
       }}>
@@ -527,11 +592,30 @@ function DashboardCanvas({
               background: T.text3, display: 'inline-block',
             }} />
             <span>Created {new Date(activeDash.created_at).toLocaleDateString()}</span>
+            <span style={{
+              width: 3, height: 3, borderRadius: '50%',
+              background: T.text3, display: 'inline-block',
+            }} />
+            <button 
+              onClick={() => setRefreshInterval(refreshInterval ? null : 60000)}
+              style={{
+                background: 'transparent', border: 'none', 
+                color: refreshInterval ? T.accent : T.text3,
+                fontSize: '0.68rem', fontFamily: T.fontMono, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 4
+              }}
+            >
+              <div style={{ 
+                width: 6, height: 6, borderRadius: '50%', 
+                background: refreshInterval ? T.accent : T.text3,
+                boxShadow: refreshInterval ? `0 0 8px ${T.accent}` : 'none'
+              }} />
+              {refreshInterval ? 'LIVE REFRESH (60s)' : 'LIVE REFRESH OFF'}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Viz breakdown badges */}
       {stats.total_widgets > 0 && (
         <div className="dash-section dash-section-d1" style={{
           display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap',
@@ -560,23 +644,25 @@ function DashboardCanvas({
         </div>
       )}
 
-      {/* Widget Grid */}
+      <DashboardFilterBar 
+        filters={localFilters}
+        onFiltersChange={setLocalFilters}
+        onApply={handleApplyFilters}
+      />
+
       {widgets.length > 0 ? (
         <div className="dash-section dash-section-d2" style={{ paddingBottom: 14 }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(20, minmax(0, 1fr))',
-            gap: 16, alignItems: 'stretch',
-          }}>
-            {widgets.map((widget, index) => (
-              <div
-                key={widget.id}
-                className="dash-section"
-                style={{
-                  gridColumn: getGridSpan(widget),
-                  animationDelay: `${0.05 + index * 0.06}s`,
-                }}
-              >
+          <ResponsiveGridLayout
+            layouts={layouts}
+            breakpoints={{ lg: 1024, md: 996, sm: 768, xs: 480, xxs: 0 }}
+            cols={{ lg: 20, md: 15, sm: 10, xs: 5, xxs: 2 }}
+            rowHeight={30}
+            draggableHandle=".widget-drag-handle"
+            onLayoutChange={(_, allLayouts) => handleLayoutChange(allLayouts.lg || [])}
+            margin={[20, 20]}
+          >
+            {widgets.map((widget) => (
+              <div key={widget.id}>
                 <WidgetRenderer
                   widget={widget}
                   onDelete={onDeleteWidget}
@@ -584,9 +670,8 @@ function DashboardCanvas({
                 />
               </div>
             ))}
-          </div>
+          </ResponsiveGridLayout>
 
-          {/* Add more hint */}
           <div style={{
             border: `1px dashed rgba(0,229,255,0.15)`,
             borderRadius: 14, minHeight: 64,
@@ -619,7 +704,6 @@ function DashboardCanvas({
           textAlign: 'center', position: 'relative',
           background: 'rgba(0,229,255,0.015)',
         }}>
-          {/* Background glow */}
           <div style={{
             position: 'absolute', top: '50%', left: '50%',
             transform: 'translate(-50%, -50%)',
@@ -682,8 +766,43 @@ export function DashboardPage() {
       listDashboardWidgets(activeDashId),
       getDashboardStats(activeDashId),
     ]);
-    setWidgets(widgetResult);
+
+    const normalizedWidgets = widgetResult.map(w => {
+      // Magic Shrink: Upscale width to 10 if squashed, and CAP height at 6 for standard widgets
+      let newW = w.w;
+      let newH = w.h;
+
+      const isStandardChart = w.viz_type !== 'table' && w.viz_type !== 'kpi';
+
+      if (w.w < 3) {
+        console.log(`Auto-repairing squashed widget: ${w.title}`);
+        newW = 10;
+        newH = Math.max(w.h, 7);
+      } else if (isStandardChart && w.h !== 7) {
+        console.log(`🔍 Auto-shrinking/aligning widget: ${w.title} (${w.h} -> 7)`);
+        newH = 7;
+      }
+
+      if (newW !== w.w || newH !== w.h) {
+        return { ...w, w: newW, h: newH };
+      }
+      return w;
+    });
+
+    console.log('🔍 FETCH RAW:', widgetResult.map(w => ({ title: w.title, h: w.h })));
+    console.log('🔍 FETCH REPAIRED:', normalizedWidgets.map(w => ({ title: w.title, h: w.h })));
+
+    setWidgets(normalizedWidgets);
     setStats(statsResult);
+
+    // Persist repairs to DB
+    normalizedWidgets.forEach(w => {
+      const original = widgetResult.find(ow => ow.id === w.id);
+      if (original && (original.w !== w.w || original.h !== w.h)) {
+        console.log('🔍 AUTO-REPAIR SYNC:', w.title, { w: w.w, h: w.h });
+        updateDashboardWidget(w.id, { w: w.w, h: w.h });
+      }
+    });
   }, [activeDashId]);
 
   useEffect(() => {
@@ -710,6 +829,7 @@ export function DashboardPage() {
   };
 
   const handleUpdateWidget = useCallback(async (id: string, patch: UpdateDashboardWidgetRequest) => {
+    console.log('🔍 SAVING TO DB:', id, patch);
     setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
     try {
       await updateDashboardWidget(id, patch);

@@ -23,8 +23,9 @@ export function autoTitle(message: AddToDashboardModalProps['message']) {
 }
 
 export function layoutDims(size: WidgetSize) {
-  if (size === 'quarter') return { w: 0.5, h: 5, minW: 0.5, minH: 4 };
+  if (size === 'quarter') return { w: 5, h: 7, minW: 3, minH: 4 };
+  if (size === 'three-quarter') return { w: 13, h: 7, minW: 10, minH: 5 };
   return size === 'full'
-    ? { w: 2, h: 8, minW: 2, minH: 6 }
-    : { w: 1, h: 7, minW: 1, minH: 5 };
+    ? { w: 20, h: 7, minW: 10, minH: 5 }
+    : { w: 10, h: 7, minW: 5, minH: 5 };
 }

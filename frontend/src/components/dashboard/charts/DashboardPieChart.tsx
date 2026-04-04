@@ -50,12 +50,12 @@ export function DashboardPieChart({ widget, size: _size }: { widget: DashboardWi
 
   const total = data.reduce((sum, d) => sum + d.value, 0) || 1;
 
-  const chartHeight = 280;
+  const chartHeight = 220;
   const outerRadius = "80%";
   const innerRadius = isDonut ? "50%" : 0;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', padding: '16px 16px 8px', gap: 12, height: 346, boxSizing: 'border-box' }}>
+    <div style={{ display: 'flex', alignItems: 'center', padding: '16px 16px 8px', gap: 12, height: 270, boxSizing: 'border-box' }}>
       {/* Left: pie / donut chart + total */}
       <div style={{ flex: '0 0 52%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <ResponsiveContainer width="100%" height={chartHeight}>

@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
-import { refreshDashboardWidget } from '../../services/api';
+import { useState, useRef, useEffect } from 'react';
+import { refreshDashboardWidget, getWidgetInsight } from '../../services/api';
 import { T } from './tokens';
-import type { DashboardWidgetItem, WidgetSize } from '../../types/dashboard';
+import type { DashboardWidgetItem } from '../../types/dashboard';
 import { resolveWidgetSize } from '../../types/dashboard';
 import type { UpdateDashboardWidgetRequest } from '../../types/api';
 import { DashboardBarChart } from './charts/DashboardBarChart';
@@ -68,6 +68,14 @@ function IconArrowDown() {
   );
 }
 
+function IconZap({ style }: { style?: React.CSSProperties }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={style}>
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
 /* ── Utility Functions ───────────────────────────────────────── */
 
 function formatColHeader(col: string) {
@@ -104,6 +112,66 @@ function inferChangePercent(rows: Array<Record<string, unknown>>, key?: string) 
   return ((last - first) / Math.abs(first)) * 100;
 }
 
+
+/* ── Premium UI Helpers ───────────────────────────────────────── */
+
+function LiveIndicator() {
+  return (
+    <span style={{ 
+      display: 'inline-flex', alignItems: 'center', gap: 6, 
+      color: '#22d3a5', fontSize: '0.62rem', fontWeight: 600,
+      fontFamily: T.fontMono, marginLeft: 8
+    }}>
+      <span className="live-indicator-pulse" style={{
+        width: 6, height: 6, borderRadius: '50%', background: '#22d3a5',
+        boxShadow: '0 0 8px rgba(34,211,165,0.6)'
+      }} />
+      LIVE
+    </span>
+  );
+}
+
+function Typewriter({ text, speed = 15 }: { text: string; speed?: number }) {
+  const [displayedText, setDisplayedText] = useState('');
+  
+  useEffect(() => {
+    let i = 0;
+    setDisplayedText('');
+    const timer = setInterval(() => {
+      setDisplayedText((prev) => prev + text.charAt(i));
+      i++;
+      if (i >= text.length) clearInterval(timer);
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed]);
+
+  return <MarkdownLite text={displayedText} />;
+}
+
+function MarkdownLite({ text }: { text: string }) {
+  // Simple regex-based formatter for **bold**, - list, and line breaks
+  const parts = text.split(/(\*\*.*?\*\*|- .*?\n|\n)/g);
+  
+  return (
+    <div style={{ lineHeight: 1.6 }}>
+      {parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i} style={{ color: T.text, fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith('- ')) {
+          return <div key={i} style={{ display: 'flex', gap: 8, paddingLeft: 4, margin: '4px 0' }}>
+            <span style={{ color: T.accent }}>•</span>
+            <span>{part.slice(2)}</span>
+          </div>;
+        }
+        if (part === '\n') {
+          return <br key={i} />;
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </div>
+  );
+}
 
 /* ── Table Viz ────────────────────────────────────────────────── */
 
@@ -212,9 +280,10 @@ function KpiCard({ widget, onDelete }: {
   const change = inferChangePercent(widget.rows, metricCol);
 
   return (
-    <div className="widget-card" style={{
+    <div className="widget-card widget-drag-handle" style={{
       background: 'linear-gradient(180deg, rgba(11,17,32,0.98), rgba(8,14,26,0.98))',
       border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden', minHeight: 190,
+      cursor: 'grab',
     }}>
       <div style={{
         padding: '14px 16px 8px', display: 'flex',
@@ -300,6 +369,8 @@ export function WidgetRenderer({
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(widget.title);
   const [refreshing, setRefreshing] = useState(false);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [loadingInsight, setLoadingInsight] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   const commitTitle = () => {
@@ -321,24 +392,56 @@ export function WidgetRenderer({
     }
   };
 
+  const handleGetInsight = async () => {
+    if (insight) {
+      setInsight(null);
+      return;
+    }
+    setLoadingInsight(true);
+    try {
+      const res = await getWidgetInsight(widget.id);
+      setInsight(res.insight);
+    } catch (err) {
+      console.error('Insight failed:', err);
+    } finally {
+      setLoadingInsight(false);
+    }
+  };
+
   if (widget.viz_type === 'kpi') {
     return <KpiCard widget={widget} onDelete={onDelete} />;
   }
 
    const onToggleSize = () => {
     const isPie = widget.viz_type === 'pie' || widget.viz_type === 'donut' || chartType === 'pie' || chartType === 'donut';
-    let nextSize: WidgetSize = 'half';
+    let nextW = 10;
+    let nextH = 7; // Standard Height
 
     if (isPie) {
-      nextSize = widget.size === 'half' ? 'three-quarter' : 'half';
+      if (widget.w >= 10) {
+        nextW = 7; // ~35%
+        nextH = 7; 
+      } else {
+        nextW = 10; // 50%
+        nextH = 7;
+      }
     } else {
-      // Group B (Bar/Line/Area): Cycle 10/20 (half) -> 13/20 (three-quarter) -> 20/20 (full)
-      if (widget.size === 'half') nextSize = 'three-quarter';
-      else if (widget.size === 'three-quarter') nextSize = 'full';
-      else nextSize = 'half';
+      if (widget.w < 10) {
+        nextW = 10; // 50%
+        nextH = 7;
+      } else if (widget.w >= 10 && widget.w < 13) {
+        nextW = 13; // 65%
+        nextH = 7;
+      } else if (widget.w >= 13 && widget.w < 20) {
+        nextW = 20; // 100%
+        nextH = 7;
+      } else {
+        nextW = 10; // Back to 50%
+        nextH = 7;
+      }
     }
 
-    onUpdateWidget(widget.id, { size: nextSize });
+    onUpdateWidget(widget.id, { w: nextW, h: nextH });
   };
 
   const isChart = widget.viz_type !== 'table';
@@ -348,12 +451,14 @@ export function WidgetRenderer({
     <div className="widget-card" style={{
       background: 'linear-gradient(180deg, rgba(11,17,32,0.98), rgba(8,14,26,0.98))',
       border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden',
+      display: 'flex', flexDirection: 'column', height: '100%'
     }}>
       {/* Header */}
-      <div style={{
+      <div className="widget-drag-handle" style={{
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '13px 16px 11px',
         borderBottom: `1px solid ${T.border}`,
+        cursor: 'grab',
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           {editingTitle ? (
@@ -398,6 +503,7 @@ export function WidgetRenderer({
               background: T.text3, display: 'inline-block',
             }} />
             <span>{widget.cadence}</span>
+            {widget.cadence !== 'Manual only' && <LiveIndicator />}
           </div>
         </div>
 
@@ -459,6 +565,22 @@ export function WidgetRenderer({
           {badge.label}
         </span>
 
+        {/* AI Insight */}
+        <button
+          className="dash-action-btn"
+          onClick={handleGetInsight}
+          disabled={loadingInsight}
+          title="Get AI insights"
+          style={{
+            width: 26, height: 26,
+            color: (insight || loadingInsight) ? T.accent : T.text3,
+            background: (insight || loadingInsight) ? 'rgba(0,229,255,0.1)' : 'transparent',
+            border: (insight || loadingInsight) ? '1px solid rgba(0,229,255,0.2)' : '1px solid transparent',
+          }}
+        >
+          {loadingInsight ? '...' : '✨'}
+        </button>
+
         {/* Refresh */}
         {canRefresh && (
           <button
@@ -487,8 +609,40 @@ export function WidgetRenderer({
         </button>
       </div>
 
+      {/* Insight Panel */}
+      {insight && (
+        <div 
+          className="insight-panel-premium"
+          style={{
+            padding: '16px 20px',
+            background: 'linear-gradient(135deg, rgba(0,229,255,0.06), rgba(124,58,255,0.04))',
+            borderBottom: `1px solid ${T.border}`,
+            fontSize: '0.78rem',
+            lineHeight: 1.6,
+            color: T.text2,
+            position: 'relative'
+          }}
+        >
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: 8, 
+            marginBottom: 10, color: T.accent, 
+            fontWeight: 800, fontSize: '0.68rem', textTransform: 'uppercase',
+            fontFamily: T.fontHead, letterSpacing: 0.5
+          }}>
+            <IconZap style={{ width: 14, height: 14 }} />
+            <span>✨ AI ANALYSIS</span>
+            <div style={{ flex: 1 }} />
+            <button 
+              onClick={() => setInsight(null)}
+              style={{ background: 'transparent', border: 'none', color: T.text3, cursor: 'pointer', fontSize: '1rem', padding: '0 4px' }}
+            >✕</button>
+          </div>
+          <Typewriter text={insight} />
+        </div>
+      )}
+
       {/* Body */}
-      <div style={{ padding: isChart ? '0 0 12px' : '12px 16px 16px' }}>
+      <div style={{ padding: isChart ? '0 0 12px' : '12px 16px 16px', position: 'relative' }}>
         {isChart && chartType === 'bar' && <DashboardBarChart widget={widget} size={size} />}
         {isChart && chartType === 'line' && <DashboardLineChart widget={widget} size={size} />}
         {isChart && chartType === 'area' && <DashboardAreaChart widget={widget} size={size} />}

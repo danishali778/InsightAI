@@ -115,8 +115,8 @@ export function DashboardLineChart({ widget, size: _size }: { widget: DashboardW
 
   const leftAxisColor = COLORS[yCols.indexOf(leftCols[0]) % COLORS.length];
   const rightAxisColor = needsDualAxis ? COLORS[yCols.indexOf(rightCols[0]) % COLORS.length] : '#fff';
+  const chartHeight = 220;
 
-  const chartHeight = 280;
   const AXIS_W = 65;
   const chartMargin = { top: 10, right: needsDualAxis ? 70 : 20, left: 50, bottom: 20 };
 

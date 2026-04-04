@@ -136,7 +136,7 @@ export function DashboardBarChart({ widget, size: _size }: { widget: DashboardWi
     const BGAP = 2;   // gap between bars within a group
     const GGAP = 16;  // minimum gap between groups
     const m = { t: 10, r: 20, l: 60, b: 70 };
-    const svgH = 215;
+    const svgH = 260; // Slightly more room for the sparse SVG
     const cH = svgH - m.t - m.b;
     const cW = svgContainerWidth - m.l - m.r;
 
@@ -290,8 +290,8 @@ export function DashboardBarChart({ widget, size: _size }: { widget: DashboardWi
 
   const leftAxisColor = COLORS[yCols.indexOf(leftCols[0]) % COLORS.length];
   const rightAxisColor = needsDualAxis ? COLORS[yCols.indexOf(rightCols[0]) % COLORS.length] : '#fff';
+  const chartHeight = 220;
 
-  const chartHeight = 280;
   const AXIS_W = 65;
   const chartMargin = { top: 10, right: needsDualAxis ? 70 : 20, left: 50, bottom: 20 };
 
