@@ -39,33 +39,44 @@ export function PublicLibraryPanel({ onCloned }: Props) {
   // Poll for templates whenever active connection changes
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
-    setTemplates([]);
-    setStatus('not_started');
-    setCloned(new Set());
-    setActiveCategory('All');
+    pollRef.current = null;
+    
+    if (!activeConnectionId) {
+      setTemplates([]);
+      setStatus('not_started');
+      return;
+    }
 
-    if (!activeConnectionId) return;
-
-    const fetch = () => {
-      listPublicTemplates(activeConnectionId)
-        .then(res => {
-          setStatus(res.status);
-          setTemplates(res.templates);
-          if (res.status === 'ready' || res.status === 'error') {
-            if (pollRef.current) clearInterval(pollRef.current);
+    const fetch = async () => {
+      try {
+        const res = await listPublicTemplates(activeConnectionId);
+        setStatus(res.status);
+        setTemplates(res.templates);
+        
+        if (res.status === 'ready' || res.status === 'error') {
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
           }
-        })
-        .catch(() => {
-          setStatus('error');
-          if (pollRef.current) clearInterval(pollRef.current);
-        });
+        }
+      } catch {
+        setStatus('error');
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      }
     };
 
     fetch();
-    pollRef.current = setInterval(fetch, 2500);
+    // Only poll if still generating or not started
+    pollRef.current = setInterval(fetch, 3000);
 
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
     };
   }, [activeConnectionId]);
 
@@ -75,18 +86,17 @@ export function PublicLibraryPanel({ onCloned }: Props) {
     setTemplates([]);
     try {
       await triggerTemplateGeneration(activeConnectionId);
-      // Restart polling
-      setActiveConnectionId(id => id);
+      // Polling will continue as long as status is 'generating'
     } catch {
       setStatus('error');
     }
   };
 
   const handleClone = async (t: PublicTemplate) => {
-    if (cloning || cloned.has(t.id)) return;
+    if (cloning || cloned.has(t.id) || !activeConnectionId) return;
     setCloning(t.id);
     try {
-      await cloneTemplate(t.id);
+      await cloneTemplate(t.id, activeConnectionId);
       setCloned(prev => new Set(prev).add(t.id));
       onCloned();
     } catch {

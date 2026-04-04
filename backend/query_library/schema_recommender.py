@@ -6,6 +6,7 @@ import json
 import re
 import uuid
 import threading
+import traceback
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -94,14 +95,14 @@ def _run_generation(connection_id: str, schema_text: str, db_type: str) -> None:
         from ai_core.sql_generator import get_llm
         llm = get_llm()
 
-        prompt = f"""You are a senior data analyst. Analyze the database schema below and generate exactly 8 useful SQL SELECT queries that provide real business insights.
+        prompt = f"""You are a senior data analyst. Analyze the database schema below and generate exactly 6 useful SQL SELECT queries that provide real business insights.
 
 Database type: {db_type}
 
 Schema:
 {schema_text}
 
-Return ONLY a valid JSON array with exactly 8 objects. No markdown, no explanation, no code blocks — just the raw JSON array.
+Return ONLY a valid JSON array with exactly 6 objects. No markdown, no explanation, no code blocks — just the raw JSON array.
 
 Each object must have these exact fields:
 - "title": concise query name, max 50 characters
@@ -126,7 +127,16 @@ Rules for the SQL:
         ])
 
         raw = response.content.strip()
-        templates = _parse_response(connection_id, raw)
+        print(f"[AI] Raw Response length: {len(raw)}")
+        # Debug: Print the first 200 chars to see if it's JSON
+        print(f"[AI] Preview: {raw[:200]}...")
+
+        try:
+            templates = _parse_response(connection_id, raw)
+        except Exception as parse_err:
+            print(f"[AI] JSON Parsing Error: {str(parse_err)}")
+            print(f"[AI] Full Raw Response: {raw}")
+            raise parse_err
 
         with _lock:
             old = _cache.get(connection_id, [])
@@ -136,17 +146,40 @@ Rules for the SQL:
             for t in templates:
                 _by_id[t.id] = t
             _status[connection_id] = "ready"
+            print(f"[AI] Succeed! Generated {len(templates)} templates.")
 
-    except Exception:
+    except Exception as e:
+        print(f"[AI] ERROR: Generation failed for connection {connection_id}")
+        traceback.print_exc()
         with _lock:
             _status[connection_id] = "error"
 
 
 def _parse_response(connection_id: str, raw: str) -> list[DynamicTemplate]:
-    # Strip markdown fences if LLM added them anyway
+    # 1. Strip markdown fences if LLM added them anyway
     raw = re.sub(r'```json\s*', '', raw)
     raw = re.sub(r'```\s*', '', raw)
+    
+    # 2. Extract only the JSON array [ ... ]
+    # We find the first '[' and the LAST ']'.
+    # If the last ']' is missing (TRUNCATION), we try to find the last '}' and append a ']'
+    start = raw.find('[')
+    end = raw.rfind(']')
+    
+    if start != -1:
+        if end == -1 or end < start:
+            # TRUNCATION DETECTED: Missing ending ]
+            # Find the last successful object end '}'
+            last_brace = raw.rfind('}')
+            if last_brace != -1:
+                raw = raw[start:last_brace+1] + "]"
+                print(f"[AI] Detected truncated JSON. Attempting recovery by closing the array at char {last_brace}.")
+        else:
+            raw = raw[start:end+1]
+    
     raw = raw.strip()
+    if not raw:
+        return []
 
     data = json.loads(raw)
     templates: list[DynamicTemplate] = []

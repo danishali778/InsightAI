@@ -15,6 +15,7 @@ import {
 import { useDashboardCatalog } from '../hooks/useDashboardCatalog';
 import type { DashboardItem, DashboardMetrics, DashboardWidgetItem } from '../types/dashboard';
 import type { UpdateDashboardWidgetRequest } from '../types/api';
+import { DeleteDashboardModal } from '../components/dashboard/DeleteDashboardModal';
 
 /* ── SVG Icons ─────────────────────────────────────────────────── */
 
@@ -86,7 +87,7 @@ function DashboardRail({
   dashboards: DashboardItem[];
   activeDashId: string | null;
   onSelect: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (dashboard: DashboardItem) => void;
   onRename: (id: string, name: string) => void;
   showCreateForm: boolean;
   onShowCreateForm: () => void;
@@ -168,7 +169,60 @@ function DashboardRail({
           </div>
 
           {/* Dashboard list */}
-          <div className="dash-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
+          <div className="dash-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px 4px 8px 8px' }}>
+            {/* New Dashboard at top */}
+            <div style={{ paddingRight: 6, marginBottom: 8 }}>
+              {!showCreateForm ? (
+                <button
+                  onClick={onShowCreateForm}
+                  className="new-dash-cta"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '8px 17px', borderRadius: 10,
+                    border: '1px solid rgba(0,229,255,0.25)',
+                    background: 'linear-gradient(135deg, rgba(0,229,255,0.08), rgba(124,58,255,0.05))',
+                    cursor: 'pointer', width: '100%',
+                    color: T.accent,
+                    fontFamily: T.fontBody, fontSize: '0.76rem',
+                    fontWeight: 600, overflow: 'hidden',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.12), rgba(124,58,255,0.08))';
+                    e.currentTarget.style.borderColor = 'rgba(0,229,255,0.4)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.08), rgba(124,58,255,0.05))';
+                    e.currentTarget.style.borderColor = 'rgba(0,229,255,0.25)';
+                  }}
+                >
+                  <div style={{
+                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                    background: 'rgba(0,229,255,0.15)',
+                    border: '1px solid rgba(0,229,255,0.3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <IconPlus />
+                  </div>
+                  <span style={{ transition: 'opacity 0.2s', opacity: isExpanded ? 1 : 0 }}>
+                    New Dashboard
+                  </span>
+                </button>
+              ) : (
+                <div style={{ transition: 'opacity 0.2s', opacity: isExpanded ? 1 : 0 }}>
+                  <DashboardCreateForm
+                    value={newDashName}
+                    onChange={onNewDashNameChange}
+                    onCreate={onCreate}
+                    onCancel={onCancelCreate}
+                    creating={creating}
+                    compact
+                    ctaLabel="Add"
+                  />
+                </div>
+              )}
+            </div>
+
             {dashboards.map((dashboard, index) => {
               const isActive = dashboard.id === activeDashId;
               const isEditing = editingId === dashboard.id;
@@ -251,7 +305,7 @@ function DashboardRail({
                         <button
                           className="dash-action-btn dash-action-btn--danger"
                           title="Delete"
-                          onClick={(e) => { e.stopPropagation(); onDelete(dashboard.id); }}
+                          onClick={(e) => { e.stopPropagation(); onDelete(dashboard); }}
                           style={{ width: 22, height: 22 }}
                         >
                           <IconTrash />
@@ -262,50 +316,6 @@ function DashboardRail({
                 </div>
               );
             })}
-
-            {/* New Dashboard */}
-            <div style={{ paddingRight: 10 }}>
-              {!showCreateForm ? (
-                <button
-                  onClick={onShowCreateForm}
-                  className="new-dash-cta"
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '8px 17px', borderRadius: 10,
-                    border: '1px solid rgba(0,229,255,0.2)',
-                    background: 'linear-gradient(135deg, rgba(0,229,255,0.06), rgba(124,58,255,0.04))',
-                    cursor: 'pointer', width: '100%',
-                    color: T.accent, marginTop: 8,
-                    fontFamily: T.fontBody, fontSize: '0.76rem',
-                    fontWeight: 500, overflow: 'hidden',
-                  }}
-                >
-                  <div style={{
-                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                    background: 'rgba(0,229,255,0.1)',
-                    border: '1px solid rgba(0,229,255,0.25)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <IconPlus />
-                  </div>
-                  <span style={{ transition: 'opacity 0.2s', opacity: isExpanded ? 1 : 0 }}>
-                    New Dashboard
-                  </span>
-                </button>
-              ) : (
-                <div style={{ transition: 'opacity 0.2s', opacity: isExpanded ? 1 : 0 }}>
-                  <DashboardCreateForm
-                    value={newDashName}
-                    onChange={onNewDashNameChange}
-                    onCreate={onCreate}
-                    onCancel={onCancelCreate}
-                    creating={creating}
-                    compact
-                    ctaLabel="Add"
-                  />
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Rail footer stats */}
@@ -649,6 +659,7 @@ export function DashboardPage() {
   const [stats, setStats] = useState<DashboardMetrics>({ total_widgets: 0, viz_breakdown: {} });
   const [newDashName, setNewDashName] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [dashboardToDelete, setDashboardToDelete] = useState<DashboardItem | null>(null);
   const [sidebarTriggeredHover, setSidebarTriggeredHover] = useState(false);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -744,7 +755,7 @@ export function DashboardPage() {
             dashboards={dashboards}
             activeDashId={activeDashId}
             onSelect={setActiveDashId}
-            onDelete={handleDeleteDash}
+            onDelete={setDashboardToDelete}
             onRename={handleRenameDash}
             showCreateForm={showCreateForm}
             onShowCreateForm={() => setShowCreateForm(true)}
@@ -770,6 +781,17 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+      <DeleteDashboardModal
+        isOpen={!!dashboardToDelete}
+        onClose={() => setDashboardToDelete(null)}
+        onConfirm={() => {
+          if (dashboardToDelete) {
+            handleDeleteDash(dashboardToDelete.id);
+            setDashboardToDelete(null);
+          }
+        }}
+        dashboardName={dashboardToDelete?.name || ''}
+      />
     </div>
   );
 }

@@ -159,15 +159,16 @@ export function listPublicTemplates(connectionId?: string) {
 }
 
 export function triggerTemplateGeneration(connectionId: string) {
-  return request<{ message: string; connection_id: string }>(
+  return jsonRequest<{ message: string; connection_id: string }>(
     `/library/public/generate?connection_id=${encodeURIComponent(connectionId)}`,
-    { method: 'POST' },
+    'POST',
+    {}
   );
 }
 
 export function cloneTemplate(templateId: string, connectionId?: string) {
   const params = connectionId ? `?connection_id=${encodeURIComponent(connectionId)}` : '';
-  return request<SaveQueryResponse>(`/library/public/${templateId}/clone${params}`, { method: 'POST' });
+  return jsonRequest<SaveQueryResponse>(`/library/public/${templateId}/clone${params}`, 'POST', {});
 }
 
 export function listDashboards() {

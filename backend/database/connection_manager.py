@@ -285,7 +285,9 @@ def get_schema_for_ai(user_id: str, connection_id: str) -> str | None:
             lines.append(f"  FK: {fk.column} -> {fk.referred_table}.{fk.referred_column}")
         lines.append("")
 
-    return "\n".join(lines)
+    schema_str = "\n".join(lines)
+    print(f"[AI] Extracted schema for connection {connection_id}: {len(schema_str)} characters")
+    return schema_str
 
 
 def seed_dev_connection() -> str | None:
@@ -305,11 +307,14 @@ def seed_dev_connection() -> str | None:
         db_type = parsed.drivername.split("+")[0]
         
         # Check if already exists in Supabase
+        print(f"[dev] 📡 Checking Supabase for existing connection '{parsed.database}' for user '{MOCK_USER.id}'...", flush=True)
         existing = supabase.table("database_connections") \
             .select("id") \
             .eq("owner_id", MOCK_USER.id) \
             .eq("name", f"Dev — {parsed.database}") \
             .execute()
+        
+        print(f"[dev] 📡 Supabase response: {len(existing.data) if existing.data else 0} results.", flush=True)
             
         if existing.data:
             print(f"[dev] ✅ Found existing dev connection '{existing.data[0]['id']}'")

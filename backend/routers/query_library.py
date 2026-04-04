@@ -246,7 +246,7 @@ def trigger_template_generation(connection_id: str, current_user: User = Depends
     if not schema_text:
         raise HTTPException(status_code=404, detail="Connection not found.")
     conn_info = connection_manager.get_all_connections(current_user.id)
-    db_type = next((c["db_type"] for c in conn_info if c["id"] == connection_id), "postgresql")
+    db_type = next((c.db_type for c in conn_info if c.id == connection_id), "postgresql")
     schema_recommender.generate_in_background(connection_id, schema_text, db_type)
     return {"message": "Template generation started.", "connection_id": connection_id}
 
