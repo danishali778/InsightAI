@@ -5,6 +5,7 @@ from sqlalchemy.engine import Engine, URL, make_url
 from .models import ConnectionRequest, TableInfo, ActiveConnection
 from . import schema_inspector
 from .supabase_client import supabase
+from .retry import supabase_retry
 
 
 # In-memory session cache for SQLAlchemy engines only
@@ -87,6 +88,7 @@ def test_connection(config: ConnectionRequest) -> tuple[bool, str, int]:
         return False, f"Connection failed: {str(e)}", 0
 
 
+@supabase_retry
 def connect(user_id: str, config: ConnectionRequest) -> tuple[str, Engine]:
     """
     Create a persistent connection in Supabase, auto-inspect schema.
@@ -128,6 +130,7 @@ def connect(user_id: str, config: ConnectionRequest) -> tuple[str, Engine]:
     return connection_id, engine
 
 
+@supabase_retry
 def get_all_connections(user_id: str) -> list[ActiveConnection]:
     """List all active database connections for a user from Supabase."""
     response = supabase.table("database_connections").select("*").eq("owner_id", user_id).execute()
@@ -152,6 +155,7 @@ def get_all_connections(user_id: str) -> list[ActiveConnection]:
     return connections
 
 
+@supabase_retry
 def get_engine(user_id: str, connection_id: str) -> Engine | None:
     """Get the SQLAlchemy engine for a connection, rebuilding it from Supabase if not in cache."""
     # Check cache first
@@ -187,6 +191,7 @@ def get_engine(user_id: str, connection_id: str) -> Engine | None:
     return new_engine
 
 
+@supabase_retry
 def disconnect(user_id: str, connection_id: str) -> bool:
     """Remove a connection from Supabase and dispose the engine."""
     # Dispose engine if in cache
@@ -204,6 +209,7 @@ def disconnect(user_id: str, connection_id: str) -> bool:
     return len(response.data) > 0
 
 
+@supabase_retry
 def update_settings(user_id: str, connection_id: str, ssl_mode: str | None, readonly: bool | None) -> bool:
     """Update settings in Supabase and rebuild engine if needed."""
     updates = {}
@@ -247,6 +253,7 @@ def refresh_schema(user_id: str, connection_id: str) -> list[TableInfo] | None:
         return None
     return schema_inspector.get_schema(engine)
 
+@supabase_retry
 def get_readonly(user_id: str, connection_id: str) -> bool:
     """Get the read-only status for a connection from Supabase."""
     try:

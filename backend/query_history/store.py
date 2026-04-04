@@ -3,8 +3,10 @@ from datetime import datetime, timezone
 from typing import Optional
 from .models import QueryRecord
 from database.supabase_client import supabase
+from database.retry import supabase_retry
 
 
+@supabase_retry
 def log_query(
     user_id: str,
     connection_id: str,
@@ -44,6 +46,7 @@ def log_query(
     )
 
 
+@supabase_retry
 def get_history(
     user_id: str,
     connection_id: Optional[str] = None,
@@ -76,6 +79,7 @@ def get_history(
     ]
 
 
+@supabase_retry
 def get_stats(user_id: str, connection_id: str) -> dict:
     """Get quick stats for a connection's query activity."""
     # We'll fetch the last 100 executions for this user/connection to calculate stats

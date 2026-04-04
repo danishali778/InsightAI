@@ -1,10 +1,26 @@
 import time
-from typing import Optional
+import decimal
+import datetime
+from typing import Optional, Any
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from .models import QueryResult
 from .safety import validate_query, sanitize_row_limit
+
+
+def serialize_data(obj: Any) -> Any:
+    """Recursively convert Decimal, Date, and Time objects to JSON-serializable types."""
+    if isinstance(obj, list):
+        return [serialize_data(i) for i in obj]
+    if isinstance(obj, dict):
+        return {k: serialize_data(v) for k, v in obj.items()}
+    if isinstance(obj, decimal.Decimal):
+        # Convert to int if it's a whole number, else float
+        return int(obj) if obj % 1 == 0 else float(obj)
+    if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
+        return obj.isoformat()
+    return obj
 
 
 # Query timeout in seconds
@@ -46,7 +62,10 @@ def execute_query(user_id: str, engine: Engine, sql: str, row_limit: int = 500, 
 
             result = conn.execute(text(safe_sql))
             columns = list(result.keys())
-            rows = [dict(row._mapping) for row in result.fetchall()]
+            raw_rows = [dict(row._mapping) for row in result.fetchall()]
+            
+            # Serialize Decimal/Date types for JSON compatibility
+            rows = serialize_data(raw_rows)
 
             elapsed = (time.time() - start_time) * 1000  # ms
 

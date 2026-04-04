@@ -14,7 +14,7 @@ def _json_serializable(obj):
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
-def generate_visualization_blueprint(user_message: str, sql: str, preview_rows: list[dict], column_metadata: dict) -> dict | None:
+def generate_visualization_blueprint(user_message: str, sql: str, preview_rows: list[dict], column_metadata: dict, is_edited: bool = False) -> dict | None:
     """
     Call the LLM to analyze the query context and results, and return an explicit chart blueprint.
     """
@@ -147,7 +147,7 @@ HARD RULES — NEVER BREAK THESE
 
     human_message = f"""Here is the query context.
 
-User's Question: {user_message}
+User's Original Question: {user_message}
 
 Generated SQL:
 {sql}
@@ -157,9 +157,12 @@ Column Metadata:
 
 Data Preview (first 5 rows):
 {json.dumps(preview_rows, indent=2, default=_json_serializable)}
-
-Based on this, generate the optimal chart visualization JSON blueprint.
 """
+
+    if is_edited:
+        human_message += "\n\nCRITICAL: The user has MANUALLY EDITED the SQL. The provided SQL is now the Source of Truth. Ensure your visualization matches the columns and data structure of the SQL exactly, even if it deviates from the Original Question."
+
+    human_message += "\n\nBased on this, generate the optimal chart visualization JSON blueprint."
 
     llm = get_llm()
     messages = [

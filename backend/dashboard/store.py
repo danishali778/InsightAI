@@ -1,12 +1,14 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from dashboard.models import Dashboard, CreateDashboardRequest, DashboardWidget, AddWidgetRequest, UpdateWidgetRequest, DashboardSummary
+from dashboard.models import Dashboard, CreateDashboardRequest, DashboardWidget, AddWidgetRequest, UpdateWidgetRequest, DashboardSummary, UpdateDashboardRequest
 from database.supabase_client import supabase
+from database.retry import supabase_retry
 
 
 # ─── Dashboard CRUD ─────────────────────────────────────────
 
+@supabase_retry
 def create_dashboard(user_id: str, req: CreateDashboardRequest) -> Dashboard:
     """Create a new dashboard in Supabase."""
     dash_id = str(uuid.uuid4())
@@ -15,6 +17,7 @@ def create_dashboard(user_id: str, req: CreateDashboardRequest) -> Dashboard:
         "owner_id": user_id,
         "name": req.name,
         "icon": req.icon,
+        "filters": req.filters or {},
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
@@ -25,6 +28,7 @@ def create_dashboard(user_id: str, req: CreateDashboardRequest) -> Dashboard:
     return Dashboard(**response.data[0])
 
 
+@supabase_retry
 def list_dashboards(user_id: str) -> list[DashboardSummary]:
     """List all dashboards for a user from Supabase with widget counts."""
     # Using Supabase count feature
@@ -44,6 +48,7 @@ def list_dashboards(user_id: str) -> list[DashboardSummary]:
     return result
 
 
+@supabase_retry
 def get_dashboard(user_id: str, dashboard_id: str) -> Optional[Dashboard]:
     """Get a specific dashboard by ID and owner."""
     response = supabase.table("dashboards") \
@@ -57,6 +62,7 @@ def get_dashboard(user_id: str, dashboard_id: str) -> Optional[Dashboard]:
     return Dashboard(**response.data[0])
 
 
+@supabase_retry
 def rename_dashboard(user_id: str, dashboard_id: str, name: str) -> Optional[Dashboard]:
     """Rename a dashboard in Supabase."""
     response = supabase.table("dashboards") \
@@ -70,6 +76,29 @@ def rename_dashboard(user_id: str, dashboard_id: str, name: str) -> Optional[Das
     return Dashboard(**response.data[0])
 
 
+@supabase_retry
+def update_dashboard(user_id: str, dashboard_id: str, req: UpdateDashboardRequest) -> Optional[Dashboard]:
+    """Update dashboard properties (metadata or filters)."""
+    update_data = {}
+    if req.name is not None: update_data["name"] = req.name
+    if req.icon is not None: update_data["icon"] = req.icon
+    if req.filters is not None: update_data["filters"] = req.filters
+    
+    if not update_data:
+        return get_dashboard(user_id, dashboard_id)
+        
+    response = supabase.table("dashboards") \
+        .update(update_data) \
+        .eq("id", dashboard_id) \
+        .eq("owner_id", user_id) \
+        .execute()
+        
+    if not response.data:
+        return None
+    return Dashboard(**response.data[0])
+
+
+@supabase_retry
 def delete_dashboard(user_id: str, dashboard_id: str) -> bool:
     """Delete a dashboard (cascading delete should be handled by DB)."""
     response = supabase.table("dashboards") \
@@ -83,6 +112,7 @@ def delete_dashboard(user_id: str, dashboard_id: str) -> bool:
 
 # ─── Widget CRUD ────────────────────────────────────────────
 
+@supabase_retry
 def add_widget(user_id: str, req: AddWidgetRequest) -> DashboardWidget:
     """Add a new widget to a dashboard in Supabase."""
     # 1. Calculate layout defaults
@@ -92,9 +122,10 @@ def add_widget(user_id: str, req: AddWidgetRequest) -> DashboardWidget:
     }
     layout_default = size_defaults.get(req.size, size_defaults["half"])
     
-    # 2. Get current widgets for next_y calculation
+    # 2. Get current widgets for next_y and next_order_index calculation
     current_widgets = list_widgets(user_id, dashboard_id=req.dashboard_id)
     next_y = max((w.y + w.h) for w in current_widgets) if current_widgets else 0
+    next_order = max(w.order_index for w in current_widgets) + 1 if current_widgets else 0
 
     widget_id = str(uuid.uuid4())
     
@@ -124,6 +155,7 @@ def add_widget(user_id: str, req: AddWidgetRequest) -> DashboardWidget:
         "chart_config": req.chart_config.dict() if req.chart_config else {},
         "layout_params": layout_params,
         "cadence": req.cadence,
+        "order_index": req.order_index if req.order_index is not None else next_order,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "rows": req.rows if req.rows else [],
         "columns": req.columns if req.columns else []
@@ -136,6 +168,7 @@ def add_widget(user_id: str, req: AddWidgetRequest) -> DashboardWidget:
     return _map_widget(response.data[0])
 
 
+@supabase_retry
 def list_widgets(user_id: str, dashboard_id: Optional[str] = None) -> list[DashboardWidget]:
     """List widgets for a user from Supabase."""
     query = supabase.table("dashboard_widgets") \
@@ -145,10 +178,11 @@ def list_widgets(user_id: str, dashboard_id: Optional[str] = None) -> list[Dashb
     if dashboard_id:
         query = query.eq("dashboard_id", dashboard_id)
         
-    response = query.order("created_at", desc=True).execute()
+    response = query.order("order_index", desc=False).order("created_at", desc=True).execute()
     return [_map_widget(w) for w in response.data]
 
 
+@supabase_retry
 def get_widget(user_id: str, widget_id: str) -> Optional[DashboardWidget]:
     """Get a specific widget by ID."""
     response = supabase.table("dashboard_widgets") \
@@ -162,6 +196,7 @@ def get_widget(user_id: str, widget_id: str) -> Optional[DashboardWidget]:
     return _map_widget(response.data[0])
 
 
+@supabase_retry
 def delete_widget(user_id: str, widget_id: str) -> bool:
     """Delete a widget from Supabase."""
     response = supabase.table("dashboard_widgets") \
@@ -173,6 +208,7 @@ def delete_widget(user_id: str, widget_id: str) -> bool:
     return len(response.data) > 0
 
 
+@supabase_retry
 def update_widget(user_id: str, widget_id: str, req: UpdateWidgetRequest) -> Optional[DashboardWidget]:
     """Update widget metadata in Supabase."""
     # 1. Fetch current widget to merge layout_params
@@ -183,6 +219,7 @@ def update_widget(user_id: str, widget_id: str, req: UpdateWidgetRequest) -> Opt
     update_data = {}
     if req.title is not None: update_data["title"] = req.title
     if req.size is not None: update_data["size"] = req.size
+    if req.order_index is not None: update_data["order_index"] = req.order_index
     
     # Merge layout_params
     layout_params = {
@@ -251,6 +288,7 @@ def _map_widget(data: dict) -> DashboardWidget:
         minW=lp.get("minW", 1),
         minH=lp.get("minH", 5),
         bar_orientation=lp.get("bar_orientation", "horizontal"),
+        order_index=data.get("order_index", 0),
         created_at=data["created_at"],
         columns=data.get("columns", []),
         rows=data.get("rows", [])

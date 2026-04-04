@@ -4,12 +4,47 @@ from typing import Optional
 from common.models import MessageResponse
 from common.auth import get_current_user, User
 from dashboard import store
-from dashboard.models import AddWidgetRequest, CreateDashboardRequest, Dashboard, DashboardStats, DashboardSummary, DashboardWidget, UpdateWidgetRequest, RenameDashboardRequest
+from dashboard.models import AddWidgetRequest, CreateDashboardRequest, Dashboard, DashboardStats, DashboardSummary, DashboardWidget, UpdateWidgetRequest, RenameDashboardRequest, UpdateDashboardRequest
 from database import connection_manager
 from query_executor.executor import execute_query
+from dashboard.insight_agent import generate_widget_insight
 
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
+
+def apply_global_filters(sql: str, filters: dict) -> str:
+    """Wrap SQL in a CTE and apply global filters."""
+    if not filters:
+        return sql
+    
+    # Basic validation for the wrap
+    clean_sql = sql.strip().rstrip(';')
+    
+    # We use a CTE to ensure we can apply filters even on complex queries
+    wrapped = f"WITH __user_query AS (\n{clean_sql}\n)\nSELECT * FROM __user_query WHERE 1=1"
+    
+    # 1. Date Range Filter (assumes created_at column)
+    date_range = filters.get("date_range")
+    if date_range and date_range != "all":
+        try:
+            days = int(date_range)
+            wrapped += f" AND created_at >= NOW() - INTERVAL '{days} days'"
+        except: pass
+        
+    # 2. Status Filter (assumes status column)
+    status = filters.get("status")
+    if status:
+        wrapped += f" AND status = '{status}'"
+        
+    # 3. Limit Filter
+    limit = filters.get("limit")
+    if limit:
+        try:
+            limit_val = int(limit)
+            wrapped += f" LIMIT {limit_val}"
+        except: pass
+        
+    return wrapped
 
 
 # ─── Dashboard CRUD ─────────────────────────────────────────
@@ -33,6 +68,15 @@ def rename_dashboard(dashboard_id: str, req: RenameDashboardRequest, current_use
         raise HTTPException(status_code=400, detail="Name cannot be empty.")
     
     dash = store.rename_dashboard(current_user.id, dashboard_id, req.name)
+    if not dash:
+        raise HTTPException(status_code=404, detail="Dashboard not found.")
+    return dash
+
+
+@router.patch("/dashboards/{dashboard_id}/update", response_model=Dashboard)
+def update_dashboard(dashboard_id: str, req: UpdateDashboardRequest, current_user: User = Depends(get_current_user)):
+    """Update dashboard properties including filters."""
+    dash = store.update_dashboard(current_user.id, dashboard_id, req)
     if not dash:
         raise HTTPException(status_code=404, detail="Dashboard not found.")
     return dash
@@ -101,10 +145,16 @@ def refresh_widget(widget_id: str, current_user: User = Depends(get_current_user
     if not engine:
         raise HTTPException(status_code=404, detail="Connection not found.")
     
+    # Apply global filters from dashboard
+    dash = store.get_dashboard(user_id, widget.dashboard_id)
+    final_sql = widget.sql
+    if dash and dash.filters:
+        final_sql = apply_global_filters(widget.sql, dash.filters)
+
     result = execute_query(
         user_id,
         engine, 
-        widget.sql, 
+        final_sql, 
         row_limit=500, 
         connection_id=widget.connection_id,
         readonly=connection_manager.get_readonly(user_id, widget.connection_id)
@@ -118,6 +168,26 @@ def refresh_widget(widget_id: str, current_user: User = Depends(get_current_user
     req = UpdateWidgetRequest(columns=result.columns, rows=result.rows)
     updated = store.update_widget(user_id, widget_id, req)
     return updated
+
+
+@router.post("/widgets/{widget_id}/insight", response_model=dict)
+def get_widget_insight(widget_id: str, current_user: User = Depends(get_current_user)):
+    """Generate an AI insight for a widget's current data."""
+    user_id = current_user.id
+    widget = store.get_widget(user_id, widget_id)
+    if not widget:
+        raise HTTPException(status_code=404, detail="Widget not found.")
+    
+    dash = store.get_dashboard(user_id, widget.dashboard_id)
+    filters = dash.filters if dash else {}
+    
+    insight = generate_widget_insight(
+        widget.title, 
+        widget.viz_type, 
+        widget.rows, 
+        filters
+    )
+    return {"insight": insight}
 
 
 @router.get("/stats", response_model=DashboardStats)

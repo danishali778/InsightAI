@@ -3,8 +3,10 @@ from typing import Optional
 from datetime import datetime
 from ai_core.models import ChatSession, ChatMessage, SessionSummary
 from database.supabase_client import supabase
+from database.retry import supabase_retry
 
 
+@supabase_retry
 def create_session(user_id: str, connection_id: str | None = None) -> ChatSession:
     """Create a new chat session in Supabase."""
     session_id = str(uuid.uuid4())
@@ -26,6 +28,7 @@ def create_session(user_id: str, connection_id: str | None = None) -> ChatSessio
     return ChatSession(**response.data[0], messages=[])
 
 
+@supabase_retry
 def get_session(user_id: str, session_id: str) -> Optional[ChatSession]:
     """Get a session by ID and owner from Supabase."""
     # 1. Fetch session metadata
@@ -52,6 +55,7 @@ def get_session(user_id: str, session_id: str) -> Optional[ChatSession]:
     return ChatSession(**session_data, messages=messages)
 
 
+@supabase_retry
 def delete_session(user_id: str, session_id: str) -> bool:
     """Delete a session and its messages from Supabase."""
     # 1. Delete messages first
@@ -71,6 +75,7 @@ def delete_session(user_id: str, session_id: str) -> bool:
     return len(response.data) > 0
 
 
+@supabase_retry
 def list_sessions(user_id: str) -> list[SessionSummary]:
     """List all sessions for a user from Supabase."""
     # Fetch sessions with message counts (simplified: just list sessions)
@@ -97,6 +102,7 @@ def list_sessions(user_id: str) -> list[SessionSummary]:
     return sessions
 
 
+@supabase_retry
 def track_connection(user_id: str, session_id: str, connection_id: str | None) -> None:
     """Track a connection used in a session. Safe for side-effect usage."""
     if not connection_id:
@@ -129,6 +135,7 @@ def track_connection(user_id: str, session_id: str, connection_id: str | None) -
         print(f"Error tracking connection (side-effect): {str(e)}")
 
 
+@supabase_retry
 def rename_session(user_id: str, session_id: str, title: str) -> bool:
     """Rename a session. Returns False if session not found. Safe for side-effect usage."""
     try:
@@ -143,6 +150,7 @@ def rename_session(user_id: str, session_id: str, title: str) -> bool:
         return False
 
 
+@supabase_retry
 def add_message(user_id: str, session_id: str, message: ChatMessage) -> None:
     """Add a single message to session history."""
     try:
@@ -163,6 +171,26 @@ def add_message(user_id: str, session_id: str, message: ChatMessage) -> None:
         # Don't raise, we want the chat to continue even if history save fails
 
 
+@supabase_retry
+def update_message(user_id: str, session_id: str, message_id: str, updates: dict) -> bool:
+    """Update a single message in session history."""
+    try:
+        # Filter out None values to avoid overwriting with nulls if not intentional
+        clean_updates = {k: v for k, v in updates.items() if v is not None}
+        
+        response = supabase.table("chat_messages") \
+            .update(clean_updates) \
+            .eq("id", message_id) \
+            .eq("session_id", session_id) \
+            .eq("owner_id", user_id) \
+            .execute()
+        return bool(response.data)
+    except Exception as e:
+        print(f"❌ Error updating message: {str(e)}")
+        return False
+
+
+@supabase_retry
 def get_history_for_llm(user_id: str, session_id: str) -> list[dict]:
     """
     Get conversation history formatted for LLM input from Supabase.

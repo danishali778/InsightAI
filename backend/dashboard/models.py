@@ -20,6 +20,7 @@ class Dashboard(BaseModel):
     owner_id: str
     name: str
     icon: str = "📊"
+    filters: dict = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -27,11 +28,18 @@ class CreateDashboardRequest(BaseModel):
     """Request body for creating a dashboard."""
     name: str
     icon: str = "📊"
+    filters: Optional[dict] = None
 
 
 class RenameDashboardRequest(BaseModel):
     """Request body for renaming a dashboard."""
     name: str
+
+class UpdateDashboardRequest(BaseModel):
+    """Patchable dashboard fields."""
+    name: Optional[str] = None
+    icon: Optional[str] = None
+    filters: Optional[dict] = None
 
 
 class DashboardWidget(BaseModel):
@@ -55,6 +63,7 @@ class DashboardWidget(BaseModel):
     minW: int = 1
     minH: int = 5
     bar_orientation: str = "horizontal"
+    order_index: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -77,6 +86,7 @@ class AddWidgetRequest(BaseModel):
     minW: Optional[int] = None
     minH: Optional[int] = None
     bar_orientation: Optional[str] = None
+    order_index: Optional[int] = None
 
 
 class UpdateWidgetRequest(BaseModel):
@@ -92,6 +102,7 @@ class UpdateWidgetRequest(BaseModel):
     minW: Optional[int] = None
     minH: Optional[int] = None
     bar_orientation: Optional[str] = None
+    order_index: Optional[int] = None
 
 
 class DashboardSummary(Dashboard):

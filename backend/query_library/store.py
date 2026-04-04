@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from .models import SavedQuery, SaveQueryRequest, UpdateQueryRequest, QueryRunRecord, ScheduleConfig
 from database.supabase_client import supabase
+from database.retry import supabase_retry
 
 
 def _normalize_sql(sql: str) -> str:
@@ -34,6 +35,7 @@ def _map_to_saved_query(row: dict) -> SavedQuery:
     )
 
 
+@supabase_retry
 def find_duplicate(user_id: str, sql: str, connection_id: Optional[str] = None) -> Optional[SavedQuery]:
     """Check if a query with the same SQL already exists for this user."""
     # Note: Exact string matching is easier in SQL. 
@@ -54,6 +56,7 @@ def find_duplicate(user_id: str, sql: str, connection_id: Optional[str] = None) 
     return None
 
 
+@supabase_retry
 def save_query(user_id: str, req: SaveQueryRequest) -> tuple[SavedQuery, bool]:
     """Create a new saved query. Returns (query, created)."""
     existing = find_duplicate(user_id, req.sql, req.connection_id)
@@ -86,6 +89,7 @@ def save_query(user_id: str, req: SaveQueryRequest) -> tuple[SavedQuery, bool]:
     return _map_to_saved_query(response.data[0]), True
 
 
+@supabase_retry
 def get_query(user_id: str, query_id: str) -> Optional[SavedQuery]:
     """Get a single saved query by ID."""
     response = supabase.table("saved_queries") \
@@ -99,6 +103,7 @@ def get_query(user_id: str, query_id: str) -> Optional[SavedQuery]:
     return _map_to_saved_query(response.data[0])
 
 
+@supabase_retry
 def list_queries(
     user_id: str,
     folder: Optional[str] = None,
@@ -134,6 +139,7 @@ def list_queries(
     return result
 
 
+@supabase_retry
 def update_query(user_id: str, query_id: str, req: UpdateQueryRequest) -> Optional[SavedQuery]:
     """Update an existing saved query (partial update)."""
     # Fetch existing to merge metadata/schedule if needed
@@ -184,6 +190,7 @@ def update_query(user_id: str, query_id: str, req: UpdateQueryRequest) -> Option
     return _map_to_saved_query(response.data[0])
 
 
+@supabase_retry
 def delete_query(user_id: str, query_id: str) -> bool:
     """Delete a saved query."""
     response = supabase.table("saved_queries") \
@@ -194,6 +201,7 @@ def delete_query(user_id: str, query_id: str) -> bool:
     return len(response.data) > 0
 
 
+@supabase_retry
 def increment_run_count(user_id: str, query_id: str) -> Optional[SavedQuery]:
     """Bump run count and update last_run_at."""
     # We need to fetch current run_count first as Supabase doesn't have a simple atomic increment in Python SDK easily
@@ -260,6 +268,7 @@ def get_stats(user_id: str) -> dict:
     }
 
 
+@supabase_retry
 def get_scheduled_queries(user_id: Optional[str] = None) -> list[SavedQuery]:
     """Return all queries with an enabled schedule. If user_id is None, returns for all users (scheduler use)."""
     query = supabase.table("saved_queries").select("*")
@@ -271,6 +280,7 @@ def get_scheduled_queries(user_id: Optional[str] = None) -> list[SavedQuery]:
     return [q for q in result if q.schedule and q.schedule.enabled]
 
 
+@supabase_retry
 def update_schedule(user_id: str, query_id: str, config: Optional[ScheduleConfig]) -> Optional[SavedQuery]:
     """Update just the schedule field of a query."""
     row_update = {
@@ -288,6 +298,7 @@ def update_schedule(user_id: str, query_id: str, config: Optional[ScheduleConfig
     return _map_to_saved_query(response.data[0])
 
 
+@supabase_retry
 def log_run(
     user_id: str,
     query_id: str,
@@ -335,6 +346,7 @@ def log_run(
     )
 
 
+@supabase_retry
 def get_run_history(user_id: str, query_id: str, limit: int = 20) -> list[QueryRunRecord]:
     """Get run history for a saved query, newest first."""
     response = supabase.table("query_executions") \
