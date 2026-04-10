@@ -80,7 +80,7 @@ querymind-*.html
 .playwright-mcp/
 
 # Assets & media (typically not committed if generated or large)
-*.png
+# *.png (Commented out to allow professional showcase images)
 extra_assets/
 
 # Local/Temporary/Scripts
