@@ -8,11 +8,11 @@ import { T } from '../../dashboard/tokens';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TruncatedXTick = ({ x, y, payload }: any) => {
-  const raw = String(payload?.value ?? '');
+  const raw = payload?.value != null ? String(payload.value) : '';
   const label = raw.length > 8 ? raw.slice(0, 8) + '…' : raw;
   return (
     <g transform={`translate(${x},${y})`}>
-      <text dy={4} textAnchor="end" fill="rgba(255,255,255,0.4)" fontSize={11} transform="rotate(-45)">
+      <text dy={4} textAnchor="end" fill={T.text3} fontSize={11} transform="rotate(-45)" fontFamily={T.fontMono}>
         {label}
       </text>
     </g>
@@ -37,7 +37,7 @@ export function AreaChartModule({
   const fixedWidth = Math.max(600, data.length * Math.max(48, yColumns.length * 22));
 
   const xLabelInterval = needsScroll ? 0 : (data.length > 20 ? Math.ceil(data.length / 12) - 1 : 0);
-  const chartMargin = { top: 10, right: 20, left: 50, bottom: 10 };
+  const chartMargin = { top: 10, right: 20, left: 50, bottom: 45 };
 
   const xAxisProps = {
     dataKey: xColumn,
@@ -50,8 +50,9 @@ export function AreaChartModule({
         value: xLabel,
         position: 'insideBottom' as const,
         offset: -6,
-        fill: 'rgba(255,255,255,0.35)',
+        fill: T.text3,
         fontSize: 11,
+        fontFamily: T.fontMono,
       }
     } : {}),
   };
@@ -103,7 +104,7 @@ export function AreaChartModule({
       const cy = vb.y + vb.height / 2;
       return (
         <text x={cx} y={cy} transform={`rotate(-90, ${cx}, ${cy})`}
-          textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize={11}>
+          textAnchor="middle" fill={T.text3} fontSize={11} fontFamily={T.fontMono}>
           {yAxisLabelText}
         </text>
       );
@@ -153,8 +154,8 @@ export function AreaChartModule({
   return (
     <>
       {needsDualAxis && (
-        <div style={{ padding: '6px 20px', background: 'rgba(124,58,255,0.06)', borderTop: `1px solid rgba(124,58,255,0.12)`, fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', fontFamily: T.fontMono }}>
-          Two independent y-axes — <span style={{ color: leftAxisColor }}>{leftAxisLabel}</span> on left · <span style={{ color: rightAxisColor }}>{rightAxisLabel}</span> on right
+        <div style={{ padding: '6px 20px', background: T.purpleDim, borderTop: `1px solid ${T.purple}20`, fontSize: '0.7rem', color: T.text3, fontFamily: T.fontMono }}>
+          Two independent y-axes — <span style={{ color: leftAxisColor, fontWeight: 600 }}>{leftAxisLabel}</span> on left · <span style={{ color: rightAxisColor, fontWeight: 600 }}>{rightAxisLabel}</span> on right
         </div>
       )}
 
@@ -166,7 +167,7 @@ export function AreaChartModule({
       </div>
 
       {needsScroll && xLabel && (
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: T.fontMono, padding: '2px 0 6px' }}>
+        <div style={{ textAlign: 'center', fontSize: 11, color: T.text3, fontFamily: T.fontMono, padding: '2px 0 6px' }}>
           {xLabel}
         </div>
       )}
@@ -176,7 +177,7 @@ export function AreaChartModule({
           {yColumns.map((col, i) => (
             <div key={col} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-              <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', fontFamily: T.fontMono }}>{formatColLabel(col)}</span>
+              <span style={{ fontSize: '0.72rem', color: T.text2, fontFamily: T.fontMono, fontWeight: 500 }}>{formatColLabel(col)}</span>
             </div>
           ))}
         </div>

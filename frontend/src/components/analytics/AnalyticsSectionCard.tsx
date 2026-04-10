@@ -5,10 +5,11 @@ export function AnalyticsSectionCard({ title, eyebrow, children }: { title: stri
   return (
     <section
       style={{
-        background: `linear-gradient(180deg, rgba(20,31,48,0.96), rgba(11,17,32,0.98))`,
+        background: T.s1,
         border: `1px solid ${T.border}`,
         borderRadius: 18,
         padding: 20,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
       }}
     >
       <div style={{ marginBottom: 16 }}>

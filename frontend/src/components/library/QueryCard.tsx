@@ -24,16 +24,16 @@ function timeAgo(ts: string | null): string {
 }
 
 const TAG_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  revenue: { bg: T.accentDim, color: T.accent, border: 'rgba(0,229,255,0.2)' },
-  churn: { bg: T.purpleDim, color: T.purple, border: 'rgba(124,58,255,0.2)' },
-  users: { bg: T.greenDim, color: T.green, border: 'rgba(34,211,165,0.2)' },
-  daily: { bg: T.yellowDim, color: T.yellow, border: 'rgba(245,158,11,0.2)' },
-  critical: { bg: T.redDim, color: T.red, border: 'rgba(248,113,113,0.2)' },
-  customers: { bg: T.purpleDim, color: T.purple, border: 'rgba(124,58,255,0.2)' },
-  funnel: { bg: T.yellowDim, color: T.yellow, border: 'rgba(245,158,11,0.2)' },
-  marketing: { bg: 'rgba(255,255,255,0.02)', color: T.text3, border: T.border },
+  revenue: { bg: 'rgba(14, 165, 233, 0.08)', color: T.accent, border: 'rgba(14, 165, 233, 0.2)' },
+  churn: { bg: 'rgba(248, 113, 113, 0.08)', color: T.red, border: 'rgba(248, 113, 113, 0.2)' },
+  users: { bg: 'rgba(34, 211, 165, 0.08)', color: T.green, border: 'rgba(34, 211, 165, 0.2)' },
+  daily: { bg: 'rgba(245, 158, 11, 0.08)', color: T.yellow, border: 'rgba(245, 158, 11, 0.2)' },
+  critical: { bg: 'rgba(248, 113, 113, 0.08)', color: T.red, border: 'rgba(248, 113, 113, 0.2)' },
+  customers: { bg: 'rgba(124, 58, 255, 0.08)', color: T.purple, border: 'rgba(124, 58, 255, 0.2)' },
+  funnel: { bg: 'rgba(245, 158, 11, 0.08)', color: T.yellow, border: 'rgba(245, 158, 11, 0.2)' },
+  marketing: { bg: 'rgba(14, 165, 233, 0.05)', color: T.text3, border: T.border },
 };
-const DEFAULT_TAG = { bg: 'rgba(255,255,255,0.02)', color: T.text3, border: T.border };
+const DEFAULT_TAG = { bg: 'rgba(0,0,0,0.03)', color: T.text3, border: T.border };
 
 function inferIcon(data: LibraryQuery): { icon: string; bg: string } {
   const s = `${data.title} ${data.sql} ${data.tags.join(' ')}`.toLowerCase();
@@ -63,18 +63,18 @@ export function QueryCard({ data, isSelected, onClick, onScheduleClick, index = 
       onMouseLeave={() => setHovered(false)}
       style={{
         background: T.s1,
-        border: `1px solid ${isSelected ? 'rgba(0,229,255,0.4)' : hovered ? 'rgba(0,229,255,0.2)' : T.border}`,
-        borderRadius: 12,
+        border: `1px solid ${isSelected ? T.accent : hovered ? 'rgba(14, 165, 233, 0.3)' : T.border}`,
+        borderRadius: 14,
         overflow: 'hidden',
         cursor: 'pointer',
-        transition: 'border-color 0.2s, transform 0.2s, box-shadow 0.2s',
+        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         position: 'relative',
-        transform: hovered && !isSelected ? 'translateY(-2px)' : 'none',
+        transform: hovered && !isSelected ? 'translateY(-3px)' : 'none',
         boxShadow: isSelected
-          ? '0 0 0 1px rgba(0,229,255,0.15)'
+          ? '0 10px 30px rgba(14, 165, 233, 0.12), 0 0 0 1px rgba(14, 165, 233, 0.1)'
           : hovered
-            ? '0 8px 30px rgba(0,0,0,0.3)'
-            : 'none',
+            ? '0 12px 35px rgba(0,0,0,0.06)'
+            : '0 1px 3px rgba(0,0,0,0.02)',
         animation: `fadeUp 0.35s ease both`,
         animationDelay: `${index * 0.03}s`,
       }}
@@ -103,16 +103,17 @@ export function QueryCard({ data, isSelected, onClick, onScheduleClick, index = 
 
       {/* SQL Preview */}
       <div style={{
-        margin: '0 16px', padding: '10px 12px',
-        background: 'rgba(0,0,0,0.25)', border: `1px solid ${T.border}`, borderRadius: 8,
-        fontFamily: T.fontMono, fontSize: '0.7rem', lineHeight: 1.7,
-        overflow: 'hidden', maxHeight: 72, position: 'relative',
+        margin: '0 16px', padding: '12px 14px',
+        background: T.s2, border: `1px solid ${T.border}`, borderRadius: 10,
+        fontFamily: T.fontMono, fontSize: '0.72rem', lineHeight: 1.6,
+        overflow: 'hidden', maxHeight: 80, position: 'relative',
+        color: T.text2,
       }}>
         {highlightSqlInline(data.sql, 'card')}
         {/* Fade gradient */}
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: 24,
-          background: 'linear-gradient(transparent, rgba(0,0,0,0.25))', pointerEvents: 'none',
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 28,
+          background: `linear-gradient(transparent, ${T.s2})`, pointerEvents: 'none',
         }} />
       </div>
 

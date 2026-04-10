@@ -153,23 +153,23 @@ export function tokenizeSqlLine(line: string): Array<{ text: string; kind: Token
 }
 
 const CARD_COLORS: Record<TokenKind, React.CSSProperties> = {
-  keyword: { color: '#00e5ff', fontWeight: 700 },
-  function: { color: '#c084fc', fontWeight: 600 },
-  string: { color: '#86efac' },
-  number: { color: '#fb923c' },
-  table: { color: '#ffb347' },
-  comment: { color: '#3a4a60', fontStyle: 'italic' },
-  plain: { color: '#6b7a99' },
+  keyword: { color: '#0550ae', fontWeight: 700 }, // Deep Blue
+  function: { color: '#8250df', fontWeight: 600 }, // Purple
+  string: { color: '#1a7f37' },                   // Emerald Green
+  number: { color: '#cf222e' },                   // Ruby Red
+  table: { color: '#953800' },                    // Burnt Orange
+  comment: { color: '#6e7781', fontStyle: 'italic' }, // Gray
+  plain: { color: '#24292f' },                    // Slate
 };
 
 const PANEL_COLORS: Record<TokenKind, React.CSSProperties> = {
-  keyword: { color: '#00e5ff', fontWeight: 700 },
-  function: { color: '#c084fc', fontWeight: 600 },
-  string: { color: '#86efac' },
-  number: { color: '#fb923c' },
-  table: { color: '#ffb347' },
-  comment: { color: '#4a5568', fontStyle: 'italic' },
-  plain: { color: '#a0b0cc' },
+  keyword: { color: '#0550ae', fontWeight: 700 },
+  function: { color: '#8250df', fontWeight: 600 },
+  string: { color: '#1a7f37' },
+  number: { color: '#cf222e' },
+  table: { color: '#953800' },
+  comment: { color: '#6e7781', fontStyle: 'italic' },
+  plain: { color: '#24292f' },
 };
 
 export function highlightSqlInline(sql: string, scheme: 'card' | 'panel' = 'card'): React.ReactElement {

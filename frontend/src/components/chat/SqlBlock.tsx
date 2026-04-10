@@ -19,17 +19,17 @@ function tokenStyle(kind: TokenKind): React.CSSProperties {
     case 'keyword':
       return { color: T.accent, fontWeight: 700 };
     case 'function':
-      return { color: '#c084fc', fontWeight: 600 };
+      return { color: '#7c3aff', fontWeight: 600 };
     case 'string':
-      return { color: '#86efac' };
+      return { color: '#059669' };
     case 'number':
-      return { color: '#fb923c' };
+      return { color: '#d97706' };
     case 'table':
-      return { color: '#ffb347' };
+      return { color: '#b45309' };
     case 'comment':
       return { color: T.text3, fontStyle: 'italic' };
     default:
-      return { color: '#d7deea' };
+      return { color: T.text };
   }
 }
 
@@ -135,22 +135,20 @@ export function SqlBlock({
         <div
           style={{
             margin: isCard ? 0 : undefined,
-            background: isCard
-              ? 'linear-gradient(180deg, rgba(3,7,18,0.75) 0%, rgba(5,10,20,0.9) 100%)'
-              : 'linear-gradient(180deg, rgba(6,10,18,0.88) 0%, rgba(7,12,22,0.98) 100%)',
+            background: T.s1,
             border: `1px solid ${T.border}`,
             borderRadius: isCard ? 11 : 0,
             padding: isCard ? '10px 12px' : '14px 18px',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 12px rgba(0,0,0,0.02)',
           }}
         >
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(180deg, rgba(0,229,255,0.02), transparent 40%)',
+              background: `linear-gradient(180deg, ${T.accent}04, transparent 40%)`,
               pointerEvents: 'none',
             }}
           />
@@ -276,8 +274,8 @@ export function SqlBlock({
             style={{
               width: '100%',
               minHeight: 180,
-              background: 'rgba(0,0,0,0.3)',
-              border: `1px solid ${T.accent}44`,
+              background: T.s2,
+              border: `1px solid ${T.border}`,
               borderRadius: 8,
               padding: 12,
               color: T.text,

@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar } from 'recharts';
+import { MainShell } from '../components/common/MainShell';
 import { AnalyticsHero } from '../components/analytics/AnalyticsHero';
 import { AnalyticsSectionCard } from '../components/analytics/AnalyticsSectionCard';
 import { AnalyticsStatCard } from '../components/analytics/AnalyticsStatCard';
 import { AnalyticsQueryTable } from '../components/analytics/AnalyticsQueryTable';
-import { AppSidebar } from '../components/common/AppSidebar';
 import { T } from '../components/dashboard/tokens';
 import { getAnalyticsOverview } from '../services/api';
 import type { AnalyticsOverviewResponse } from '../types/api';
 
 const HEALTH_COLORS = [T.green, T.red];
-const BAR_COLOR = '#33d4ff';
 
 function AnalyticsEmptyState() {
   return (
@@ -51,11 +50,12 @@ function AnalyticsEmptyState() {
             padding: '12px 24px',
             borderRadius: 12,
             background: T.accent,
-            color: '#000',
+            color: '#fff',
             fontWeight: 600,
             textDecoration: 'none',
             fontSize: '0.9rem',
-            transition: 'transform 0.2s ease'
+            transition: 'transform 0.2s ease',
+            boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)'
           }}
           onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
           onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
@@ -101,10 +101,16 @@ export function AnalyticsPage() {
     : [];
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100%', maxWidth: '100%', overflow: 'hidden', background: T.bg, color: T.text, fontFamily: T.fontBody }}>
-      <AppSidebar />
-
-      <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', overflowX: 'hidden', padding: '24px 26px 30px', background: `radial-gradient(circle at top right, rgba(0,229,255,0.08), transparent 28%), ${T.bg}` }}>
+    <MainShell
+      title="Performance Insights"
+      subtitle="Universal analytics across all connections"
+      badge={{
+        text: 'Live Data',
+        color: T.green,
+        icon: <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.green }} />
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', overflowX: 'hidden', padding: '0 2px 30px' }}>
         <AnalyticsHero />
 
         {loading ? (
@@ -115,7 +121,6 @@ export function AnalyticsPage() {
           <AnalyticsEmptyState />
         ) : overview ? (
           <>
-            {/* Stats Cards Row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
               <AnalyticsStatCard label="Active Connections" value={String(overview.active_connections)} hint="Connected databases available to chat, library, and dashboards." />
               <AnalyticsStatCard label="Queries Run" value={String(overview.total_queries)} hint={`${overview.success_rate}% success rate across recorded executions.`} tone="green" />
@@ -123,7 +128,6 @@ export function AnalyticsPage() {
               <AnalyticsStatCard label="Dashboards" value={String(overview.dashboards)} hint={`${overview.total_widgets} widgets created from query output.`} tone="yellow" />
             </div>
 
-            {/* Health & Asset Row */}
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16 }}>
               <AnalyticsSectionCard eyebrow="Query health" title="Execution quality">
                 <div style={{ height: 240, width: '100%', display: 'flex', alignItems: 'center' }}>
@@ -135,8 +139,8 @@ export function AnalyticsPage() {
                         ))}
                       </Pie>
                       <Tooltip 
-                        contentStyle={{ background: T.s1, border: `1px solid ${T.border}`, borderRadius: 8, fontSize: '0.8rem' }}
-                        itemStyle={{ color: T.text2 }}
+                        contentStyle={{ background: T.s1, border: `1px solid ${T.border}`, borderRadius: 8, fontSize: '0.8rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                        itemStyle={{ color: T.text }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -183,7 +187,7 @@ export function AnalyticsPage() {
                     </div>
                     <div style={{ display: 'flex', gap: 4 }}>
                       {Object.entries(dashboards?.viz_breakdown || {}).slice(0, 3).map(([key, val]) => (
-                        <div key={key} title={`${key}: ${val}`} style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifySelf: 'center', fontSize: '0.75rem' }}>
+                        <div key={key} title={`${key}: ${val}`} style={{ width: 24, height: 24, borderRadius: 6, background: T.s2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', border: `1px solid ${T.border}` }}>
                           📈
                         </div>
                       ))}
@@ -193,11 +197,10 @@ export function AnalyticsPage() {
               </AnalyticsSectionCard>
             </div>
 
-            {/* FULL-WIDTH QUERY TABLE */}
             <AnalyticsQueryTable queries={data?.recent_queries || []} />
           </>
         ) : null}
       </div>
-    </div>
+    </MainShell>
   );
 }

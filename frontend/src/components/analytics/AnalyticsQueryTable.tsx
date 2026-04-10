@@ -35,7 +35,7 @@ export function AnalyticsQueryTable({ queries }: AnalyticsQueryTableProps) {
   };
 
   return (
-    <div style={{ marginTop: 24, background: `linear-gradient(180deg, rgba(20,31,48,0.96), rgba(11,17,32,0.98))`, border: `1px solid ${T.border}`, borderRadius: 18, overflow: 'hidden' }}>
+    <div style={{ marginTop: 24, background: T.s1, border: `1px solid ${T.border}`, borderRadius: 18, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
       {/* Header & Filters */}
       <div style={{ padding: '20px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -46,11 +46,11 @@ export function AnalyticsQueryTable({ queries }: AnalyticsQueryTableProps) {
               style={{
                 padding: '8px 16px',
                 borderRadius: 10,
-                background: filter === t ? T.accent : 'rgba(255,255,255,0.05)',
-                color: filter === t ? '#000' : T.text2,
+                background: filter === t ? T.accent : T.s2,
+                color: filter === t ? '#fff' : T.text2,
                 fontSize: '0.8rem',
                 fontWeight: 600,
-                border: 'none',
+                border: filter === t ? 'none' : `1px solid ${T.border}`,
                 cursor: 'pointer',
                 textTransform: 'capitalize',
                 transition: 'all 0.2s ease'
@@ -69,7 +69,7 @@ export function AnalyticsQueryTable({ queries }: AnalyticsQueryTableProps) {
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 800 }}>
           <thead>
-            <tr style={{ borderBottom: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.02)' }}>
+            <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.s2 }}>
               {['QUERY ID', 'SQL PREVIEW', 'TIMESTAMP', 'STATUS', 'RUNTIME', 'ACTIONS'].map((h) => (
                 <th key={h} style={{ padding: '14px 24px', fontSize: '0.68rem', fontWeight: 600, color: T.text3, letterSpacing: 1.2 }}>{h}</th>
               ))}
@@ -78,7 +78,7 @@ export function AnalyticsQueryTable({ queries }: AnalyticsQueryTableProps) {
           <tbody>
             {paginatedQueries.length > 0 ? (
               paginatedQueries.map((q) => (
-                <tr key={q.id} style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.2s ease' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                <tr key={q.id} style={{ borderBottom: `1px solid ${T.border}`, transition: 'background 0.2s ease' }} onMouseOver={(e) => e.currentTarget.style.background = T.s2} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '18px 24px', fontSize: '0.8rem', fontFamily: T.fontMono, color: T.text2 }}>
                     #QX-{q.id.slice(0, 4)}
                   </td>

@@ -3,35 +3,35 @@ export const T = {
   // ============ COLORS ============
 
   // BACKGROUNDS (8 depth layers)
-  bg: '#060a12',        // Main background
-  s1: '#0b1120',        // Surface layer 1 (deepest)
-  s2: '#0f1929',        // Surface layer 2
-  s3: '#141f30',        // Surface layer 3
-  s4: '#1a2640',        // Surface layer 4
-  s5: '#1f2d4a',        // Surface layer 5 (lightest)
+  bg: '#fcfcfd',        // Main background (Cloud White)
+  s1: '#ffffff',        // Surface layer 1 (Solid White)
+  s2: '#f8fafc',        // Surface layer 2 (Slate-50)
+  s3: '#f1f5f9',        // Surface layer 3 (Slate-100)
+  s4: '#e2e8f0',        // Surface layer 4 (Slate-200)
+  s5: '#cbd5e1',        // Surface layer 5 (Slate-300)
 
   // ACCENT COLORS (Primary palette)
-  accent: '#00e5ff',    // Cyan - primary accent
-  accentDim: 'rgba(0,229,255,0.1)',
-  purple: '#7c3aff',    // Secondary accent
-  purpleDim: 'rgba(124,58,255,0.1)',
-  green: '#22d3a5',     // Success/positive
-  greenDim: 'rgba(34,211,165,0.1)',
-  yellow: '#f59e0b',    // Warning
-  yellowDim: 'rgba(245,158,11,0.1)',
-  red: '#f87171',       // Error/danger
-  redDim: 'rgba(248,113,113,0.1)',
-  orange: '#ff6b35',    // Info
-  orangeDim: 'rgba(255,107,53,0.1)',
+  accent: '#0ea5e9',    // Sky Blue
+  accentDim: 'rgba(14, 165, 233, 0.08)',
+  purple: '#6366f1',    // Indigo
+  purpleDim: 'rgba(99, 102, 241, 0.08)',
+  green: '#10b981',     // Emerald
+  greenDim: 'rgba(16, 185, 129, 0.08)',
+  yellow: '#f59e0b',    // Amber
+  yellowDim: 'rgba(245, 158, 11, 0.08)',
+  red: '#ef4444',       // Rose
+  redDim: 'rgba(239, 68, 68, 0.08)',
+  orange: '#f97316',    // Orange
+  orangeDim: 'rgba(249, 115, 22, 0.08)',
 
   // TEXT COLORS (Hierarchy)
-  text: '#e2e8f4',      // Primary text
-  text2: '#94a3b8',     // Secondary text (muted)
-  text3: '#4a5568',     // Tertiary text (very muted)
+  text: '#0f172a',      // Primary text (Slate-900)
+  text2: '#334155',     // Secondary text (Slate-700)
+  text3: '#64748b',     // Tertiary text (Slate-500)
 
   // BORDERS
-  border: 'rgba(255,255,255,0.055)',   // Subtle border
-  border2: 'rgba(255,255,255,0.1)',    // Standard border
+  border: '#e2e8f0',    // Subtle border
+  border2: '#cbd5e1',   // Standard border
 
   // STATUS COLORS
   statusOnline: '#22d3a5',    // Online/connected
@@ -40,9 +40,9 @@ export const T = {
   statusWarning: '#f59e0b',   // Warning
 
   // ============ TYPOGRAPHY ============
-  fontHead: "'Syne', sans-serif",      // Display font
+  fontHead: "'Inter', sans-serif",      // Display font
   fontMono: "'DM Mono', monospace",    // Code font
-  fontBody: "'DM Sans', sans-serif",   // Body font
+  fontBody: "'Inter', sans-serif",   // Body font
 
   // ============ SPACING (8px base unit) ============
   space: {
@@ -77,12 +77,12 @@ export const T = {
   // ============ SHADOWS ============
   shadow: {
     none: 'none',
-    sm: '0 2px 8px rgba(0,0,0,0.3)',
-    md: '0 4px 16px rgba(0,0,0,0.4)',
-    lg: '0 8px 24px rgba(0,0,0,0.5)',
-    xl: '0 12px 32px rgba(0,0,0,0.6)',
-    glow: '0 0 20px rgba(0, 229, 255, 0.2)',
-    glowIntense: '0 0 40px rgba(0, 229, 255, 0.3)',
+    sm: '0 2px 8px rgba(0,0,0,0.03)',
+    md: '0 4px 16px rgba(0,0,0,0.06)',
+    lg: '0 8px 24px rgba(0,0,0,0.08)',
+    xl: '0 12px 32px rgba(0,0,0,0.1)',
+    glow: '0 0 20px rgba(14, 165, 233, 0.1)',
+    glowIntense: '0 0 40px rgba(14, 165, 233, 0.15)',
   },
 
   // ============ TRANSITIONS ============

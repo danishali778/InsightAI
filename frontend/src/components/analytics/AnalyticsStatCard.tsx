@@ -26,7 +26,7 @@ export function AnalyticsStatCard({
         border: `1px solid ${colors.border}`,
         borderRadius: 16,
         padding: 18,
-        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.22)`,
+        boxShadow: `0 8px 24px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.8)`,
       }}
     >
       <div style={{ fontSize: '0.68rem', letterSpacing: 1.4, textTransform: 'uppercase', color: T.text3, fontFamily: T.fontMono, marginBottom: 10 }}>

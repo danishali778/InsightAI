@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
-import { AppSidebar } from '../components/common/AppSidebar';
-import { DashboardTopbar } from '../components/dashboard/DashboardTopbar';
+import { MainShell } from '../components/common/MainShell';
+import { HeaderIcons } from '../components/common/AppHeader';
 import { DashboardCreateForm } from '../components/dashboard/DashboardCreateForm';
 import { WidgetRenderer } from '../components/dashboard/WidgetRenderer';
 import { T } from '../components/dashboard/tokens';
@@ -526,17 +526,28 @@ function DashboardCanvas({
   const layouts = useMemo(() => {
     return {
       lg: widgets.map((w): GridLayoutItem => {
-        // Ironclad Safeguard: Charts are strictly 7 units tall
-        const isStandardChart = w.viz_type !== 'table' && w.viz_type !== 'kpi';
-        const safeH = isStandardChart ? 7 : w.h;
+        const isKPI = w.viz_type === 'kpi';
+        const isStandardChart = !isKPI && w.viz_type !== 'table';
+        
+        let safeW = w.w;
+        let safeH = w.h;
+
+        // Ironclad Safeguards
+        if (isKPI) {
+          safeW = 5; // 25% width
+          safeH = 5; // Compact height
+        } else if (isStandardChart) {
+          safeH = 7; // Chart height
+        }
+
         return {
           i: w.id,
           x: w.x,
           y: w.y,
-          w: w.w,
+          w: safeW,
           h: safeH,
-          minW: w.minW,
-          minH: safeH // Prevent grid from shrinking it further
+          minW: isKPI ? 5 : w.minW,
+          minH: safeH
         };
       })
     };
@@ -547,15 +558,25 @@ function DashboardCanvas({
     currentLayout.forEach((item) => {
       const widget = widgets.find(w => w.id === item.i);
       if (widget) {
-        // Ironclad Safeguard: Don't save a tall height if it's a chart
-        const isStandardChart = widget.viz_type !== 'table' && widget.viz_type !== 'kpi';
-        const finalH = isStandardChart ? 7 : item.h;
+        const isKPI = widget.viz_type === 'kpi';
+        const isStandardChart = !isKPI && widget.viz_type !== 'table';
+        
+        let finalW = item.w;
+        let finalH = item.h;
 
-        if (widget.x !== item.x || widget.y !== item.y || widget.w !== item.w || widget.h !== finalH) {
+        // Ironclad Safeguards
+        if (isKPI) {
+          finalW = 5;
+          finalH = 5;
+        } else if (isStandardChart) {
+          finalH = 7;
+        }
+
+        if (widget.x !== item.x || widget.y !== item.y || widget.w !== finalW || widget.h !== finalH) {
           onUpdateWidget(item.i, {
             x: item.x,
             y: item.y,
-            w: item.w,
+            w: finalW,
             h: finalH
           });
         }
@@ -768,13 +789,17 @@ export function DashboardPage() {
     ]);
 
     const normalizedWidgets = widgetResult.map(w => {
-      // Magic Shrink: Upscale width to 10 if squashed, and CAP height at 6 for standard widgets
       let newW = w.w;
       let newH = w.h;
 
-      const isStandardChart = w.viz_type !== 'table' && w.viz_type !== 'kpi';
+      const isKPI = w.viz_type === 'kpi';
+      const isStandardChart = !isKPI && w.viz_type !== 'table';
 
-      if (w.w < 3) {
+      if (isKPI) {
+        // Quad-KPI Row Standard: 25% width, Height 5
+        newW = 5;
+        newH = 5;
+      } else if (w.w < 3) {
         console.log(`Auto-repairing squashed widget: ${w.title}`);
         newW = 10;
         newH = Math.max(w.h, 7);
@@ -789,18 +814,37 @@ export function DashboardPage() {
       return w;
     });
 
-    console.log('🔍 FETCH RAW:', widgetResult.map(w => ({ title: w.title, h: w.h })));
-    console.log('🔍 FETCH REPAIRED:', normalizedWidgets.map(w => ({ title: w.title, h: w.h })));
+    // KPI GRAVITY: Herd KPIs to top (y=0) while keeping existing sequence
+    const kpis = normalizedWidgets.filter(w => w.viz_type === 'kpi').sort((a, b) => a.x - b.x);
+    const nonKpis = normalizedWidgets.filter(w => w.viz_type !== 'kpi');
+    
+    const kpiRowsUsed = kpis.length > 0 ? Math.ceil(kpis.length / 4) * 5 : 0;
+    
+    const herdedWidgets = [
+      ...kpis.map((w, i) => ({
+        ...w,
+        x: (i % 4) * 5,
+        y: Math.floor(i / 4) * 5
+      })),
+      ...nonKpis.map(w => ({
+        ...w,
+        // Slide charts down if they would overlap the protected KPI space
+        y: Math.max(w.y, kpiRowsUsed)
+      }))
+    ];
 
-    setWidgets(normalizedWidgets);
+    console.log('🔍 FETCH RAW:', widgetResult.map(w => ({ title: w.title, h: w.h, type: w.viz_type })));
+    console.log('🔍 FETCH HERDED:', herdedWidgets.map(w => ({ title: w.title, x: w.x, y: w.y, h: w.h })));
+
+    setWidgets(herdedWidgets);
     setStats(statsResult);
 
     // Persist repairs to DB
-    normalizedWidgets.forEach(w => {
+    herdedWidgets.forEach(w => {
       const original = widgetResult.find(ow => ow.id === w.id);
-      if (original && (original.w !== w.w || original.h !== w.h)) {
-        console.log('🔍 AUTO-REPAIR SYNC:', w.title, { w: w.w, h: w.h });
-        updateDashboardWidget(w.id, { w: w.w, h: w.h });
+      if (original && (original.w !== w.w || original.h !== w.h || original.x !== w.x || original.y !== w.y)) {
+        console.log('🔍 AUTO-REPAIR SYNC:', w.title, { w: w.w, h: w.h, x: w.x, y: w.y });
+        updateDashboardWidget(w.id, { x: w.x, y: w.y, w: w.w, h: w.h });
       }
     });
   }, [activeDashId]);
@@ -860,47 +904,66 @@ export function DashboardPage() {
   const activeDash = dashboards.find((dashboard) => dashboard.id === activeDashId);
 
   return (
-    <div style={{
-      display: 'flex', height: '100vh', width: '100vw',
-      overflow: 'hidden', background: '#060a12',
-      fontFamily: "'DM Sans', sans-serif",
-    }}>
-      <AppSidebar onDashboardHover={handleSidebarHover} />
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
-        <DashboardTopbar activeDashboard={activeDash} dashboardCount={dashboards.length} />
-
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          <DashboardRail
-            dashboards={dashboards}
-            activeDashId={activeDashId}
-            onSelect={setActiveDashId}
-            onDelete={setDashboardToDelete}
-            onRename={handleRenameDash}
-            showCreateForm={showCreateForm}
-            onShowCreateForm={() => setShowCreateForm(true)}
-            newDashName={newDashName}
-            onNewDashNameChange={setNewDashName}
-            onCreate={handleCreateDash}
-            onCancelCreate={() => setShowCreateForm(false)}
-            creating={creating}
-            externalHover={sidebarTriggeredHover}
+    <MainShell
+      title={activeDash?.name || 'Dashboards'}
+      subtitle={activeDash ? `${stats.total_widgets} widgets` : 'Data Insights'}
+      badge={dashboards.length > 0 ? {
+        text: `${dashboards.length} platforms`,
+        color: T.accent,
+        icon: <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent }} />
+      } : undefined}
+      headerActions={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button style={headerIconBtnStyle} title="Search"><HeaderIcons.Search /></button>
+          <button style={headerActionBtnStyle} title="Share"><HeaderIcons.Share /> Share</button>
+          <button style={headerActionBtnStyle} title="Export"><HeaderIcons.Download /> Export</button>
+          <button 
+            onClick={() => setShowCreateForm(true)}
+            style={{
+              ...headerActionBtnStyle,
+              background: T.accent,
+              color: '#fff',
+              border: 'none',
+              fontWeight: 700
+            }}
+          >
+            <HeaderIcons.Plus /> New
+          </button>
+        </div>
+      }
+      onDashboardHover={handleSidebarHover}
+    >
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <DashboardRail
+          dashboards={dashboards}
+          activeDashId={activeDashId}
+          onSelect={setActiveDashId}
+          onDelete={setDashboardToDelete}
+          onRename={handleRenameDash}
+          showCreateForm={showCreateForm}
+          onShowCreateForm={() => setShowCreateForm(true)}
+          newDashName={newDashName}
+          onNewDashNameChange={setNewDashName}
+          onCreate={handleCreateDash}
+          onCancelCreate={() => setShowCreateForm(false)}
+          creating={creating}
+          externalHover={sidebarTriggeredHover}
+        />
+        {/* Main Dashboard Content */}
+        <div className="dash-scroll" style={{
+          flex: 1, overflowY: 'auto', overflowX: 'hidden',
+          padding: '24px 32px 48px', background: T.bg,
+        }}>
+          <DashboardCanvas
+            activeDash={activeDash}
+            stats={stats}
+            widgets={widgets}
+            onDeleteWidget={handleDeleteWidget}
+            onUpdateWidget={handleUpdateWidget}
           />
-
-          <div className="dash-scroll" style={{
-            flex: 1, overflowY: 'auto', overflowX: 'hidden',
-            padding: '20px 26px 36px', background: '#060a12',
-          }}>
-            <DashboardCanvas
-              activeDash={activeDash}
-              stats={stats}
-              widgets={widgets}
-              onDeleteWidget={handleDeleteWidget}
-              onUpdateWidget={handleUpdateWidget}
-            />
-          </div>
         </div>
       </div>
+
       <DeleteDashboardModal
         isOpen={!!dashboardToDelete}
         onClose={() => setDashboardToDelete(null)}
@@ -912,6 +975,22 @@ export function DashboardPage() {
         }}
         dashboardName={dashboardToDelete?.name || ''}
       />
-    </div>
+    </MainShell>
   );
 }
+
+const headerActionBtnStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  padding: '7px 14px', borderRadius: 8,
+  border: `1px solid ${T.border}`,
+  background: 'transparent',
+  color: T.text2, fontSize: '0.76rem',
+  cursor: 'pointer', fontFamily: T.fontBody,
+  transition: 'all 0.18s ease',
+};
+
+const headerIconBtnStyle: React.CSSProperties = {
+  width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+  borderRadius: 8, border: `1px solid ${T.border}`, background: 'transparent',
+  color: T.text3, cursor: 'pointer', transition: 'all 0.18s ease',
+};

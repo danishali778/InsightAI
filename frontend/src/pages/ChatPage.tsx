@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sidebar } from '../components/chat/Sidebar';
-import { ChatTopbar } from '../components/chat/ChatTopbar';
+import { MainShell } from '../components/common/MainShell';
+import { HeaderIcons } from '../components/common/AppHeader';
+import { Sidebar as ChatSidebar } from '../components/chat/Sidebar';
 import { ChatInput } from '../components/chat/ChatInput';
 import { MessageBubble } from '../components/chat/MessageBubble';
 import { ConnectionModal } from '../components/chat/ConnectionModal';
@@ -155,20 +156,61 @@ export function ChatPage() {
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: T.bg, fontFamily: T.fontBody }}>
-      <Sidebar
-        sessions={sessions} activeSessionId={activeSessionId}
-        onSelectSession={setActiveSessionId} onNewChat={handleNewChat}
-        onDeleteSession={handleDeleteSession} onRenameSession={handleRenameSession}
-        onOpenConnect={() => setShowConnectModal(true)}
-        connections={connections}
-      />
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
-        <ChatTopbar
-          sessionId={activeSessionId} sessionTitle={activeSession?.title}
-          dbType={activeConn?.db_type} dbName={activeConn?.database}
-          onToggleSchema={() => setSchemaOpen(p => !p)} schemaOpen={schemaOpen}
+    <MainShell
+      title={activeSession?.title || 'New Chat'}
+      subtitle={activeConn ? `${activeConn.db_type} • ${activeConn.database}` : 'Select a connection'}
+      hideSidebar={true}
+      activeId="chat"
+      badge={activeConn ? {
+        text: 'Live',
+        color: T.green,
+        icon: <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.green }} />
+      } : undefined}
+      headerActions={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button 
+            onClick={() => setSchemaOpen(!schemaOpen)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 14px', borderRadius: 8,
+              border: `1px solid ${schemaOpen ? T.accent : T.border}`,
+              background: schemaOpen ? T.accentDim : 'transparent',
+              color: schemaOpen ? T.accent : T.text2,
+              fontSize: '0.76rem', cursor: 'pointer', fontFamily: T.fontBody,
+              transition: 'all 0.18s ease',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+            Schema {schemaOpen ? 'Open' : ''}
+          </button>
+          <button 
+            onClick={() => setShowConnectModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 14px', borderRadius: 8,
+              border: `1px solid ${activeConn ? T.border : T.accent}`,
+              background: activeConn ? 'transparent' : T.accent,
+              color: activeConn ? T.text2 : '#fff',
+              fontSize: '0.76rem', cursor: 'pointer', fontFamily: T.fontBody,
+              transition: 'all 0.18s ease',
+              fontWeight: activeConn ? 500 : 700,
+            }}
+          >
+            <HeaderIcons.Plus /> {activeConn ? 'Add Connection' : 'Connect DB'}
+          </button>
+        </div>
+      }
+    >
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <ChatSidebar
+          sessions={sessions} activeSessionId={activeSessionId}
+          onSelectSession={setActiveSessionId} onNewChat={handleNewChat}
+          onDeleteSession={handleDeleteSession} onRenameSession={handleRenameSession}
+          onOpenConnect={() => setShowConnectModal(true)}
+          connections={connections}
         />
 
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -210,19 +252,20 @@ export function ChatPage() {
 
               {messages.length === 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 14 }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 14, background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800, color: '#000', boxShadow: '0 4px 20px rgba(0,229,255,0.25)', marginBottom: 8, fontFamily: T.fontHead }}>Q</div>
-                  <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.4rem', color: T.text }}>What would you like to know?</div>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: '#fff', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.2)', marginBottom: 8, fontFamily: T.fontHead }}>Q</div>
+                  <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.5rem', color: T.text, letterSpacing: -0.5 }}>What would you like to know?</div>
                   <div style={{ fontSize: '0.88rem', color: T.text3, maxWidth: 420, textAlign: 'center', lineHeight: 1.65, fontWeight: 300 }}>
                     Ask a question in plain English. QueryMind will write the SQL, run it, and show you the results.
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10, justifyContent: 'center' }}>
                     {['Show me all tables', 'How many records per table?', 'Describe the database'].map(s => (
                       <button key={s} onClick={() => handleSend(s)} disabled={!activeConnectionId || loading} style={{
-                        padding: '6px 13px', borderRadius: 20, border: `1px solid ${T.border}`, background: T.s1,
-                        color: T.text3, fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
+                        padding: '7px 14px', borderRadius: 20, border: `1px solid ${T.border}`, background: T.s1,
+                        color: T.text2, fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
+                        fontWeight: 500, boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                       }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; e.currentTarget.style.color = T.accent; e.currentTarget.style.background = T.accentDim; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text3; e.currentTarget.style.background = T.s1; }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text2; e.currentTarget.style.background = T.s1; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >{s}</button>
                     ))}
                   </div>
@@ -277,6 +320,6 @@ export function ChatPage() {
       <style>{`
         @keyframes thinkbounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-5px);opacity:1} }
       `}</style>
-    </div>
+    </MainShell>
   );
 }

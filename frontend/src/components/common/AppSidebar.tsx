@@ -20,22 +20,24 @@ function NavItem({ icon, label, path, active, onMouseEnter, onMouseLeave }: NavI
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 9,
-        padding: '8px 10px',
+        gap: 10,
+        padding: '8px 12px',
         borderRadius: 8,
         cursor: clickable ? 'pointer' : 'default',
-        transition: 'all 0.15s',
-        marginBottom: 1,
+        transition: 'all 0.15s ease',
+        marginBottom: 2,
         color: active ? T.text : T.text3,
-        fontSize: '0.82rem',
+        fontSize: '0.8rem',
+        fontWeight: active ? 600 : 500,
         background: active ? T.s2 : 'transparent',
-        border: `1px solid ${active ? 'rgba(0,229,255,0.12)' : 'transparent'}`,
+        border: `1px solid ${active ? T.border : 'transparent'}`,
         fontFamily: T.fontBody,
       }}
       onMouseEnter={e => {
         if (!active && clickable) {
           e.currentTarget.style.background = T.s2;
-          e.currentTarget.style.color = T.text2;
+          e.currentTarget.style.color = T.text;
+          e.currentTarget.style.borderColor = T.border;
         }
         onMouseEnter?.(e);
       }}
@@ -43,17 +45,19 @@ function NavItem({ icon, label, path, active, onMouseEnter, onMouseLeave }: NavI
         if (!active && clickable) {
           e.currentTarget.style.background = 'transparent';
           e.currentTarget.style.color = T.text3;
+          e.currentTarget.style.borderColor = 'transparent';
         }
         onMouseLeave?.(e);
       }}
     >
       <span style={{
-        width: 16, height: 16, flexShrink: 0, borderRadius: 4,
-        border: `1px solid ${active ? 'rgba(0,229,255,0.2)' : T.border}`,
-        background: active ? T.accentDim : 'transparent',
+        width: 18, height: 18, flexShrink: 0, borderRadius: 5,
+        border: `1px solid ${active ? T.accent : T.border}`,
+        background: active ? T.accentDim : T.s1,
         color: active ? T.accent : T.text3,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '0.62rem', fontFamily: T.fontMono, fontWeight: 700,
+        fontSize: '0.65rem', fontFamily: T.fontMono, fontWeight: 700,
+        transition: 'all 0.2s ease',
       }}>
         {icon}
       </span>
@@ -100,11 +104,12 @@ export function NavSection({ onDashboardHover }: { onDashboardHover?: (hovering:
 export function AppSidebar({ onDashboardHover }: { onDashboardHover?: (hovering: boolean) => void }) {
   return (
     <aside style={{
-      width: 220, flexShrink: 0,
+      width: 240, flexShrink: 0,
       background: T.s1, borderRight: `1px solid ${T.border}`,
       display: 'flex', flexDirection: 'column',
       height: '100vh', overflow: 'hidden',
       fontFamily: T.fontBody,
+      zIndex: 100,
     }}>
       {/* Logo */}
       <div style={{ padding: '16px 14px 4px' }}>
