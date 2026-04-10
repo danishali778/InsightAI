@@ -6,19 +6,16 @@ A next-generation **Natural Language Business Intelligence (BI)** platform. Conn
 ---
 
 ## 🏗️ Visual Showcase
+![Hero Landing Page](extra_assets/01-landing-page.png)
+*Modern, glassmorphism-inspired landing page with 20-column precision grid.*
 
-![Landing Page](extra_assets/01-landing-page.png)
-*Modern, high-performance landing page.*
+| Dashboard (Upper) | Dashboard (Lower) |
+| :---: | :---: |
+| ![Dashboard Top](extra_assets/dashboard-top.png) | ![Dashboard Bottom](extra_assets/dashboard-bottom.png) |
 
-````carousel
-![Dashboard](extra_assets/02-dashboard-page.png)
-<!-- slide -->
-![AI Chat](extra_assets/03-chat-page.png)
-<!-- slide -->
-![Query Library](extra_assets/04-query-library.png)
-<!-- slide -->
-![Connections](extra_assets/05-connections-page.png)
-````
+| AI Chat Deep-Dive | Advanced Analytics |
+| :---: | :---: |
+| ![Chat Session](extra_assets/chat-detailed-session.png) | ![Analytics Bottom](extra_assets/analytics-bottom.png) |
 
 ---
 
@@ -85,8 +82,8 @@ SUPABASE_KEY=your_supabase_anon_key
 ---
 
 ## 🎥 Product Walkthrough
-[INSERT LOOM OR YOUTUBE LINK HERE]
-*Check out the full capabilities of InsightAI in action.*
+![Walkthrough Video](extra_assets/walkthrough.webp)
+*Check out the full capabilities of InsightAI in action—from natural language queries to automated BI dashboards.*
 
 ---
 
