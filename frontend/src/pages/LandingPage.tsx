@@ -37,20 +37,20 @@ export function LandingPage() {
             <Integrations />
 
             {/* CTA Section */}
-            <section className="cta-glow" style={{ background: 'var(--bg)', textAlign: 'center', padding: '100px 60px', position: 'relative', overflow: 'hidden' }}>
-                <div className="reveal" style={{ position: 'relative', zIndex: 2, maxWidth: 600, margin: '0 auto' }}>
-                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.72rem', color: 'var(--accent)', letterSpacing: 2, textTransform: 'uppercase', display: 'block', marginBottom: 14 }}>Get started today</span>
-                    <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 'clamp(2rem, 4vw, 3.2rem)', letterSpacing: -1.5, marginBottom: 16, fontStyle: 'normal' }}>
+            <section style={{ background: '#f8fafc', textAlign: 'center', padding: '120px 60px', position: 'relative', overflow: 'hidden', borderTop: '1px solid var(--border)' }}>
+                <div className="reveal" style={{ position: 'relative', zIndex: 2, maxWidth: 660, margin: '0 auto' }}>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600, letterSpacing: 2.5, textTransform: 'uppercase', display: 'block', marginBottom: 16 }}>Ready to evolve?</span>
+                    <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', letterSpacing: -1.8, marginBottom: 20, fontStyle: 'normal', color: 'var(--text)' }}>
                         Stop writing SQL.<br />Start getting answers.
                     </h2>
-                    <p style={{ color: 'var(--muted)', fontSize: '1rem', marginBottom: 36, lineHeight: 1.7, fontWeight: 300 }}>
+                    <p style={{ color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 44, lineHeight: 1.75, fontWeight: 300 }}>
                         Join thousands of analysts and teams who've replaced manual SQL with QueryMind. Free forever for individuals.
                     </p>
-                    <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <a href="/chat" className="btn-glow" style={{ background: 'var(--accent)', color: '#000', padding: '14px 32px', borderRadius: 8, fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none' }}>
-                            Create Free Account →
+                    <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <a href="/chat" className="btn-glow" style={{ background: 'var(--accent)', color: '#fff', padding: '15px 36px', borderRadius: 10, fontWeight: 700, fontSize: '1rem', textDecoration: 'none', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.2)' }}>
+                            Get Started for Free →
                         </a>
-                        <a href="#" style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '14px 32px', borderRadius: 8, fontWeight: 500, fontSize: '0.95rem', textDecoration: 'none' }}>
+                        <a href="#" style={{ background: '#fff', border: '1px solid var(--border)', color: 'var(--text)', padding: '15px 36px', borderRadius: 10, fontWeight: 600, fontSize: '1rem', textDecoration: 'none', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                             Book a demo
                         </a>
                     </div>

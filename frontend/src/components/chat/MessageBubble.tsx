@@ -96,9 +96,10 @@ export function MessageBubble({
     return (
       <div style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
         <div style={{
-          maxWidth: 520, background: T.s2, border: `1px solid ${T.border}`,
-          borderRadius: '14px 14px 4px 14px', padding: '12px 16px',
+          maxWidth: 520, background: T.s3, border: `1px solid ${T.border}`,
+          borderRadius: '16px 16px 4px 16px', padding: '12px 18px',
           fontSize: '0.88rem', lineHeight: 1.6, color: T.text,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
         }}>
           {message.content}
         </div>
@@ -114,15 +115,16 @@ export function MessageBubble({
     <div id={message.id ? `msg-${message.id}` : undefined} style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: 8 }}>
       <div style={{
         maxWidth: 820, width: '100%', background: T.s1, border: `1px solid ${T.border}`,
-        borderRadius: '4px 14px 14px 14px', overflow: 'hidden',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
+        borderRadius: '4px 16px 16px 16px', overflow: 'hidden',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
       }}>
         {/* Summary */}
         <div style={{ padding: '16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start', borderBottom: `1px solid ${T.border}` }}>
           <div style={{
             width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-            background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#000', fontWeight: 800,
+            background: T.accent,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: '#fff', fontWeight: 800,
+            fontFamily: T.fontHead,
           }}>Q</div>
           <div style={{ fontSize: '0.87rem', lineHeight: 1.65, color: T.text2 }}>
             {message.error ? (
@@ -255,14 +257,14 @@ export function MessageBubble({
             )}
             <button
               style={{
-                padding: '5px 12px', borderRadius: 6, border: `1px solid rgba(0,229,255,0.25)`,
-                background: T.accentDim,
+                padding: '5px 12px', borderRadius: 6, border: `1px solid ${T.accent}`,
+                background: 'transparent',
                 color: T.accent,
                 fontSize: '0.72rem', cursor: 'pointer', fontFamily: T.fontBody,
                 display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; }}
-              onMouseLeave={e => { e.currentTarget.style.background = T.accentDim; e.currentTarget.style.color = T.accent; }}
+              onMouseEnter={e => { e.currentTarget.style.background = T.accent; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.accent; }}
             >
               🔄 Regenerate
             </button>

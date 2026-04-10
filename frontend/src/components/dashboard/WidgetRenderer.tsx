@@ -93,13 +93,13 @@ function formatMetric(value: unknown) {
 
 function widgetBadge(vizType: string) {
   const map: Record<string, { bg: string; color: string; label: string; borderColor: string }> = {
-    kpi:     { bg: T.greenDim,   color: T.green,  label: 'KPI',     borderColor: 'rgba(34,211,165,0.2)' },
-    bar:     { bg: T.accentDim,  color: T.accent, label: 'BAR',     borderColor: 'rgba(0,229,255,0.2)' },
-    line:    { bg: T.purpleDim,  color: T.purple, label: 'LINE',    borderColor: 'rgba(124,58,255,0.2)' },
-    area:    { bg: T.purpleDim,  color: T.purple, label: 'AREA',    borderColor: 'rgba(124,58,255,0.2)' },
-    scatter: { bg: T.yellowDim,  color: T.yellow, label: 'SCATTER', borderColor: 'rgba(245,158,11,0.2)' },
-    donut:   { bg: T.accentDim,  color: T.accent, label: 'DONUT',   borderColor: 'rgba(0,229,255,0.2)' },
-    table:   { bg: T.s3,         color: T.text2,  label: 'TABLE',   borderColor: T.border },
+    kpi:     { bg: '#f0fdf4',   color: '#16a34a',  label: 'KPI',     borderColor: '#bbf7d0' },
+    bar:     { bg: '#f0f9ff',   color: '#0284c7',  label: 'BAR',     borderColor: '#bae6fd' },
+    line:    { bg: '#f5f3ff',   color: '#7c3aed',  label: 'LINE',    borderColor: '#ddd6fe' },
+    area:    { bg: '#f5f3ff',   color: '#7c3aed',  label: 'AREA',    borderColor: '#ddd6fe' },
+    scatter: { bg: '#fffbeb',   color: '#d97706',  label: 'SCATTER', borderColor: '#fef3c7' },
+    donut:   { bg: '#f0f9ff',   color: '#0284c7',  label: 'DONUT',   borderColor: '#bae6fd' },
+    table:   { bg: '#f8fafc',   color: '#64748b',  label: 'TABLE',   borderColor: '#e2e8f0' },
   };
   return map[vizType] || map.table;
 }
@@ -184,9 +184,9 @@ function TableViz({ columns, rows, compact }: { columns: string[]; rows: Array<R
           <tr>
             {columns.map((col) => (
               <th key={col} style={{
-                background: 'rgba(15,25,41,0.6)', color: T.text3, fontFamily: T.fontMono,
+                background: '#f8fafc', color: T.text2, fontFamily: T.fontMono,
                 fontSize: '0.64rem', textTransform: 'uppercase', textAlign: 'left',
-                padding: '9px 12px', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap',
+                padding: '10px 12px', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap',
                 letterSpacing: 0.5,
               }}>
                 {formatColHeader(col)}
@@ -281,9 +281,10 @@ function KpiCard({ widget, onDelete }: {
 
   return (
     <div className="widget-card widget-drag-handle" style={{
-      background: 'linear-gradient(180deg, rgba(11,17,32,0.98), rgba(8,14,26,0.98))',
+      background: T.s1,
       border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden', minHeight: 190,
       cursor: 'grab',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
     }}>
       <div style={{
         padding: '14px 16px 8px', display: 'flex',
@@ -449,9 +450,10 @@ export function WidgetRenderer({
 
   return (
     <div className="widget-card" style={{
-      background: 'linear-gradient(180deg, rgba(11,17,32,0.98), rgba(8,14,26,0.98))',
+      background: T.s1,
       border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden',
-      display: 'flex', flexDirection: 'column', height: '100%'
+      display: 'flex', flexDirection: 'column', height: '100%',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
     }}>
       {/* Header */}
       <div className="widget-drag-handle" style={{

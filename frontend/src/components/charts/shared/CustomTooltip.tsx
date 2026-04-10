@@ -25,16 +25,20 @@ export interface CustomTooltipProps {
   tooltipColumns?: string[];
 }
 
+import { T } from '../../dashboard/tokens';
+
 export function CustomTooltip({ active, payload, label, normalizedColMaxes, categoryCol, tooltipColumns }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   const tt = {
     borderRadius: 8,
-    border: '1px solid rgba(255,255,255,0.1)',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+    border: `1px solid ${T.border}`,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
     fontSize: '0.78rem',
-    background: '#1e1e2e',
-    color: '#e2e8f0',
-    padding: '10px 14px'
+    background: 'rgba(255, 255, 255, 0.96)',
+    backdropFilter: 'blur(10px)',
+    color: T.text,
+    padding: '10px 14px',
+    zIndex: 100,
   };
 
   const primaryColor = payload[0].color;
@@ -42,9 +46,9 @@ export function CustomTooltip({ active, payload, label, normalizedColMaxes, cate
 
   return (
     <div style={tt}>
-      <div style={{ fontWeight: 600, marginBottom: 6, color: 'rgba(255,255,255,0.7)' }}>{formatLabel(String(label ?? ''))}</div>
+      <div style={{ fontWeight: 600, marginBottom: 6, color: T.text2 }}>{formatLabel(String(label ?? ''))}</div>
       {categoryCol && rowData[categoryCol] && (
-        <div style={{ color: primaryColor, marginBottom: 4 }}>
+        <div style={{ color: primaryColor, marginBottom: 4, fontWeight: 500 }}>
           {categoryCol} : {String(rowData[categoryCol])}
         </div>
       )}
@@ -55,19 +59,19 @@ export function CustomTooltip({ active, payload, label, normalizedColMaxes, cate
           ? `${typeof rawValue === 'number' ? rawValue.toLocaleString() : rawValue} (${entry.value}%)`
           : (typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value);
         return (
-          <div key={i} style={{ color: categoryCol && payload.length === 1 ? 'rgba(255,255,255,0.6)' : entry.color, marginBottom: 2 }}>
+          <div key={i} style={{ color: categoryCol && payload.length === 1 ? T.text2 : entry.color, marginBottom: 2, fontWeight: 500 }}>
             {formatColLabel(entry.dataKey)} : {displayValue}
           </div>
         );
       })}
       {tooltipColumns && tooltipColumns.length > 0 && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 6, paddingTop: 6 }}>
+        <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 6, paddingTop: 6 }}>
           {tooltipColumns.map(col => {
             const val = rowData[col];
             if (val == null) return null;
             const display = typeof val === 'number' ? val.toLocaleString() : String(val);
             return (
-              <div key={col} style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>
+              <div key={col} style={{ color: T.text3, marginBottom: 2, fontSize: '0.72rem' }}>
                 {formatColLabel(col)} : {display}
               </div>
             );

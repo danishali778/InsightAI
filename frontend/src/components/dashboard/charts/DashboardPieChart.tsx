@@ -10,11 +10,11 @@ const COLORS = [
 
 const TT_STYLE = {
   borderRadius: 8,
-  border: '1px solid rgba(255,255,255,0.1)',
-  boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+  border: `1px solid ${T.border}`,
+  boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
   fontSize: '0.78rem',
-  background: '#1e1e2e',
-  color: '#e2e8f0',
+  background: T.s1,
+  color: T.text,
   padding: '10px 14px',
 };
 
@@ -83,8 +83,8 @@ export function DashboardPieChart({ widget, size: _size }: { widget: DashboardWi
             />
           </PieChart>
         </ResponsiveContainer>
-        <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontFamily: T.fontMono, marginTop: -6, paddingBottom: 6, letterSpacing: 0.5 }}>
-          TOTAL · <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>{formatVal(total)}</span>
+        <div style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono, marginTop: -6, paddingBottom: 6, letterSpacing: 0.5 }}>
+          TOTAL · <span style={{ color: T.text2, fontWeight: 600 }}>{formatVal(total)}</span>
         </div>
       </div>
 
@@ -96,7 +96,7 @@ export function DashboardPieChart({ widget, size: _size }: { widget: DashboardWi
           return (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', fontFamily: T.fontMono, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '0.7rem', color: T.text2, fontFamily: T.fontMono, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {item.name}
               </span>
               <span style={{ fontSize: '0.7rem', color: color, fontFamily: T.fontMono, flexShrink: 0, fontWeight: 600 }}>

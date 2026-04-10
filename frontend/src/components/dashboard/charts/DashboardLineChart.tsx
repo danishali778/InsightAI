@@ -10,12 +10,12 @@ const COLORS = [
   '#a3e635', '#c084fc', '#2dd4bf', '#ff6b6b', '#fbbf24',
 ];
 
-const GS = 'rgba(255,255,255,0.06)';
-const TEXT_STYLE = { fontSize: 11, fill: 'rgba(255,255,255,0.4)' };
+const GS = T.border;
+const TEXT_STYLE = { fontSize: 11, fill: T.text3 };
 const TT_STYLE = {
-  borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)',
-  boxShadow: '0 4px 16px rgba(0,0,0,0.3)', fontSize: '0.78rem',
-  background: '#1e1e2e', color: '#e2e8f0', padding: '10px 14px',
+  borderRadius: 8, border: `1px solid ${T.border}`,
+  boxShadow: '0 4px 16px rgba(0,0,0,0.06)', fontSize: '0.78rem',
+  background: T.s1, color: T.text, padding: '10px 14px',
 };
 
 function formatColLabel(col: string) {
@@ -38,7 +38,7 @@ const XTick = ({ x, y, payload }: any) => {
   return (
     <g transform={`translate(${x},${y})`}>
       <title>{raw}</title>
-      <text dy={4} textAnchor="end" fill="rgba(255,255,255,0.4)" fontSize={11} transform="rotate(-45)">
+      <text dy={4} textAnchor="end" fill={T.text3} fontSize={11} transform="rotate(-45)">
         {label}
       </text>
     </g>
@@ -120,7 +120,7 @@ export function DashboardLineChart({ widget, size: _size }: { widget: DashboardW
   const AXIS_W = 65;
   const chartMargin = { top: 10, right: needsDualAxis ? 70 : 20, left: 50, bottom: 20 };
 
-  const xAxisLabel = { value: formatColLabel(xCol), position: 'insideBottom' as const, offset: -6, fill: 'rgba(255,255,255,0.35)', fontSize: 10, style: { textAnchor: 'middle' as const } };
+  const xAxisLabel = { value: formatColLabel(xCol), position: 'insideBottom' as const, offset: -6, fill: T.text3, fontSize: 10, style: { textAnchor: 'middle' as const } };
   const makeAxisLabel = (value: string, color: string, side: 'left' | 'right') => ({
     value, angle: side === 'left' ? -90 : 90,
     position: (side === 'left' ? 'insideLeft' : 'insideRight') as 'insideLeft' | 'insideRight',
@@ -150,7 +150,7 @@ export function DashboardLineChart({ widget, size: _size }: { widget: DashboardW
         </>
       ) : (
         <YAxis yAxisId="left" width={AXIS_W} tickCount={6} tick={TEXT_STYLE} axisLine={{ stroke: GS }} tickFormatter={formatYValue}
-          label={makeAxisLabel(singleAxisLabel, 'rgba(255,255,255,0.35)', 'left')} />
+          label={makeAxisLabel(singleAxisLabel, T.text3, 'left')} />
       )}
       <Tooltip contentStyle={TT_STYLE} />
       {yCols.map((c, i) => (
@@ -165,7 +165,7 @@ export function DashboardLineChart({ widget, size: _size }: { widget: DashboardW
     <>
       {/* Dual Axis Indicator Slot (Fixed 26px) */}
       {needsDualAxis ? (
-        <div style={{ padding: '4px 16px', background: 'rgba(124,58,255,0.06)', borderTop: '1px solid rgba(124,58,255,0.12)', fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', fontFamily: T.fontMono, height: 26, display: 'flex', alignItems: 'center' }}>
+        <div style={{ padding: '4px 16px', background: T.accentDim, borderTop: `1px solid ${T.border}`, fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono, height: 26, display: 'flex', alignItems: 'center' }}>
           Two y-axes — <span style={{ color: leftAxisColor }}>{leftCols.map(formatColLabel).join(' / ')}</span> left · <span style={{ color: rightAxisColor }}>{rightCols.map(formatColLabel).join(' / ')}</span> right
         </div>
       ) : (
@@ -174,11 +174,11 @@ export function DashboardLineChart({ widget, size: _size }: { widget: DashboardW
 
       {/* Legend / Spacer Slot (Fixed 40px) */}
       {yCols.length > 1 ? (
-        <div className="flex flex-wrap gap-x-4 gap-y-2 px-4 py-2 border-t border-white/[0.05]" style={{ minHeight: 40 }}>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 px-4 py-2 border-t border-gray-100" style={{ minHeight: 40, borderTop: `1px solid ${T.border}` }}>
           {yCols.map((col, i) => (
             <div key={col} className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-              <span className="text-[11px] font-medium text-white/50">{formatColLabel(col)}</span>
+              <span className="text-[11px] font-medium text-gray-500" style={{ color: T.text3 }}>{formatColLabel(col)}</span>
             </div>
           ))}
         </div>

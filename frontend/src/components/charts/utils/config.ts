@@ -1,6 +1,8 @@
+import { T } from '../../dashboard/tokens';
+
 export const chartStyles = {
-  gridStroke: 'rgba(255,255,255,0.06)',
-  textStyle: { fontSize: 11, fill: 'rgba(255,255,255,0.4)' },
+  gridStroke: T.border,
+  textStyle: { fontSize: 11, fill: T.text3, fontFamily: T.fontMono },
   axisTickLine: false as const,
   axisLine: false as const,
 };

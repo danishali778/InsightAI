@@ -8,7 +8,7 @@ export function Footer() {
             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 40, maxWidth: 1100, margin: '0 auto 48px' }}>
                 {/* Brand */}
                 <div>
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '1.3rem', color: '#fff', display: 'block', marginBottom: 14, fontStyle: 'normal' }}>
+                    <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '1.3rem', color: 'var(--text)', display: 'block', marginBottom: 14, fontStyle: 'normal' }}>
                         Query<span style={{ color: 'var(--accent)' }}>Mind</span>
                     </span>
                     <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.7, maxWidth: 240 }}>

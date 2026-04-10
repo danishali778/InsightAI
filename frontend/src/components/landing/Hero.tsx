@@ -32,7 +32,7 @@ export function Hero() {
             {/* Content */}
             <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: 860 }}>
                 {/* Badge */}
-                <div className="animate-fade-down" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 100, padding: '6px 16px', fontFamily: "'DM Mono', monospace", fontSize: '0.78rem', color: 'var(--accent)', marginBottom: 28 }}>
+                <div className="animate-fade-down" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(14, 165, 233, 0.08)', border: '1px solid rgba(14, 165, 233, 0.2)', borderRadius: 100, padding: '6px 16px', fontFamily: "'DM Mono', monospace", fontSize: '0.78rem', color: 'var(--accent)', marginBottom: 28 }}>
                     <div className="animate-pulse-dot" style={{ width: 6, height: 6, background: 'var(--accent)', borderRadius: '50%' }} />
                     Text-to-SQL &nbsp;·&nbsp; Instant Insights
                 </div>
@@ -50,10 +50,10 @@ export function Hero() {
 
                 {/* CTA Buttons */}
                 <div className="animate-fade-down-3" style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <a href="/dashboard" className="btn-glow" style={{ background: 'var(--accent)', color: '#000', padding: '14px 32px', borderRadius: 8, fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none' }}>
+                    <a href="/dashboard" className="btn-glow" style={{ background: 'var(--accent)', color: '#fff', padding: '14px 34px', borderRadius: 10, fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.2)' }}>
                         Start for Free →
                     </a>
-                    <a href="#how" style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '14px 32px', borderRadius: 8, fontWeight: 500, fontSize: '0.95rem', textDecoration: 'none' }}>
+                    <a href="#how" style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '14px 34px', borderRadius: 10, fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none', transition: 'all 0.2s' }}>
                         Watch how it works
                     </a>
                 </div>
@@ -68,17 +68,17 @@ export function Hero() {
                         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--muted)', marginLeft: 8 }}>querymind.app — live query</span>
                     </div>
                     {/* Query */}
-                    <div style={{ padding: '20px 24px 14px', fontFamily: "'DM Sans', sans-serif", fontSize: '0.95rem', color: 'var(--text)', display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left' }}>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', background: 'rgba(0,229,255,0.1)', color: 'var(--accent)', border: '1px solid rgba(0,229,255,0.2)', padding: '3px 8px', borderRadius: 4, whiteSpace: 'nowrap', marginTop: 2 }}>ASK</span>
-                        <span ref={typewriterRef} />
+                    <div style={{ padding: '24px 28px 18px', fontFamily: "'DM Sans', sans-serif", fontSize: '0.95rem', color: 'var(--text)', display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left' }}>
+                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem', background: 'rgba(14, 165, 233, 0.08)', color: 'var(--accent)', border: '1px solid rgba(14, 165, 233, 0.2)', padding: '4px 9px', borderRadius: 4, whiteSpace: 'nowrap' }}>ASK</span>
+                        <span ref={typewriterRef} style={{ fontWeight: 500 }} />
                     </div>
                     {/* SQL output */}
-                    <div style={{ padding: '14px 24px 20px', fontFamily: "'DM Mono', monospace", fontSize: '0.8rem', color: '#a0c4ff', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid var(--border)', lineHeight: 1.8, textAlign: 'left' }}>
-                        <span className="sql-kw">SELECT</span> region, <span className="sql-kw">SUM</span>(revenue) <span className="sql-kw">AS</span> total_revenue<br />
-                        <span className="sql-kw">FROM</span> <span className="sql-tbl">sales_data</span><br />
-                        <span className="sql-kw">WHERE</span> quarter = <span className="sql-str">'Q3'</span> <span className="sql-kw">AND</span> year = <span className="sql-str">2024</span><br />
-                        <span className="sql-kw">GROUP BY</span> region<br />
-                        <span className="sql-kw">ORDER BY</span> total_revenue <span className="sql-kw">DESC</span>;
+                    <div style={{ padding: '18px 28px 24px', fontFamily: "'DM Mono', monospace", fontSize: '0.85rem', color: '#1e293b', background: '#f8fafc', borderTop: '1px solid var(--border)', lineHeight: 1.8, textAlign: 'left' }}>
+                        <span style={{ color: '#0ea5e9', fontWeight: 600 }}>SELECT</span> region, <span style={{ color: '#0ea5e9', fontWeight: 600 }}>SUM</span>(revenue) <span style={{ color: '#0ea5e9', fontWeight: 600 }}>AS</span> total_revenue<br />
+                        <span style={{ color: '#0ea5e9', fontWeight: 600 }}>FROM</span> <span style={{ color: '#6366f1' }}>sales_data</span><br />
+                        <span style={{ color: '#0ea5e9', fontWeight: 600 }}>WHERE</span> quarter = <span style={{ color: '#10b981' }}>'Q3'</span> <span style={{ color: '#0ea5e9', fontWeight: 600 }}>AND</span> year = <span style={{ color: '#10b981' }}>2024</span><br />
+                        <span style={{ color: '#0ea5e9', fontWeight: 600 }}>GROUP BY</span> region<br />
+                        <span style={{ color: '#0ea5e9', fontWeight: 600 }}>ORDER BY</span> total_revenue <span style={{ color: '#0ea5e9', fontWeight: 600 }}>DESC</span>;
                     </div>
                 </div>
             </div>

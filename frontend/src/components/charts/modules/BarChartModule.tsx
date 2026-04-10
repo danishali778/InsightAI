@@ -9,11 +9,11 @@ import { T } from '../../dashboard/tokens';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TruncatedXTick = ({ x, y, payload }: any) => {
-  const raw = String(payload?.value ?? '');
+  const raw = payload?.value != null ? String(payload.value) : '';
   const label = raw.length > 8 ? raw.slice(0, 8) + '…' : raw;
   return (
     <g transform={`translate(${x},${y})`}>
-      <text dy={4} textAnchor="end" fill="rgba(255,255,255,0.4)" fontSize={11} transform="rotate(-45)">
+      <text dy={4} textAnchor="end" fill={T.text3} fontSize={11} transform="rotate(-45)" fontFamily={T.fontMono}>
         {label}
       </text>
     </g>
@@ -111,14 +111,14 @@ export function BarChartModule({
         <div ref={svgContainerRef} style={{ padding: '16px 20px 0', overflowX: needsSVGScroll ? 'auto' : 'visible' }}>
           <svg width={svgW} height={svgH} style={{ display: 'block', overflow: 'visible' }}>
             {yTicks.map(t => (
-              <line key={t} x1={m.l} x2={svgW - m.r} y1={toY(t)} y2={toY(t)} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+              <line key={t} x1={m.l} x2={svgW - m.r} y1={toY(t)} y2={toY(t)} stroke={T.border} strokeDasharray="3 3" />
             ))}
-            <line x1={m.l} x2={m.l} y1={m.t} y2={ab} stroke="rgba(255,255,255,0.15)" />
-            <line x1={m.l} x2={svgW - m.r} y1={ab} y2={ab} stroke="rgba(255,255,255,0.15)" />
+            <line x1={m.l} x2={m.l} y1={m.t} y2={ab} stroke={T.border} />
+            <line x1={m.l} x2={svgW - m.r} y1={ab} y2={ab} stroke={T.border} />
             {yTicks.map(t => (
-              <text key={t} x={m.l - 8} y={toY(t)} textAnchor="end" dominantBaseline="middle" fill="rgba(255,255,255,0.4)" fontSize={11}>{fmtV(t)}</text>
+              <text key={t} x={m.l - 8} y={toY(t)} textAnchor="end" dominantBaseline="middle" fill={T.text3} fontSize={11} fontFamily={T.fontMono}>{fmtV(t)}</text>
             ))}
-            {yLabel && <text transform={`translate(${m.l - 52},${m.t + cH / 2}) rotate(-90)`} textAnchor="middle" fill="rgba(255,255,255,0.35)" fontSize={11}>{yLabel}</text>}
+            {yLabel && <text transform={`translate(${m.l - 52},${m.t + cH / 2}) rotate(-90)`} textAnchor="middle" fill={T.text3} fontSize={11} fontFamily={T.fontMono}>{yLabel}</text>}
             {groups.map((g, gi) => {
               const gx = gxs[gi];
               const centerX = gx + g.innerW / 2;
@@ -136,20 +136,20 @@ export function BarChartModule({
                     const bh = Math.max(1, (val / yTop) * cH);
                     return <rect key={col} x={gx + ci * (FBW + BGAP)} y={ab - bh} width={FBW} height={bh} fill={COLORS[yColumns.indexOf(col) % COLORS.length]} rx={3} opacity={0.85} />;
                   })}
-                  <g transform={`translate(${centerX},${ab + 4})`}><title>{g.xVal}</title><text textAnchor="end" fill="rgba(255,255,255,0.4)" fontSize={11} transform="rotate(-45)" dy={4}>{short}</text></g>
+                  <g transform={`translate(${centerX},${ab + 4})`}><title>{g.xVal}</title><text textAnchor="end" fill={T.text3} fontSize={11} transform="rotate(-45)" dy={4} fontFamily={T.fontMono}>{short}</text></g>
                 </g>
               );
             })}
-            {xLabel && <text x={m.l + (svgW - m.l - m.r) / 2} y={svgH - 6} textAnchor="middle" fill="rgba(255,255,255,0.35)" fontSize={11}>{xLabel}</text>}
+            {xLabel && <text x={m.l + (svgW - m.l - m.r) / 2} y={svgH - 6} textAnchor="middle" fill={T.text3} fontSize={11} fontFamily={T.fontMono}>{xLabel}</text>}
           </svg>
         </div>
         {sparseTooltip && (
-          <div style={{ position: 'fixed', left: sparseTooltip.clientX + 12, top: sparseTooltip.clientY - 40, background: 'rgba(15,23,42,0.96)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', pointerEvents: 'none', zIndex: 9999, minWidth: 160, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f8fafc', marginBottom: 8 }}>{sparseTooltip.xVal}</div>
+          <div style={{ position: 'fixed', left: sparseTooltip.clientX + 12, top: sparseTooltip.clientY - 40, background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(10px)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 14px', pointerEvents: 'none', zIndex: 9999, minWidth: 160, boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: T.text, marginBottom: 8 }}>{sparseTooltip.xVal}</div>
             {yColumns.filter(c => (Number(sparseTooltip.row[c]) || 0) > 0).map(c => (
               <div key={c} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-                <span style={{ fontSize: '0.75rem', color: COLORS[yColumns.indexOf(c) % COLORS.length] }}>{formatColLabel(c)}</span>
-                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', fontFamily: 'monospace' }}>{fmtV(Number(sparseTooltip.row[c]) || 0)}</span>
+                <span style={{ fontSize: '0.75rem', color: COLORS[yColumns.indexOf(c) % COLORS.length], fontWeight: 500 }}>{formatColLabel(c)}</span>
+                <span style={{ fontSize: '0.75rem', color: T.text2, fontFamily: T.fontMono }}>{fmtV(Number(sparseTooltip.row[c]) || 0)}</span>
               </div>
             ))}
           </div>
@@ -158,7 +158,7 @@ export function BarChartModule({
           {yColumns.map((col, i) => (
             <div key={col} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-              <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', fontFamily: T.fontMono }}>{formatColLabel(col)}</span>
+              <span style={{ fontSize: '0.72rem', color: T.text2, fontFamily: T.fontMono, fontWeight: 500 }}>{formatColLabel(col)}</span>
             </div>
           ))}
         </div>
@@ -212,7 +212,7 @@ export function BarChartModule({
       if (!vb) return null;
       const cx = vb.x - 32;
       const cy = vb.y + vb.height / 2;
-      return <text x={cx} y={cy} transform={`rotate(-90, ${cx}, ${cy})`} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize={11}>{yAxisLabelText}</text>;
+      return <text x={cx} y={cy} transform={`rotate(-90, ${cx}, ${cy})`} textAnchor="middle" fill={T.text3} fontSize={11} fontFamily={T.fontMono}>{yAxisLabelText}</text>;
     }
   };
 
@@ -229,10 +229,10 @@ export function BarChartModule({
           return (
             <div key={col} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px 10px', minWidth: 0 }}>
               <div style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>{formatColLabel(col)}</div>
-              <div style={{ fontSize: '1.55rem', fontWeight: 700, color: '#f8fafc', lineHeight: 1.1, marginBottom: 3 }}>{fmtV(lastVal)}</div>
-              <div style={{ fontSize: '0.7rem', color: isDown ? '#f87171' : '#22d3a5', marginBottom: 10 }}>{isDown ? '▼' : '▲'} {Math.abs(pctChange).toFixed(0)}% since {String(rawData[0]?.[xColumn] ?? '')}</div>
+              <div style={{ fontSize: '1.55rem', fontWeight: 700, color: T.text, lineHeight: 1.1, marginBottom: 3 }}>{fmtV(lastVal)}</div>
+              <div style={{ fontSize: '0.7rem', color: isDown ? T.red : T.green, marginBottom: 10, fontWeight: 500 }}>{isDown ? '▼' : '▲'} {Math.abs(pctChange).toFixed(0)}% since {String(rawData[0]?.[xColumn] ?? '')}</div>
               <ResponsiveContainer width="100%" height={120}>
-                <BarChart data={rawData} margin={{ top: 4, right: 4, bottom: 16, left: 4 }}>
+                <BarChart data={rawData} margin={{ top: 12, right: 12, bottom: 45, left: 12 }}>
                   <XAxis dataKey={xColumn} hide axisLine={false} tickLine={false} />
                   <YAxis hide domain={['auto', 'auto']} />
                   <Tooltip content={<CustomTooltip normalizedColMaxes={null} />} />
@@ -264,7 +264,7 @@ export function BarChartModule({
                 <YAxis yAxisId="right" orientation="right" width={AXIS_W} tickFormatter={yAxisFmtRight} tick={{ fontSize: 11, fill: rightAxisColor }} label={makeAxisLabel(rightAxisLabel, rightAxisColor, 'right')} />
               </>
             ) : (
-              <YAxis yAxisId="left" width={AXIS_W} tickFormatter={yAxisFmtSingle} tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.4)' }} label={yAxisLabelSingle} />
+              <YAxis yAxisId="left" width={AXIS_W} tickFormatter={yAxisFmtSingle} tick={{ fontSize: 11, fill: T.text3, fontFamily: T.fontMono }} label={yAxisLabelSingle} />
             )}
             <Tooltip content={<CustomTooltip normalizedColMaxes={normalized ? colMaxes : null} tooltipColumns={tooltipColumns} />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
             {viewMode === 'grouped' 
@@ -280,9 +280,9 @@ export function BarChartModule({
   return (
     <>
       {needsDualAxis && (
-        <div style={{ padding: '8px 20px', background: 'rgba(124,58,255,0.08)', borderTop: `1px solid rgba(124,58,255,0.15)`, fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', fontFamily: T.fontMono, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ padding: '8px 20px', background: T.purpleDim, borderTop: `1px solid ${T.purple}20`, fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono, display: 'flex', alignItems: 'center', gap: 10 }}>
           <Info width={14} height={14} style={{ color: T.purple, opacity: 0.8 }} />
-          <span>Two independent y-axes — <span style={{ color: leftAxisColor, fontWeight: 500 }}>{leftAxisLabel}</span> scale vs <span style={{ color: rightAxisColor, fontWeight: 500 }}>{rightAxisLabel}</span> scale</span>
+          <span>Two independent y-axes — <span style={{ color: leftAxisColor, fontWeight: 600 }}>{leftAxisLabel}</span> scale vs <span style={{ color: rightAxisColor, fontWeight: 600 }}>{rightAxisLabel}</span> scale</span>
         </div>
       )}
       {viewMode !== 'multi' && rightCols.length > 0 && !needsDualAxis && !normalized && (
@@ -294,13 +294,13 @@ export function BarChartModule({
       <div style={{ padding: viewMode === 'multi' ? '12px 16px 8px' : '16px 10px 0', overflowX: needsScroll ? 'auto' : 'visible' }}>
         {viewMode === 'multi' ? renderSmallMultiples() : renderSingleChart(viewMode === 'single' ? activeCategory : yColumns[0], 0)}
       </div>
-      {needsScroll && xLabel && <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: T.fontMono, padding: '2px 0 6px' }}>{xLabel}</div>}
+      {needsScroll && xLabel && <div style={{ textAlign: 'center', fontSize: 11, color: T.text3, fontFamily: T.fontMono, padding: '2px 0 6px' }}>{xLabel}</div>}
       {yColumns.length > 1 && viewMode !== 'multi' && (
         <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 16, padding: '4px 20px 10px' }}>
           {yColumns.map((col, i) => (
             <div key={col} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS[i % COLORS.length] }} />
-              <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', fontFamily: T.fontMono }}>{formatColLabel(col)}</span>
+              <span style={{ fontSize: '0.72rem', color: T.text2, fontFamily: T.fontMono, fontWeight: 500 }}>{formatColLabel(col)}</span>
             </div>
           ))}
         </div>

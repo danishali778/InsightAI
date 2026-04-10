@@ -22,7 +22,12 @@ export function autoTitle(message: AddToDashboardModalProps['message']) {
   return message.title || message.chart_recommendation?.title || 'Untitled Widget';
 }
 
-export function layoutDims(size: WidgetSize) {
+export function layoutDims(size: WidgetSize, vizType?: string) {
+  // KPI Header Standard: 25% Width (5 columns), Compact Height (5 units)
+  if (vizType === 'kpi') {
+    return { w: 5, h: 5, minW: 5, maxW: 5, minH: 5, maxH: 5 };
+  }
+
   if (size === 'quarter') return { w: 5, h: 7, minW: 3, minH: 4 };
   if (size === 'three-quarter') return { w: 13, h: 7, minW: 10, minH: 5 };
   return size === 'full'

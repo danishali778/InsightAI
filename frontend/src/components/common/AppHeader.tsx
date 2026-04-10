@@ -1,0 +1,134 @@
+import React from 'react';
+import { T } from '../dashboard/tokens';
+
+interface AppHeaderProps {
+  title: string;
+  subtitle?: string;
+  badge?: {
+    text: string;
+    color: string;
+    icon?: React.ReactNode;
+  };
+  children?: React.ReactNode; // For page-specific actions/filters
+}
+
+export function AppHeader({ title, subtitle, badge, children }: AppHeaderProps) {
+  return (
+    <header style={{
+      height: 54,
+      flexShrink: 0,
+      background: 'rgba(255, 255, 255, 0.82)',
+      backdropFilter: 'blur(20px) saturate(1.8)',
+      boxShadow: '0 1px 0 0 rgba(0, 0, 0, 0.05)',
+      borderBottom: `1px solid ${T.border}`,
+      display: 'flex',
+      alignItems: 'center',
+      padding: '0 24px',
+      gap: 16,
+      zIndex: 50,
+    }}>
+      {/* Left: Branding/Title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <h1 style={{
+            fontFamily: T.fontHead,
+            fontWeight: 800,
+            fontSize: '0.95rem',
+            color: T.text,
+            letterSpacing: '-0.02em',
+            margin: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {title}
+          </h1>
+          {subtitle && (
+            <div style={{
+              fontSize: '0.68rem',
+              color: T.text3,
+              fontFamily: T.fontMono,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {subtitle}
+            </div>
+          )}
+        </div>
+
+        {badge && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: `${badge.color}10`,
+            border: `1px solid ${badge.color}30`,
+            borderRadius: 20,
+            padding: '4px 12px',
+            fontSize: '0.68rem',
+            fontFamily: T.fontMono,
+            color: badge.color,
+            fontWeight: 600,
+            flexShrink: 0,
+          }}>
+            {badge.icon && <span style={{ display: 'flex' }}>{badge.icon}</span>}
+            {badge.text}
+          </div>
+        )}
+      </div>
+
+      {/* Right: Page-specific actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {children}
+        
+        {/* Universal User Menu Placeholder */}
+        <div style={{
+          width: 30,
+          height: 30,
+          borderRadius: 8,
+          background: `linear-gradient(135deg, ${T.purple}, ${T.accent})`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          color: '#fff',
+          cursor: 'pointer',
+          marginLeft: 8,
+        }}>
+          AK
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// Reusable Icon components for Header Actions
+export const HeaderIcons = {
+  Share: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+      <polyline points="16 6 12 2 8 6" />
+      <line x1="12" y1="2" x2="12" y2="15" />
+    </svg>
+  ),
+  Download: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
+  Search: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  ),
+  Plus: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+};

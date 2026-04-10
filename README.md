@@ -1,131 +1,102 @@
 # InsightAI 🧠📊
 
-A Text-to-SQL Business Intelligence Dashboard powered by Multi-Agent AI.
+### **Talk to your Data. Get Insights in Seconds.**
+A next-generation **Natural Language Business Intelligence (BI)** platform. Connect your database, ask questions in plain English, and watch as specialized AI agents generate SQL, execute it, and build interactive dashboards for you.
 
+---
 
-https://github.com/user-attachments/assets/fe8c9466-1f92-44c9-9265-6ab98135695d
+## 🏗️ Visual Showcase
 
+![Landing Page](extra_assets/01-landing-page.png)
+*Modern, high-performance landing page.*
 
+````carousel
+![Dashboard](extra_assets/02-dashboard-page.png)
+<!-- slide -->
+![AI Chat](extra_assets/03-chat-page.png)
+<!-- slide -->
+![Query Library](extra_assets/04-query-library.png)
+<!-- slide -->
+![Connections](extra_assets/05-connections-page.png)
+````
 
-**Ask questions in plain English → Get SQL queries → See visualizations**
+---
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue)
-![React](https://img.shields.io/badge/React-18+-61DAFB)
-![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6)
+## ✨ Core Features
 
-## ✨ Features
+### 🤖 **The LangGraph Brain**
+InsightAI isn't just a simple wrapper. It uses a **Multi-Agent Orchestration** engine powered by **LangGraph** to handle the complexity of data analysis:
+- **Autonomous SQL Generation**: Specialized agents write optimized SQL based on your schema.
+- **Self-Correction Loop**: If a query fails, the agent analyzes the error and automatically corrects the SQL.
+- **Smart Chart Recommendations**: AI analyzes your data shape to suggest the perfect visualization (Bar, Line, Radar, etc.).
 
-- 🤖 **Multi-Agent System**: Specialized AI agents for SQL generation, data analysis, and chart selection
-- 📊 **15+ Chart Types**: Bar, Line, Pie, Radar, Scatter, Waterfall, Funnel, Stacked, Clustered, and more
-- 🎨 **Smart Recommendations**: AI suggests best chart types based on your data
-- 🔄 **Real-time Processing**: Stream-based updates with step-by-step logging
-- 💡 **Natural Language**: Just ask questions like "Show revenue by category"
+### 📊 **SaaS 2.0 BI Dashboard**
+- **20-Column Grid Layout**: A precision-engineered dashboard system for infinite customization.
+- **Interactive Widgets**: Pin any AI-generated query to your personal or shared dashboards.
+- **Enterprise Analytics**: Real-time stats on query performance, usage, and database health.
 
-## 🏗️ Tech Stack
+### 🔐 **Core Infrastructure**
+- **Supabase Integration**: Built-in authentication and persistent database storage for sessions, connections, and dashboards.
+- **Multi-Database Support**: Connect to PostgreSQL (and others) with enterprise-grade safety (read-only enforcement).
+- **FastAPI Backend**: High-performance, asynchronous backend designed for scale.
 
-| Component | Technology |
-|-----------|------------|
-| Backend | FastAPI, LangGraph, CrewAI |
-| Frontend | React, Vite, TypeScript, Recharts |
-| LLM | Groq (DeepSeek/Llama models) |
-| Database | PostgreSQL |
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, TypeScript, Tailwind CSS, Recharts, Lucide Icons |
+| **Backend** | FastAPI, LangGraph, LangChain, CrewAI, Pydantic v2 |
+| **Database/Auth** | Supabase (PostgreSQL), PostgreSQL (Analytics Data) |
+| **AI Models** | Groq (Llama 3/DeepSeek), OpenAI (GPT-4o compatible) |
+
+---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL database
-- Groq API key
-
-### Backend Setup
-
+### 1. Backend Setup
 ```bash
 cd backend
-
-# Create virtual environment
 python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
-
-# Install dependencies
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# Configure environment
 cp .env.example .env
-# Edit .env with your API keys and database URL
-
-# Run server
+# Configure your GROQ_API_KEY and SUPABASE settings
 python main.py
 ```
 
-### Frontend Setup
-
+### 2. Frontend Setup
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Run dev server
 npm run dev
 ```
 
-### Access the App
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-
-## 📝 Example Queries
-
-```
-Show total revenue by product category
-Compare monthly sales and order count
-Top 10 customers by total spending
-Show order status distribution
-```
-
-## 📊 Supported Chart Types
-
-| Chart | Best For |
-|-------|----------|
-| Bar / Clustered | Category comparison |
-| Line / Area | Time series trends |
-| Pie | Distribution/composition |
-| Radar | Multi-metric comparison |
-| Scatter | Correlation analysis |
-| Stacked / 100% Stacked | Part-to-whole |
-| Combo (Dual Y-Axis) | Two metrics, different scales |
-| Waterfall | Cumulative changes |
-| Funnel | Pipeline/conversion |
-| Table | Detailed data view |
-
-## 🔧 Configuration
-
-Edit `backend/.env`:
-
+### 3. Environment Variables
+Ensure your `backend/.env` contains:
 ```env
 GROQ_API_KEY=your_key_here
-GROQ_MODEL=deepseek-r1-distill-llama-70b
-DATABASE_URL=postgresql://user:pass@localhost:5432/db
+DATABASE_URL=your_postgres_url
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_anon_key
 ```
 
-## 📁 Project Structure
+---
 
-```
-P9/
-├── backend/
-│   ├── agents/           # AI agents (SQL, Chart, Data)
-│   ├── services/         # LangGraph workflow
-│   ├── business_logic/   # Database connections
-│   └── main.py          # FastAPI server
-├── frontend/
-│   ├── src/components/   # React components
-│   ├── src/services/     # API client
-│   └── index.html
-└── README.md
-```
+## 🎥 Product Walkthrough
+[INSERT LOOM OR YOUTUBE LINK HERE]
+*Check out the full capabilities of InsightAI in action.*
+
+---
+
+## 📂 Project Structure
+- `backend/ai_core`: The LangGraph orchestration logic.
+- `backend/database`: Connection management and schema inspection.
+- `frontend/src/pages`: SaaS 2.0 app screens (Chat, Analytics, Dashboards).
+- `frontend/src/components/charts`: Modular, AI-ready visualization components.
+
+---
 
 ## 📄 License
-
-MIT License
+MIT License - Developed for InsightAI.

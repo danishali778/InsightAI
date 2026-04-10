@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AppSidebar } from '../components/common/AppSidebar';
+import { MainShell } from '../components/common/MainShell';
 import { T } from '../components/dashboard/tokens';
 
 type Section = 'profile' | 'security' | 'appearance' | 'ai' | 'notifications' | 'apikeys' | 'billing';
@@ -18,10 +18,15 @@ export function SettingsPage() {
   const [section, setSection] = useState<Section>('profile');
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: T.bg, overflow: 'hidden' }}>
-      <AppSidebar />
-
-      {/* Settings shell */}
+    <MainShell
+      title="User Settings"
+      subtitle="Manage your profile, security, and preferences"
+      badge={{
+        text: 'PRO',
+        color: T.purple,
+        icon: <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.purple }} />
+      }}
+    >
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* Settings nav */}
@@ -73,7 +78,7 @@ export function SettingsPage() {
         .settings-scroll::-webkit-scrollbar { width: 4px; }
         .settings-scroll::-webkit-scrollbar-thumb { background: ${T.s4}; border-radius: 2px; }
       `}</style>
-    </div>
+    </MainShell>
   );
 }
 

@@ -8,11 +8,11 @@ import { T } from '../../dashboard/tokens';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TruncatedXTick = ({ x, y, payload }: any) => {
-  const raw = String(payload?.value ?? '');
+  const raw = payload?.value != null ? String(payload.value) : '';
   const label = raw.length > 8 ? raw.slice(0, 8) + '…' : raw;
   return (
     <g transform={`translate(${x},${y})`}>
-      <text dy={4} textAnchor="end" fill="rgba(255,255,255,0.4)" fontSize={11} transform="rotate(-45)">
+      <text dy={4} textAnchor="end" fill={T.text3} fontSize={11} transform="rotate(-45)" fontFamily={T.fontMono}>
         {label}
       </text>
     </g>
@@ -40,7 +40,7 @@ export function LineChartModule({
   const fixedWidth = Math.max(600, data.length * Math.max(48, yColumns.length * 22));
 
   const xLabelInterval = needsScroll ? 0 : (data.length > 20 ? Math.ceil(data.length / 12) - 1 : 0);
-  const chartMargin = { top: 10, right: 20, left: 50, bottom: 10 };
+  const chartMargin = { top: 12, right: 12, bottom: 45, left: 12 };
 
   const xAxisProps = {
     dataKey: xColumn,
@@ -53,8 +53,9 @@ export function LineChartModule({
         value: xLabel,
         position: 'insideBottom' as const,
         offset: -6,
-        fill: 'rgba(255,255,255,0.35)',
+        fill: T.text3,
         fontSize: 11,
+        fontFamily: T.fontMono,
       }
     } : {}),
   };
@@ -106,7 +107,7 @@ export function LineChartModule({
       const cy = vb.y + vb.height / 2;
       return (
         <text x={cx} y={cy} transform={`rotate(-90, ${cx}, ${cy})`}
-          textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize={11}>
+          textAnchor="middle" fill={T.text3} fontSize={11} fontFamily={T.fontMono}>
           {yAxisLabelText}
         </text>
       );
@@ -116,44 +117,51 @@ export function LineChartModule({
   const showMultiToggle = !normalized && yColumns.length > 1;
 
   const renderSmallMultiples = () => {
-    const getFmtVal = (colName: string) => (v: number) => {
-      const isCurr = isColCurrency(colName);
+    const getFmtVal = (col: string) => (v: number) => {
+      const isCurr = isColCurrency(col);
       const prefix = isCurr ? '$' : '';
       const abs = Math.abs(v);
-      if (abs >= 1e9) return `${prefix}${(v / 1e9).toFixed(1)}B`;
-      if (abs >= 1e6) return `${prefix}${(v / 1e6).toFixed(2)}M`;
-      if (abs >= 1e3) return `${prefix}${(v / 1e3).toFixed(1)}k`;
+      if (abs >= 1000000) return `${prefix}${(v / 1000000).toFixed(1)}M`;
+      if (abs >= 1000) return `${prefix}${(v / 1000).toFixed(1)}K`;
       if (abs < 10 && abs !== 0) return `${prefix}${v.toFixed(2)}`;
       return `${prefix}${Math.round(v).toLocaleString()}`;
     };
-    const xTick = { fontSize: 9, fill: 'rgba(255,255,255,0.35)' };
-    const tipStyle = { background: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, fontSize: '0.72rem' };
+    const xTick = { fontSize: 9, fill: T.text3, fontFamily: T.fontMono };
+    const tipStyle = { 
+      background: 'rgba(255, 255, 255, 0.96)', 
+      border: `1px solid ${T.border}`, 
+      borderRadius: 6, 
+      fontSize: '0.72rem',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+    };
 
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
         {yColumns.map((col, i) => {
           const color = COLORS[i % COLORS.length];
-          const firstVal = Number(rawData[0]?.[col]) || 0;
-          const lastVal = Number(rawData[rawData.length - 1]?.[col]) || 0;
-          const pctChange = firstVal !== 0 ? ((lastVal - firstVal) / Math.abs(firstVal)) * 100 : 0;
+          const gradId = `grad-${col.replace(/\s+/g, '-')}`;
+          const colData = rawData.map(r => Number(r[col]) || 0);
+          const firstVal = colData[0] || 0;
+          const lastVal = colData[colData.length - 1] || 0;
+          const diff = lastVal - firstVal;
+          const pctChange = firstVal === 0 ? 0 : (diff / firstVal) * 100;
+          const isDown = diff < 0;
           const firstX = String(rawData[0]?.[xColumn] ?? '');
-          const isDown = pctChange < 0;
-          const gradId = `sm-grad-${i}`;
 
           return (
-            <div key={col} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px 10px', minWidth: 0 }}>
+            <div key={col} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px 10px' }}>
               <div style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>
                 {formatColLabel(col)}
               </div>
-              <div style={{ fontSize: '1.55rem', fontWeight: 700, color: '#f8fafc', lineHeight: 1.1, marginBottom: 3 }}>
+              <div style={{ fontSize: '1.55rem', fontWeight: 700, color: T.text, lineHeight: 1.1, marginBottom: 3 }}>
                 {getFmtVal(col)(lastVal)}
               </div>
-              <div style={{ fontSize: '0.7rem', color: isDown ? '#f87171' : '#22d3a5', marginBottom: 10 }}>
+              <div style={{ fontSize: '0.7rem', color: isDown ? T.red : T.green, marginBottom: 10, fontWeight: 500 }}>
                 {isDown ? '▼' : '▲'} {Math.abs(pctChange).toFixed(0)}% since {firstX}
               </div>
 
               <ResponsiveContainer width="100%" height={90}>
-                <AreaChart data={rawData} margin={{ top: 4, right: 2, bottom: 0, left: 2 }}>
+                <AreaChart data={rawData} margin={{ top: 2, right: 4, bottom: 2, left: 4 }}>
                   <defs>
                     <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={color} stopOpacity={0.4} />
@@ -162,7 +170,7 @@ export function LineChartModule({
                   </defs>
                   <XAxis dataKey={xColumn} tick={xTick} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                   <YAxis domain={['auto', 'auto']} hide />
-                  <Tooltip contentStyle={tipStyle} labelStyle={{ color: 'rgba(255,255,255,0.6)', marginBottom: 4 }} itemStyle={{ color }}
+                  <Tooltip contentStyle={tipStyle} labelStyle={{ color: T.text2, marginBottom: 4, fontWeight: 600 }} itemStyle={{ color }}
                     formatter={(v: any) => [typeof v === 'number' ? (isColCurrency(col) ? `$${v.toLocaleString()}` : v.toLocaleString()) : v, formatColLabel(col)] as any} />
                   <Area type="monotone" dataKey={col} stroke={color} fill={`url(#${gradId})`} strokeWidth={2} dot={false} connectNulls />
                 </AreaChart>
@@ -217,8 +225,8 @@ export function LineChartModule({
   return (
     <>
       {needsDualAxis && (
-        <div style={{ padding: '6px 20px', background: 'rgba(124,58,255,0.06)', borderTop: `1px solid rgba(124,58,255,0.12)`, fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', fontFamily: T.fontMono }}>
-          Two independent y-axes — <span style={{ color: leftAxisColor }}>{leftAxisLabel}</span> on left · <span style={{ color: rightAxisColor }}>{rightAxisLabel}</span> on right
+        <div style={{ padding: '6px 20px', background: T.purpleDim, borderTop: `1px solid ${T.purple}20`, fontSize: '0.7rem', color: T.text3, fontFamily: T.fontMono }}>
+          Two independent y-axes — <span style={{ color: leftAxisColor, fontWeight: 600 }}>{leftAxisLabel}</span> on left · <span style={{ color: rightAxisColor, fontWeight: 600 }}>{rightAxisLabel}</span> on right
         </div>
       )}
 
@@ -232,7 +240,7 @@ export function LineChartModule({
       </div>
 
       {needsScroll && xLabel && (
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: T.fontMono, padding: '2px 0 6px' }}>
+        <div style={{ textAlign: 'center', fontSize: 11, color: T.text3, fontFamily: T.fontMono, padding: '2px 0 6px' }}>
           {xLabel}
         </div>
       )}
@@ -242,7 +250,7 @@ export function LineChartModule({
           {yColumns.map((col, i) => (
             <div key={col} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-              <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)', fontFamily: T.fontMono }}>{xLabel && col === xColumn ? xLabel : formatColLabel(col)}</span>
+              <span style={{ fontSize: '0.72rem', color: T.text2, fontFamily: T.fontMono, fontWeight: 500 }}>{xLabel && col === xColumn ? xLabel : formatColLabel(col)}</span>
             </div>
           ))}
         </div>
