@@ -9,13 +9,21 @@ A next-generation **Natural Language Business Intelligence (BI)** platform. Conn
 ![Hero Landing Page](extra_assets/01-landing-page.png)
 *Modern, glassmorphism-inspired landing page with 20-column precision grid.*
 
-| Dashboard (Upper) | Dashboard (Lower) |
+| Dashboard (Top) | Dashboard (Upper-Mid) |
 | :---: | :---: |
-| ![Dashboard Top](extra_assets/dashboard-top.png) | ![Dashboard Bottom](extra_assets/dashboard-bottom.png) |
+| ![Dashboard 1](extra_assets/dashboard-1.png) | ![Dashboard 2](extra_assets/dashboard-2.png) |
+
+| Dashboard (Lower-Mid) | Dashboard (Bottom) |
+| :---: | :---: |
+| ![Dashboard 3](extra_assets/dashboard-3.png) | ![Dashboard 4](extra_assets/dashboard-4.png) |
 
 | AI Chat Deep-Dive | Advanced Analytics |
 | :---: | :---: |
-| ![Chat Session](extra_assets/chat-detailed-session.png) | ![Analytics Bottom](extra_assets/analytics-bottom.png) |
+| ![Chat Session](extra_assets/chat-detailed.png) | ![Analytics Top](extra_assets/analytics-top.png) |
+
+| Query Library | Connection Hub |
+| :---: | :---: |
+| ![Query Library](extra_assets/04-query-library.png) | ![Connections](extra_assets/05-connections-page.png) |
 
 ---
 
