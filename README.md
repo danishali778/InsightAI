@@ -6,24 +6,24 @@ A next-generation **Natural Language Business Intelligence (BI)** platform. Conn
 ---
 
 ## 🏗️ Visual Showcase
-![Hero Landing Page](extra_assets/01-landing-page.png)
+![Hero Landing Page](assets/01-landing-page.png)
 *Modern, glassmorphism-inspired landing page with 20-column precision grid.*
 
 | Dashboard (Top) | Dashboard (Upper-Mid) |
 | :---: | :---: |
-| ![Dashboard 1](extra_assets/dashboard-1.png) | ![Dashboard 2](extra_assets/dashboard-2.png) |
+| ![Dashboard 1](assets/dashboard-1.png) | ![Dashboard 2](assets/dashboard-2.png) |
 
 | Dashboard (Lower-Mid) | Dashboard (Bottom) |
 | :---: | :---: |
-| ![Dashboard 3](extra_assets/dashboard-3.png) | ![Dashboard 4](extra_assets/dashboard-4.png) |
+| ![Dashboard 3](assets/dashboard-3.png) | ![Dashboard 4](assets/dashboard-4.png) |
 
 | AI Chat Deep-Dive | Advanced Analytics |
 | :---: | :---: |
-| ![Chat Session](extra_assets/chat-detailed.png) | ![Analytics Top](extra_assets/analytics-top.png) |
+| ![Chat Session](assets/chat-detailed.png) | ![Analytics Top](assets/analytics-top.png) |
 
 | Query Library | Connection Hub |
 | :---: | :---: |
-| ![Query Library](extra_assets/04-query-library.png) | ![Connections](extra_assets/05-connections-page.png) |
+| ![Query Library](assets/04-query-library.png) | ![Connections](assets/05-connections-page.png) |
 
 ---
 
@@ -90,7 +90,7 @@ SUPABASE_KEY=your_supabase_anon_key
 ---
 
 ## 🎥 Product Walkthrough
-![Walkthrough Video](extra_assets/walkthrough.webp)
+![Walkthrough Video](assets/walkthrough.webp)
 *Check out the full capabilities of InsightAI in action—from natural language queries to automated BI dashboards.*
 
 ---
