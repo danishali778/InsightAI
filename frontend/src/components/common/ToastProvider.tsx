@@ -20,6 +20,7 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) throw new Error('useToast must be used within a ToastProvider');
@@ -66,9 +67,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 function ToastItem({ toast, onRemove }: { toast: Toast, onRemove: () => void }) {
   const isSuccess = toast.type === 'success';
   const isError = toast.type === 'error';
-  
+
   return (
-    <div 
+    <div
       className="toast-container"
       style={{
         pointerEvents: 'auto',
@@ -95,7 +96,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast, onRemove: () => void }) 
       }}>
         {isSuccess ? '✓' : isError ? '✕' : 'ℹ'}
       </div>
-      
+
       <div style={{ flex: 1 }}>
         <div style={{ color: T.text, fontSize: '0.84rem', fontWeight: 500, lineHeight: 1.4 }}>
           {toast.message}
@@ -123,7 +124,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast, onRemove: () => void }) 
         </button>
       )}
 
-      <button 
+      <button
         onClick={onRemove}
         style={{
           background: 'none', border: 'none', color: T.text3,
