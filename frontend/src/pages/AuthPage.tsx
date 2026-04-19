@@ -36,6 +36,7 @@ export function AuthPage() {
       }
     };
     freshCheck();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isDevMode, navigate]);
 
   const handleOAuthLogin = async (provider: 'google') => {
@@ -49,8 +50,8 @@ export function AuthPage() {
         }
       });
       if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || 'Failed to authenticate with Google');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to authenticate with Google');
     } finally {
       setLoading(false);
     }
@@ -81,8 +82,8 @@ export function AuthPage() {
           setError("Success! Please check your email for a confirmation link.");
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Authentication failed');
     } finally {
       setLoading(false);
     }

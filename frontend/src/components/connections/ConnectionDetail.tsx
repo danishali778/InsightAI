@@ -5,6 +5,29 @@ import { testConnection, updateConnectionSettings } from '../../services/api';
 import type { ConnectionDetailProps, ConnectionDetailTab, ConnectionListItem } from '../../types/connections';
 import { ErdDiagram } from './ErdDiagram';
 
+// ---------------------------------------------------------------------------
+// Local type definitions for schema and query data
+// ---------------------------------------------------------------------------
+interface ColumnSchema {
+  name: string;
+  type?: string;
+  primary_key?: boolean;
+  is_foreign_key?: boolean;
+}
+
+interface TableSchema {
+  name: string;
+  row_count?: number;
+  columns?: ColumnSchema[];
+}
+
+interface QueryRecord {
+  success: boolean;
+  sql: string;
+  execution_time_ms?: number;
+  timestamp: string;
+}
+
 export function ConnectionDetail({ connection, schema, queryHistory, onDelete, onRefreshSchema }: ConnectionDetailProps) {
   const [activeTab, setActiveTab] = useState<ConnectionDetailTab>('overview');
   
@@ -145,10 +168,10 @@ function OverviewTab({ connection, schema, queryHistory, onTabSwitch }: { connec
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16, marginBottom: 20 }}>
         <SectionCard title="Schema Preview" badge={{ text: `${tableCount} tables`, color: T.green }} onAction={() => onTabSwitch('schema')}>
           <div style={{ padding: '10px 14px' }}>
-            {tables.slice(0, 4).map((t: any, i: number) => (
+            {tables.slice(0, 4).map((t: TableSchema, i: number) => (
               <SchemaTable key={i} name={t.name} rows={t.row_count != null ? `${t.row_count.toLocaleString()} rows` : 'N/A'}
                 defaultExpanded={i === 0}
-                cols={t.columns?.map((c: any) => ({ name: c.name, type: c.type?.split('(')[0]?.toUpperCase() || 'UNK', isPk: c.primary_key, isFk: c.is_foreign_key })) || []} />
+                cols={t.columns?.map((c: ColumnSchema) => ({ name: c.name, type: c.type?.split('(')[0]?.toUpperCase() || 'UNK', isPk: c.primary_key, isFk: c.is_foreign_key })) || []} />
             ))}
             {tables.length === 0 && <div style={{ color: T.text3, fontSize: '0.78rem', padding: 8 }}>No tables found</div>}
           </div>
@@ -175,7 +198,7 @@ function OverviewTab({ connection, schema, queryHistory, onTabSwitch }: { connec
       
       <SectionCard title="Recent Query Activity" onAction={() => onTabSwitch('activity')} actionText="View All →">
          <div style={{ display: 'flex', flexDirection: 'column' }}>
-           {recentQueries.map((q: any, i: number) => (
+           {recentQueries.map((q: QueryRecord, i: number) => (
              <ActivityRow key={i} ok={q.success} err={!q.success}
                query={q.sql?.substring(0, 80) + (q.sql?.length > 80 ? '...' : '')}
                dur={q.success ? `${((q.execution_time_ms || 0) / 1000).toFixed(2)}s` : 'Error'}
@@ -225,8 +248,8 @@ function CredentialsTab({ connection }: { connection: ConnectionListItem }) {
         password: '',  // We don't have the password stored on frontend
       });
       setTestResult(result);
-    } catch (err: any) {
-      setTestResult({ success: false, message: err.message || 'Test failed' });
+    } catch (err: unknown) {
+      setTestResult({ success: false, message: (err as Error).message || 'Test failed' });
     } finally {
       setTesting(false);
     }
@@ -313,7 +336,7 @@ function CredentialsTab({ connection }: { connection: ConnectionListItem }) {
   );
 }
 
-function SchemaTab({ schema, onRefresh }: { schema?: any, onRefresh?: () => void }) {
+function SchemaTab({ schema, onRefresh }: { schema?: { tables?: TableSchema[] }, onRefresh?: () => void }) {
   const tables = schema?.tables || [];
   const [viewMode, setViewMode] = useState<'table' | 'erd'>('table');
 
@@ -346,7 +369,7 @@ function SchemaTab({ schema, onRefresh }: { schema?: any, onRefresh?: () => void
               </tr>
             </thead>
             <tbody>
-              {tables.map((t: any, i: number) => (
+              {tables.map((t: TableSchema, i: number) => (
                 <tr key={i} style={{ borderBottom: `1px solid ${T.border}` }}>
                   <td style={{ padding: '9px 18px', color: T.text, fontFamily: T.fontMono }}>{t.name}</td>
                   <td style={{ padding: '9px 18px', color: T.text2, fontFamily: T.fontMono }}>{t.row_count?.toLocaleString() || 'N/A'}</td>
@@ -375,12 +398,12 @@ function SecurityTab() {
     <div style={{ color: T.text2 }}>Security settings coming soon...</div>
   )
 }
-function ActivityTab({ queryHistory }: { queryHistory?: any[] }) {
+function ActivityTab({ queryHistory }: { queryHistory?: QueryRecord[] }) {
   const records = queryHistory || [];
   return (
     <SectionCard title="All Query Activity" badge={{ text: `${records.length} queries`, color: T.accent }}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {records.map((q: any, i: number) => (
+        {records.map((q: QueryRecord, i: number) => (
           <ActivityRow key={i} ok={q.success} err={!q.success}
             query={q.sql?.substring(0, 100) + (q.sql?.length > 100 ? '...' : '')}
             dur={q.success ? `${((q.execution_time_ms || 0) / 1000).toFixed(2)}s` : 'Error'}
@@ -435,7 +458,7 @@ function SectionCard({ title, badge, onAction, actionText, children }: { title: 
   );
 }
 
-function SchemaTable({ name, rows, defaultExpanded, cols }: { name: string, rows: string, defaultExpanded?: boolean, cols: any[] }) {
+function SchemaTable({ name, rows, defaultExpanded, cols }: { name: string, rows: string, defaultExpanded?: boolean, cols: ColumnSchema[] }) {
   const [isOpen, setIsOpen] = useState(defaultExpanded || false);
   return (
     <div style={{ marginBottom: 4 }}>
@@ -497,6 +520,7 @@ function FormGroup({ label, req, value, full, select }: { label: string, req?: b
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ToggleRow({ label, sub, on }: { label: string, sub: string, on?: boolean }) {
   const [isOn, setIsOn] = useState(on || false);
   return (

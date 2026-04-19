@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Optional
 
 from common.auth import get_current_user, get_user_no_check, User
 from settings_page import store
