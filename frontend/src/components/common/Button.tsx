@@ -127,7 +127,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       justifyContent: 'center',
       gap: T.space[2],
       whiteSpace: 'nowrap',
-      ...(style as any),
+      ...(style as React.CSSProperties),
     };
 
     return (

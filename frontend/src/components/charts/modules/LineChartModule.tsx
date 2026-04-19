@@ -147,6 +147,12 @@ export function LineChartModule({
           const pctChange = firstVal === 0 ? 0 : (diff / firstVal) * 100;
           const isDown = diff < 0;
           const firstX = String(rawData[0]?.[xColumn] ?? '');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tooltipFmt = (v: any) => [
+            typeof v === 'number' ? (isColCurrency(col) ? `$${v.toLocaleString()}` : v.toLocaleString()) : v,
+            formatColLabel(col),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ] as any;
 
           return (
             <div key={col} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 16px 10px' }}>
@@ -171,7 +177,7 @@ export function LineChartModule({
                   <XAxis dataKey={xColumn} tick={xTick} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                   <YAxis domain={['auto', 'auto']} hide />
                   <Tooltip contentStyle={tipStyle} labelStyle={{ color: T.text2, marginBottom: 4, fontWeight: 600 }} itemStyle={{ color }}
-                    formatter={(v: any) => [typeof v === 'number' ? (isColCurrency(col) ? `$${v.toLocaleString()}` : v.toLocaleString()) : v, formatColLabel(col)] as any} />
+                    formatter={tooltipFmt} />
                   <Area type="monotone" dataKey={col} stroke={color} fill={`url(#${gradId})`} strokeWidth={2} dot={false} connectNulls />
                 </AreaChart>
               </ResponsiveContainer>

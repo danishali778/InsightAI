@@ -17,10 +17,10 @@ export function KPIModule({
   const label = yLabel || formatColLabel(primaryCol);
   const isCurrency = column_metadata?.[primaryCol] === 'currency';
 
-  const formatValue = (v: any) => {
+  const formatValue = (v: unknown) => {
     const num = Number(v);
     if (isNaN(num)) return String(v);
-    
+
     if (isCurrency) {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -56,7 +56,7 @@ export function KPIModule({
       }}>
         {label}
       </div>
-      
+
       <div style={{
         fontSize: '4.5rem',
         fontWeight: 800,

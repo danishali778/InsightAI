@@ -50,7 +50,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 
     const cardStyle: React.CSSProperties = {
       ...variantStyles,
-      ...(style as any),
+      ...(style as React.CSSProperties),
     };
 
     return (

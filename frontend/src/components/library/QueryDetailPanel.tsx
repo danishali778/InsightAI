@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { T } from '../dashboard/tokens';
 import { runSavedQuery, getQueryRunHistory, setQuerySchedule, removeQuerySchedule, updateSavedQuery, listLibraryFolders } from '../../services/api';
@@ -74,8 +75,8 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
         setActiveTab('info');
       }
       onRefresh?.();
-    } catch (err: any) {
-      const errorResult = { success: false, error: err.message };
+    } catch (err: unknown) {
+      const errorResult = { success: false, error: err instanceof Error ? err.message : String(err) };
       setRunResult(errorResult);
       setActiveTab('info');
     } finally {
