@@ -1,9 +1,12 @@
 import os
+import logging
 import uvicorn
 import traceback
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+logger = logging.getLogger(__name__)
 
 # Log folder
 LOG_FILE = "startup_debug.log"
@@ -75,12 +78,34 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS
-origins = ALLOWED_ORIGINS
-if "*" not in origins:
-    for local_origin in ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]:
-        if local_origin not in origins:
-            origins.append(local_origin)
+# ---------------------------------------------------------------------------
+# CORS Configuration
+# ---------------------------------------------------------------------------
+# IMPORTANT: Using allow_credentials=True together with allow_origins=["*"]
+# is a security misconfiguration — browsers block credentialed requests to
+# wildcard origins, but the combination also opens CSRF attack surface.
+# We enforce that wildcards are never used with credentials enabled.
+# ---------------------------------------------------------------------------
+origins = list(ALLOWED_ORIGINS)
+
+# Hard guard: refuse to start if wildcard origin + credentials are combined.
+# This prevents a misconfigured ALLOWED_ORIGINS env var from silently creating
+# a CSRF-vulnerable server in production.
+if "*" in origins:
+    raise RuntimeError(
+        "Security configuration error: ALLOWED_ORIGINS cannot contain '*' "
+        "when allow_credentials=True. "
+        "Set ALLOWED_ORIGINS to a specific list of allowed origins (e.g. "
+        "'https://app.yourdomain.com'). "
+        "Refusing to start."
+    )
+
+# Add localhost origins only if not already present (dev convenience)
+for local_origin in ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]:
+    if local_origin not in origins:
+        origins.append(local_origin)
+
+log_to_file(f"[startup] CORS allowed origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
