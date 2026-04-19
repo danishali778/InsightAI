@@ -47,7 +47,7 @@ export const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(
       fontFamily: T.fontBody,
       transition: `all ${T.transition}`,
       boxSizing: 'border-box',
-      ...(style as any),
+      ...(style as React.CSSProperties),
     };
 
     return (
