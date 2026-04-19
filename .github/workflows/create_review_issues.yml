@@ -1,0 +1,60 @@
+name: Create Code Review Issues
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Security Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --repo ${{ github.repository }} \
+            --title "Security: Potential Hardcoded Secret/Password Found" \
+            --label "security,bug" \
+            --body "The latest commit appears to contain hardcoded password or secret assignments.
+          Also, there is an exposed password warning in \`backend/database/connection_manager.py:146: \"password\": config.password, # Note: Encrypt in production\`.
+
+          **Suggested Fix:**
+          Move secrets to environment variables or a secure vault. Encrypt passwords before storing them in memory or the database. Never log raw passwords or webhook secrets." || echo "Issue creation failed, maybe already exists."
+
+      - name: Create Code Quality Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --repo ${{ github.repository }} \
+            --title "Code Quality: Broad Exceptions Caught" \
+            --label "bug,enhancement" \
+            --body "There are numerous occurrences of \`except Exception as e:\` or \`except Exception:\` throughout the backend. Catching broad exceptions can lead to raw exceptions being exposed to the client or hiding underlying bugs.
+
+          **Suggested Fix:**
+          Audit exception blocks and catch specific exceptions (e.g., \`SQLAlchemyError\`, \`ValueError\`, \`KeyError\`). If a broad catch is necessary for top-level routers, ensure the error message returned to the client is generic and the actual error is logged securely using \`logger.exception()\`." || echo "Issue creation failed, maybe already exists."
+
+      - name: Create Performance Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --repo ${{ github.repository }} \
+            --title "Performance: In-memory cache limits scalability" \
+            --label "performance,enhancement" \
+            --body "The application uses an in-memory dictionary \`_engines\` and \`_schema_cache\` to store SQLAlchemy engines and schemas. As noted in the comments, this state is lost on restart and not shared across instances. This will cause issues when scaling the application horizontally.
+
+          **Suggested Fix:**
+          Implement a distributed caching mechanism using Redis or Memcached for schemas, and a connection pooler like PgBouncer for database connections." || echo "Issue creation failed, maybe already exists."
+
+      - name: Create Missing Tests Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --repo ${{ github.repository }} \
+            --title "Missing Tests for New Code" \
+            --label "enhancement" \
+            --body "New utility functions like \`inferViz\`, \`layoutDims\`, \`tokenizeSqlLine\`, and \`highlightSqlInline\` lack unit tests. These contain complex logic (like regex parsing for SQL) that is prone to edge cases. The latest commit modified application code but did not include any related changes to test files.
+
+          **Suggested Fix:**
+          Add Jest or Vitest test suites for these utility files to ensure they handle various inputs and edge cases correctly." || echo "Issue creation failed, maybe already exists."
