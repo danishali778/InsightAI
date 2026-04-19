@@ -60,6 +60,7 @@ MOCK_USER = User(
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    verify_existence: bool = True,
 ) -> User:
     """
     FastAPI dependency that extracts and verifies the user from a Supabase JWT.
@@ -83,8 +84,6 @@ async def get_current_user(
 
     try:
         if not SUPABASE_JWT_SECRET:
-            # In dev mode with no secret and no token this path is unreachable
-            # (caught above). Reaching here means prod with missing secret.
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Authentication server misconfigured (missing JWT secret)",
@@ -92,9 +91,18 @@ async def get_current_user(
 
         # Decode and verify the Supabase JWT
         # Supabase uses HS256 by default, but newer projects use ES256 (ECC P-256)
+        key = SUPABASE_JWT_SECRET
+        try:
+            import json
+            trimmed_secret = SUPABASE_JWT_SECRET.strip()
+            if trimmed_secret.startswith('{') and trimmed_secret.endswith('}'):
+                key = json.loads(trimmed_secret)
+        except Exception:
+            key = SUPABASE_JWT_SECRET
+
         payload = jwt.decode(
             token,
-            SUPABASE_JWT_SECRET,
+            key,
             algorithms=["HS256", "ES256"],
             audience="authenticated",
         )
@@ -108,10 +116,20 @@ async def get_current_user(
                 detail="Invalid token payload",
             )
 
+        # --- DATABASE TRUTH CHECK ---
+        # If not in mock-auth mode, verify the user exists in our DB
+        if not _MOCK_AUTH_ACTIVE and verify_existence:
+            from database.supabase_client import supabase
+            user_check = supabase.table("user_settings").select("owner_id").eq("owner_id", user_id).execute()
+            if not user_check.data:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User account has been deactivated or deleted.",
+                )
+
         return User(id=user_id, email=email)
 
     except JWTError as e:
-        # In mock-auth dev mode with a bad token, log and fall back to mock user.
         if _MOCK_AUTH_ACTIVE:
             logger.debug(
                 "Auth: Invalid JWT in BACKEND_DEV_MODE, continuing with MOCK_USER. Error: %s", e
@@ -133,3 +151,10 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",
         )
+
+
+async def get_user_no_check(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> User:
+    """Dependency for endpoints that need auth but can skip the existence check (e.g. onboarding)."""
+    return await get_current_user(credentials, verify_existence=False)
