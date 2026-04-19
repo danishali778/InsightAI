@@ -1,4 +1,6 @@
 import uuid
+import time
+import logging
 from typing import Optional
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine, URL, make_url
@@ -7,10 +9,26 @@ from . import schema_inspector
 from .supabase_client import supabase
 from .retry import supabase_retry
 
+logger = logging.getLogger(__name__)
 
-# In-memory session cache for SQLAlchemy engines only
+# ---------------------------------------------------------------------------
+# In-memory session cache for SQLAlchemy engines
 # Keyed by (user_id, connection_id)
+# NOTE: This is intentional in-process caching. State is lost on restart and
+# is not shared across multiple backend instances. Phase 2 will introduce a
+# shared connection pooler (e.g. PgBouncer) for horizontal scaling.
+# ---------------------------------------------------------------------------
+MAX_ENGINES = 20  # LRU cap — prevents unbounded memory growth
 _engines: dict[tuple[str, str], Engine] = {}
+_engine_access_times: dict[tuple[str, str], float] = {}
+
+# ---------------------------------------------------------------------------
+# TTL-based schema cache
+# Keyed by (user_id, connection_id) → (schema, timestamp)
+# Default TTL: 10 minutes. Avoids re-inspecting the DB on every LLM chat turn.
+# ---------------------------------------------------------------------------
+SCHEMA_CACHE_TTL_SECONDS = 600  # 10 minutes
+_schema_cache: dict[tuple[str, str], tuple[list[TableInfo], float]] = {}
 
 
 def _build_connection_url(config: ConnectionRequest) -> str:
@@ -61,6 +79,18 @@ def _build_engine(url: str, db_type: str, ssl_mode: str = "disable") -> Engine:
             connect_args["ssl"] = {"ssl_verify_cert": ssl_mode == "verify-full"}
 
     return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
+
+
+def _evict_lru_engine() -> None:
+    """Evict the least-recently-used engine if the cache is at capacity."""
+    if len(_engines) < MAX_ENGINES:
+        return
+    lru_key = min(_engine_access_times, key=_engine_access_times.get)
+    engine = _engines.pop(lru_key, None)
+    _engine_access_times.pop(lru_key, None)
+    if engine:
+        engine.dispose()
+        logger.info("Engine cache: evicted LRU entry %s (cap=%d)", lru_key, MAX_ENGINES)
 
 
 def test_connection(config: ConnectionRequest) -> tuple[bool, str, int]:
@@ -124,8 +154,11 @@ def connect(user_id: str, config: ConnectionRequest) -> tuple[str, Engine]:
         
     connection_id = response.data[0]["id"]
     
-    # Store engine in cache
-    _engines[(user_id, connection_id)] = engine
+    # Store engine in cache (with LRU eviction)
+    _evict_lru_engine()
+    key = (user_id, connection_id)
+    _engines[key] = engine
+    _engine_access_times[key] = time.monotonic()
 
     return connection_id, engine
 
@@ -158,9 +191,12 @@ def get_all_connections(user_id: str) -> list[ActiveConnection]:
 @supabase_retry
 def get_engine(user_id: str, connection_id: str) -> Engine | None:
     """Get the SQLAlchemy engine for a connection, rebuilding it from Supabase if not in cache."""
+    key = (user_id, connection_id)
+
     # Check cache first
-    engine = _engines.get((user_id, connection_id))
+    engine = _engines.get(key)
     if engine:
+        _engine_access_times[key] = time.monotonic()  # Update LRU timestamp
         return engine
         
     # Not in cache, fetch from Supabase and rebuild
@@ -187,17 +223,26 @@ def get_engine(user_id: str, connection_id: str) -> Engine | None:
     
     url = _build_connection_url(config)
     new_engine = _build_engine(url, config.db_type, config.ssl_mode)
-    _engines[(user_id, connection_id)] = new_engine
+
+    _evict_lru_engine()
+    _engines[key] = new_engine
+    _engine_access_times[key] = time.monotonic()
     return new_engine
 
 
 @supabase_retry
 def disconnect(user_id: str, connection_id: str) -> bool:
-    """Remove a connection from Supabase and dispose the engine."""
+    """Remove a connection from Supabase, dispose the engine, and clear schema cache."""
+    key = (user_id, connection_id)
+
     # Dispose engine if in cache
-    engine = _engines.pop((user_id, connection_id), None)
+    engine = _engines.pop(key, None)
+    _engine_access_times.pop(key, None)
     if engine:
         engine.dispose()
+
+    # Clear schema cache for this connection
+    _schema_cache.pop(key, None)
         
     # Remove from Supabase
     response = supabase.table("database_connections") \
@@ -232,26 +277,74 @@ def update_settings(user_id: str, connection_id: str, ssl_mode: str | None, read
         
     # Rebuild engine to apply new settings
     _engines.pop((user_id, connection_id), None)
-    get_engine(user_id, connection_id) # Rebuilds into cache
+    _engine_access_times.pop((user_id, connection_id), None)
+    get_engine(user_id, connection_id)  # Rebuilds into cache
     return True
 
 
-def get_cached_schema(user_id: str, connection_id: str) -> list[TableInfo] | None:
-    """Get the schema for a connection."""
+def get_cached_schema(
+    user_id: str,
+    connection_id: str,
+    force_refresh: bool = False,
+) -> list[TableInfo] | None:
+    """
+    Get the schema for a connection with TTL-based caching.
+
+    The schema is cached for SCHEMA_CACHE_TTL_SECONDS (default: 10 minutes)
+    to avoid re-inspecting the database on every LLM chat turn.
+
+    Args:
+        user_id: The user making the request.
+        connection_id: The connection to inspect.
+        force_refresh: If True, bypass the cache and re-inspect the DB.
+                       Use this when the user triggers a manual schema refresh.
+    """
+    key = (user_id, connection_id)
+    now = time.monotonic()
+
+    if not force_refresh:
+        cached = _schema_cache.get(key)
+        if cached:
+            schema, ts = cached
+            age = now - ts
+            if age < SCHEMA_CACHE_TTL_SECONDS:
+                logger.debug(
+                    "Schema cache HIT for connection %s (age=%.1fs, ttl=%ds)",
+                    connection_id, age, SCHEMA_CACHE_TTL_SECONDS,
+                )
+                return schema
+            else:
+                logger.debug(
+                    "Schema cache EXPIRED for connection %s (age=%.1fs)",
+                    connection_id, age,
+                )
+
     engine = get_engine(user_id, connection_id)
     if not engine:
         return None
-    # We could persist schema in Supabase too, but for now we re-inspect if not in engine cache
-    # In a full prod app, we'd store the JSON schema in Supabase dashboard_widgets or similar
-    return schema_inspector.get_schema(engine)
+
+    logger.info("Schema cache MISS — inspecting DB for connection %s", connection_id)
+    schema = schema_inspector.get_schema(engine)
+
+    # Store in cache with current timestamp
+    _schema_cache[key] = (schema, now)
+    return schema
+
+
+def invalidate_schema_cache(user_id: str, connection_id: str) -> None:
+    """
+    Explicitly invalidate the schema cache for a connection.
+    Called when the user triggers a manual 'Refresh Schema' action.
+    """
+    key = (user_id, connection_id)
+    _schema_cache.pop(key, None)
+    logger.info("Schema cache invalidated for connection %s", connection_id)
 
 
 def refresh_schema(user_id: str, connection_id: str) -> list[TableInfo] | None:
-    """Re-inspect and return schema."""
-    engine = get_engine(user_id, connection_id)
-    if not engine:
-        return None
-    return schema_inspector.get_schema(engine)
+    """Re-inspect and return schema, bypassing the TTL cache."""
+    return get_cached_schema(user_id, connection_id, force_refresh=True)
+
 
 @supabase_retry
 def get_readonly(user_id: str, connection_id: str) -> bool:
@@ -264,13 +357,12 @@ def get_readonly(user_id: str, connection_id: str) -> bool:
             .execute()
             
         if not response.data:
-            return True # Default to safe
+            return True  # Default to safe
             
         return response.data[0].get("readonly", True)
     except Exception as e:
-        print(f"Error fetching readonly status for {connection_id}: {e}")
-        return True # Default to safe
-
+        logger.error("Error fetching readonly status for %s: %s", connection_id, e)
+        return True  # Default to safe
 
 
 def get_schema_for_ai(user_id: str, connection_id: str) -> str | None:
@@ -293,7 +385,7 @@ def get_schema_for_ai(user_id: str, connection_id: str) -> str | None:
         lines.append("")
 
     schema_str = "\n".join(lines)
-    print(f"[AI] Extracted schema for connection {connection_id}: {len(schema_str)} characters")
+    logger.info("AI schema extracted for connection %s: %d characters", connection_id, len(schema_str))
     return schema_str
 
 
@@ -304,7 +396,7 @@ def seed_dev_connection() -> str | None:
     import os
     from common.auth import MOCK_USER
     url = os.getenv("DATABASE_URL")
-    dev_mode = os.getenv("VITE_DEV_MODE", "true").lower() == "true"
+    dev_mode = os.getenv("BACKEND_DEV_MODE", "false").lower() == "true"
     
     if not url or not dev_mode:
         return None
@@ -314,17 +406,15 @@ def seed_dev_connection() -> str | None:
         db_type = parsed.drivername.split("+")[0]
         
         # Check if already exists in Supabase
-        print(f"[dev] 📡 Checking Supabase for existing connection '{parsed.database}' for user '{MOCK_USER.id}'...", flush=True)
+        logger.info("[dev] Checking Supabase for existing connection '%s' for user '%s'...", parsed.database, MOCK_USER.id)
         existing = supabase.table("database_connections") \
             .select("id") \
             .eq("owner_id", MOCK_USER.id) \
             .eq("name", f"Dev — {parsed.database}") \
             .execute()
-        
-        print(f"[dev] 📡 Supabase response: {len(existing.data) if existing.data else 0} results.", flush=True)
             
         if existing.data:
-            print(f"[dev] ✅ Found existing dev connection '{existing.data[0]['id']}'")
+            logger.info("[dev] Found existing dev connection '%s'", existing.data[0]['id'])
             return existing.data[0]["id"]
 
         # If not, create it
@@ -340,9 +430,9 @@ def seed_dev_connection() -> str | None:
         )
 
         connection_id, _ = connect(MOCK_USER.id, config)
-        print(f"[dev] ✅ Seeded dev connection → connection_id = '{connection_id}'")
+        logger.info("[dev] Seeded dev connection → connection_id = '%s'", connection_id)
         return connection_id
 
     except Exception as e:
-        print(f"[dev] ❌ Auto-connect failed: {e}")
+        logger.error("[dev] Auto-connect failed: %s", e)
         return None
