@@ -1,0 +1,34 @@
+name: Jules AI Code Reviewer
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches:
+      - main
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  jules-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for diffs
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Jules AI Reviewer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python scripts/jules_reviewer.py
