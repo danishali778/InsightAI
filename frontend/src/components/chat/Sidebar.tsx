@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { T } from '../dashboard/tokens';
+import { useSettingsStore } from '../../store/settingsStore';
 import type { ChatSidebarProps } from '../../types/chat';
 import { DeleteSessionModal } from './DeleteSessionModal';
 
 export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession, onRenameSession, onOpenConnect, connections }: ChatSidebarProps) {
+  const { settings } = useSettingsStore();
+  const displayName = settings?.full_name || 'User';
+  const avatarInitials = displayName.substring(0, 2).toUpperCase();
+
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -199,9 +204,9 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
 
       {/* User */}
       <div style={{ padding: '12px 14px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: `linear-gradient(135deg, ${T.purple}, ${T.accent})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>AK</div>
+        <div style={{ width: 30, height: 30, borderRadius: 8, background: `linear-gradient(135deg, ${T.purple}, ${T.accent})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>{avatarInitials}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: T.text }}>Ahmad Khan</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: T.text }}>{displayName}</div>
           <div style={{ fontSize: '0.65rem', color: T.accent, fontFamily: T.fontMono }}>PRO PLAN</div>
         </div>
       </div>

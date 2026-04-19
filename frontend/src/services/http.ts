@@ -1,4 +1,5 @@
 import { API_BASE } from '../config';
+import { supabase } from '../lib/supabase';
 import type { ApiErrorResponse } from '../types/api';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -29,16 +30,27 @@ function getErrorMessage(payload: unknown, fallback: string): string {
 }
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Get the current session token to send to the backend
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...(init?.headers || {}),
     },
   });
 
   const payload = await parseResponseBody(response);
   if (!response.ok) {
+    if (response.status === 401) {
+      // Force sign out if the backend rejects the token (Database Truth Check failed)
+      console.warn("Session invalid or user deleted. Forcing sign out.");
+      await supabase.auth.signOut();
+      window.location.href = '/'; // Kick to landing page
+    }
     throw new Error(getErrorMessage(payload, `Request failed with status ${response.status}`));
   }
 

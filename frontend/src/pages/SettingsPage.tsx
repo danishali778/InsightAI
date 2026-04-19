@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainShell } from '../components/common/MainShell';
 import { T } from '../components/dashboard/tokens';
+import { useSettingsStore } from '../store/settingsStore';
+import { useAuth } from '../context/AuthContext';
 
-type Section = 'profile' | 'security' | 'appearance' | 'ai' | 'notifications' | 'apikeys' | 'billing';
+type Section = 'profile' | 'security' | 'ai' | 'notifications' | 'apikeys' | 'billing';
 
 const NAV: { id: Section; label: string; icon: string; badge?: string }[] = [
   { id: 'profile',       label: 'Profile',       icon: '👤' },
   { id: 'security',      label: 'Security',       icon: '🔒' },
-  { id: 'appearance',    label: 'Appearance',     icon: '🎨' },
   { id: 'ai',            label: 'AI & Queries',   icon: '⚡' },
   { id: 'notifications', label: 'Notifications',  icon: '🔔' },
   { id: 'apikeys',       label: 'API Keys',       icon: '🔑' },
@@ -16,6 +18,19 @@ const NAV: { id: Section; label: string; icon: string; badge?: string }[] = [
 
 export function SettingsPage() {
   const [section, setSection] = useState<Section>('profile');
+  const { settings, isLoading, fetchSettings } = useSettingsStore();
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  if (isLoading && !settings) {
+    return (
+      <MainShell title="User Settings" subtitle="Manage your profile, security, and preferences">
+        <div style={{ padding: 40, color: T.text3, fontFamily: T.fontBody }}>Loading preferences...</div>
+      </MainShell>
+    );
+  }
 
   return (
     <MainShell
@@ -66,7 +81,6 @@ export function SettingsPage() {
         <main style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }} className="settings-scroll">
           {section === 'profile'       && <ProfileSection />}
           {section === 'security'      && <SecuritySection />}
-          {section === 'appearance'    && <AppearanceSection />}
           {section === 'ai'            && <AISection />}
           {section === 'notifications' && <NotificationsSection />}
           {section === 'apikeys'       && <ApiKeysSection />}
@@ -131,7 +145,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
       background: on ? T.accent : T.s4,
       cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background 0.2s',
     }}>
-      <div style={{ position: 'absolute', width: 14, height: 14, borderRadius: '50%', background: on ? '#000' : T.text3, top: 3, left: on ? 19 : 3, transition: 'left 0.2s' }} />
+      <div style={{ position: 'absolute', width: 14, height: 14, borderRadius: '50%', background: on ? '#fff' : T.text3, top: 3, left: on ? 19 : 3, transition: 'left 0.2s' }} />
     </div>
   );
 }
@@ -174,13 +188,39 @@ function SaveBtn({ label = 'Save Changes', onClick }: { label?: string; onClick?
 // ── Profile ───────────────────────────────────────────────
 
 function ProfileSection() {
-  const [name, setName] = useState('Ahmad Khan');
-  const [email, setEmail] = useState('ahmad@querymind.io');
-  const [role, setRole] = useState('Data Analyst');
+  const { settings, updateSetting } = useSettingsStore();
+  const { user, signOut } = useAuth();
+  const defaultNameFromEmail = user?.email ? user.email.split('@')[0] : '';
+  const [name, setName] = useState(settings?.full_name || defaultNameFromEmail);
+  const [role, setRole] = useState(settings?.job_title || '');
+  const [timezone, setTimezone] = useState(settings?.timezone || 'UTC');
+
+  const handleSave = () => {
+    updateSetting({ full_name: name, job_title: role, timezone });
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = '/auth'; // Hard redirect to clear out all state
+  };
 
   return (
     <>
-      <PageTitle title="Profile" sub="Manage your personal information and workspace display name." />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div>
+          <h1 style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.4rem', color: T.text, margin: 0, marginBottom: 4 }}>Profile</h1>
+          <p style={{ fontSize: '0.82rem', color: T.text3, margin: 0, fontFamily: T.fontBody }}>Manage your personal information and workspace display name.</p>
+        </div>
+        <button 
+          onClick={handleSignOut}
+          style={{
+            padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(248,113,113,0.2)',
+            background: 'transparent', color: T.red, fontSize: '0.8rem', fontFamily: T.fontBody, cursor: 'pointer',
+          }}
+        >
+          Sign Out
+        </button>
+      </div>
 
       <Card>
         <CardLabel label="Avatar" />
@@ -190,9 +230,11 @@ function ProfileSection() {
             background: `linear-gradient(135deg, ${T.purple}, ${T.accent})`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '1.4rem', fontWeight: 700, color: '#fff', fontFamily: T.fontHead, flexShrink: 0,
-          }}>AK</div>
+          }}>
+            {name ? name.substring(0, 2).toUpperCase() : (user?.email?.substring(0, 2).toUpperCase() || 'U')}
+          </div>
           <div>
-            <div style={{ fontSize: '0.82rem', color: T.text2, marginBottom: 6 }}>JPG, PNG or GIF · Max 2MB</div>
+            <div style={{ fontSize: '0.82rem', color: T.text2, marginBottom: 6 }}>JPG, PNG or GIF · Max 2MB (Mocked)</div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button style={{ padding: '6px 14px', borderRadius: 7, border: `1px solid ${T.border2}`, background: T.s2, color: T.text2, fontSize: '0.78rem', fontFamily: T.fontBody, cursor: 'pointer' }}>Upload Photo</button>
               <button style={{ padding: '6px 14px', borderRadius: 7, border: `1px solid ${T.border}`, background: 'transparent', color: T.text3, fontSize: '0.78rem', fontFamily: T.fontBody, cursor: 'pointer' }}>Remove</button>
@@ -201,37 +243,39 @@ function ProfileSection() {
         </div>
 
         <Row label="Full Name">
-          <TextInput value={name} onChange={setName} />
+          <TextInput value={name} onChange={setName} placeholder="e.g. Ahmad Khan" />
         </Row>
-        <Row label="Email Address" sub="Used for schedule result delivery">
-          <TextInput value={email} onChange={setEmail} type="email" />
+        <Row label="Email Address" sub="Managed securely by Supabase Auth">
+          <input type="email" value={user?.email || 'dev@insightai.com'} readOnly style={{ width: 220, padding: '7px 12px', borderRadius: 10, background: T.s3, border: `1px solid ${T.border}`, color: T.text3, fontSize: '0.86rem', fontFamily: T.fontMono, outline: 'none', cursor: 'not-allowed' }} />
         </Row>
         <Row label="Job Title">
           <TextInput value={role} onChange={setRole} placeholder="e.g. Data Analyst" />
         </Row>
         <Row label="Timezone" sub="Used for scheduled query times">
-          <select style={{ padding: '7px 12px', borderRadius: 8, background: T.s2, border: `1px solid ${T.border}`, color: T.text2, fontSize: '0.82rem', fontFamily: T.fontBody, outline: 'none', cursor: 'pointer' }}>
-            <option>Asia/Karachi (PKT, UTC+5)</option>
-            <option>UTC</option>
-            <option>America/New_York (ET, UTC−5)</option>
-            <option>Europe/London (GMT, UTC+0)</option>
-            <option>Asia/Kolkata (IST, UTC+5:30)</option>
+          <select 
+            value={timezone}
+            onChange={e => setTimezone(e.target.value)}
+            style={{ padding: '7px 12px', borderRadius: 8, background: T.s2, border: `1px solid ${T.border}`, color: T.text2, fontSize: '0.82rem', fontFamily: T.fontBody, outline: 'none', cursor: 'pointer' }}
+          >
+            <option value="Asia/Karachi">Asia/Karachi (PKT, UTC+5)</option>
+            <option value="UTC">UTC</option>
+            <option value="America/New_York">America/New_York (ET, UTC−5)</option>
+            <option value="Europe/London">Europe/London (GMT, UTC+0)</option>
+            <option value="Asia/Kolkata">Asia/Kolkata (IST, UTC+5:30)</option>
           </select>
         </Row>
-        <SaveBtn />
+        <SaveBtn onClick={handleSave} />
       </Card>
     </>
   );
 }
 
-// ── Security ──────────────────────────────────────────────
+// ── Security (Mocked) ──────────────────────────────────────
 
 function SecuritySection() {
   const [twoFa, setTwoFa] = useState(false);
   const [sessions] = useState([
     { device: 'Chrome on Windows', location: 'Karachi, PK', last: 'Active now', current: true },
-    { device: 'Firefox on macOS', location: 'Lahore, PK', last: '2 days ago', current: false },
-    { device: 'Safari on iPhone', location: 'Karachi, PK', last: '5 days ago', current: false },
   ]);
 
   return (
@@ -239,33 +283,14 @@ function SecuritySection() {
       <PageTitle title="Security" sub="Manage your password, two-factor authentication, and active sessions." />
 
       <Card>
-        <CardLabel label="Change Password" />
-        <Row label="Current Password">
-          <TextInput value="" onChange={() => {}} type="password" placeholder="••••••••" />
-        </Row>
-        <Row label="New Password">
-          <TextInput value="" onChange={() => {}} type="password" placeholder="••••••••" />
-        </Row>
-        <Row label="Confirm Password">
-          <TextInput value="" onChange={() => {}} type="password" placeholder="••••••••" />
-        </Row>
-        <SaveBtn label="Update Password" />
-      </Card>
-
-      <Card>
-        <CardLabel label="Two-Factor Authentication" />
+        <CardLabel label="Two-Factor Authentication (Demo View)" />
         <Row label="Authenticator App" sub="Use Google Authenticator or Authy">
           <Toggle on={twoFa} onToggle={() => setTwoFa(!twoFa)} />
         </Row>
-        {twoFa && (
-          <div style={{ marginTop: 12, padding: '12px 14px', borderRadius: 8, background: T.greenDim, border: '1px solid rgba(34,211,165,0.2)', fontSize: '0.78rem', color: T.green }}>
-            2FA is enabled. Scan the QR code in your authenticator app to get started.
-          </div>
-        )}
       </Card>
 
       <Card>
-        <CardLabel label="Active Sessions" />
+        <CardLabel label="Active Sessions (Demo View)" />
         {sessions.map((s, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < sessions.length - 1 ? `1px solid ${T.border}` : 'none' }}>
             <div style={{ width: 34, height: 34, borderRadius: 9, background: T.s3, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>💻</div>
@@ -276,93 +301,8 @@ function SecuritySection() {
               </div>
               <div style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono, marginTop: 2 }}>{s.location} · {s.last}</div>
             </div>
-            {!s.current && (
-              <button style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(248,113,113,0.2)', background: 'transparent', color: T.red, fontSize: '0.72rem', fontFamily: T.fontMono, cursor: 'pointer' }}>Revoke</button>
-            )}
           </div>
         ))}
-      </Card>
-    </>
-  );
-}
-
-// ── Appearance ────────────────────────────────────────────
-
-function AppearanceSection() {
-  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
-  const [accentIdx, setAccentIdx] = useState(0);
-  const accents = [
-    { label: 'Cyan',   color: '#00e5ff' },
-    { label: 'Purple', color: '#7c3aff' },
-    { label: 'Green',  color: '#22d3a5' },
-    { label: 'Orange', color: '#ff6b35' },
-    { label: 'Pink',   color: '#f472b6' },
-  ];
-
-  return (
-    <>
-      <PageTitle title="Appearance" sub="Customize the look and feel of your workspace." />
-
-      <Card>
-        <CardLabel label="Theme" />
-        <div style={{ display: 'flex', gap: 10 }}>
-          {['Dark', 'Darker', 'OLED'].map((t, i) => (
-            <button key={t} onClick={() => {}} style={{
-              padding: '10px 22px', borderRadius: 9, fontSize: '0.82rem', fontFamily: T.fontBody, cursor: 'pointer',
-              border: `1px solid ${i === 0 ? 'rgba(0,229,255,0.35)' : T.border}`,
-              background: i === 0 ? T.accentDim : T.s2,
-              color: i === 0 ? T.accent : T.text3,
-              transition: 'all 0.15s',
-            }}>{t}</button>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <CardLabel label="Accent Color" />
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {accents.map((a, i) => (
-            <div key={a.label} onClick={() => setAccentIdx(i)} style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer',
-            }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: '50%', background: a.color,
-                border: `3px solid ${accentIdx === i ? '#fff' : 'transparent'}`,
-                boxShadow: accentIdx === i ? `0 0 0 1px ${a.color}` : 'none',
-                transition: 'all 0.15s',
-              }} />
-              <span style={{ fontSize: '0.62rem', fontFamily: T.fontMono, color: accentIdx === i ? T.text2 : T.text3 }}>{a.label}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <CardLabel label="Density" />
-        <div style={{ display: 'flex', gap: 10 }}>
-          {(['comfortable', 'compact'] as const).map(d => (
-            <button key={d} onClick={() => setDensity(d)} style={{
-              padding: '10px 22px', borderRadius: 9, fontSize: '0.82rem', fontFamily: T.fontBody, cursor: 'pointer',
-              border: `1px solid ${density === d ? 'rgba(0,229,255,0.35)' : T.border}`,
-              background: density === d ? T.accentDim : T.s2,
-              color: density === d ? T.accent : T.text3,
-              textTransform: 'capitalize', transition: 'all 0.15s',
-            }}>{d}</button>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <CardLabel label="Display" />
-        <Row label="Show run counts on query cards">
-          <Toggle on={true} onToggle={() => {}} />
-        </Row>
-        <Row label="Animate chart renders">
-          <Toggle on={true} onToggle={() => {}} />
-        </Row>
-        <Row label="Show SQL syntax highlighting">
-          <Toggle on={true} onToggle={() => {}} />
-        </Row>
       </Card>
     </>
   );
@@ -371,11 +311,10 @@ function AppearanceSection() {
 // ── AI & Queries ──────────────────────────────────────────
 
 function AISection() {
-  const [model, setModel] = useState('claude-sonnet-4-6');
-  const [rowLimit, setRowLimit] = useState('500');
-  const [systemPrompt, setSystemPrompt] = useState('');
-  const [autoSave, setAutoSave] = useState(false);
-  const [streamResults, setStreamResults] = useState(true);
+  const { settings, updateSetting } = useSettingsStore();
+  const [prompt, setPrompt] = useState(settings?.system_prompt || '');
+
+  if (!settings) return null;
 
   return (
     <>
@@ -385,8 +324,8 @@ function AISection() {
         <CardLabel label="AI Model" />
         <Row label="Default Model" sub="Used for all SQL generation requests">
           <select
-            value={model}
-            onChange={e => setModel(e.target.value)}
+            value={settings.ai_model}
+            onChange={e => updateSetting({ ai_model: e.target.value })}
             style={{ padding: '7px 12px', borderRadius: 8, background: T.s2, border: `1px solid ${T.border}`, color: T.text2, fontSize: '0.82rem', fontFamily: T.fontMono, outline: 'none', cursor: 'pointer' }}
           >
             <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
@@ -395,7 +334,7 @@ function AISection() {
           </select>
         </Row>
         <Row label="Stream responses">
-          <Toggle on={streamResults} onToggle={() => setStreamResults(!streamResults)} />
+          <Toggle on={settings.stream_responses} onToggle={() => updateSetting({ stream_responses: !settings.stream_responses })} />
         </Row>
       </Card>
 
@@ -403,8 +342,8 @@ function AISection() {
         <CardLabel label="Query Execution" />
         <Row label="Default Row Limit" sub="Max rows returned per query">
           <select
-            value={rowLimit}
-            onChange={e => setRowLimit(e.target.value)}
+            value={settings.default_row_limit.toString()}
+            onChange={e => updateSetting({ default_row_limit: parseInt(e.target.value, 10) })}
             style={{ padding: '7px 12px', borderRadius: 8, background: T.s2, border: `1px solid ${T.border}`, color: T.text2, fontSize: '0.82rem', fontFamily: T.fontMono, outline: 'none', cursor: 'pointer' }}
           >
             {['100', '250', '500', '1000', '2500', '5000'].map(v => (
@@ -413,7 +352,7 @@ function AISection() {
           </select>
         </Row>
         <Row label="Auto-save queries to Library" sub="Save every AI-generated query automatically">
-          <Toggle on={autoSave} onToggle={() => setAutoSave(!autoSave)} />
+          <Toggle on={settings.auto_save_queries} onToggle={() => updateSetting({ auto_save_queries: !settings.auto_save_queries })} />
         </Row>
       </Card>
 
@@ -423,8 +362,8 @@ function AISection() {
           Appended to every AI request. Use it to provide business context (e.g. "Our fiscal year starts in April").
         </div>
         <textarea
-          value={systemPrompt}
-          onChange={e => setSystemPrompt(e.target.value)}
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
           placeholder="e.g. Our company uses UTC for all timestamps. The 'orders' table uses soft deletes via deleted_at..."
           style={{
             width: '100%', minHeight: 100, background: T.s2, border: `1px solid ${T.border}`,
@@ -434,7 +373,7 @@ function AISection() {
           onFocus={e => (e.currentTarget.style.borderColor = 'rgba(0,229,255,0.35)')}
           onBlur={e => (e.currentTarget.style.borderColor = T.border)}
         />
-        <SaveBtn />
+        <SaveBtn onClick={() => updateSetting({ system_prompt: prompt })} />
       </Card>
     </>
   );
@@ -443,11 +382,11 @@ function AISection() {
 // ── Notifications ─────────────────────────────────────────
 
 function NotificationsSection() {
-  const [emailScheduled, setEmailScheduled] = useState(true);
-  const [emailFailed, setEmailFailed] = useState(true);
-  const [emailAlerts, setEmailAlerts] = useState(false);
-  const [slackEnabled, setSlackEnabled] = useState(false);
-  const [slackWebhook, setSlackWebhook] = useState('');
+  const { settings, updateSetting } = useSettingsStore();
+  const [webhook, setWebhook] = useState(settings?.slack_webhook || '');
+  const [channel, setChannel] = useState(settings?.slack_channel || '');
+
+  if (!settings) return null;
 
   return (
     <>
@@ -456,19 +395,23 @@ function NotificationsSection() {
       <Card>
         <CardLabel label="Email Notifications" />
         <Row label="Scheduled query results" sub="Receive results when a scheduled query runs">
-          <Toggle on={emailScheduled} onToggle={() => setEmailScheduled(!emailScheduled)} />
+          <Toggle on={settings.email_scheduled} onToggle={() => updateSetting({ email_scheduled: !settings.email_scheduled })} />
         </Row>
         <Row label="Query run failures" sub="Get notified when a scheduled query fails">
-          <Toggle on={emailFailed} onToggle={() => setEmailFailed(!emailFailed)} />
+          <Toggle on={settings.email_failed} onToggle={() => updateSetting({ email_failed: !settings.email_failed })} />
         </Row>
         <Row label="Alert triggers" sub="Notify when an alert condition is met">
-          <Toggle on={emailAlerts} onToggle={() => setEmailAlerts(!emailAlerts)} />
+          <Toggle on={settings.email_alerts} onToggle={() => updateSetting({ email_alerts: !settings.email_alerts })} />
         </Row>
         <Row label="Delivery format">
-          <select style={{ padding: '7px 12px', borderRadius: 8, background: T.s2, border: `1px solid ${T.border}`, color: T.text2, fontSize: '0.82rem', fontFamily: T.fontBody, outline: 'none', cursor: 'pointer' }}>
-            <option>CSV + Chart PNG</option>
-            <option>CSV only</option>
-            <option>Summary only</option>
+          <select 
+            value={settings.delivery_format}
+            onChange={e => updateSetting({ delivery_format: e.target.value })}
+            style={{ padding: '7px 12px', borderRadius: 8, background: T.s2, border: `1px solid ${T.border}`, color: T.text2, fontSize: '0.82rem', fontFamily: T.fontBody, outline: 'none', cursor: 'pointer' }}
+          >
+            <option value="CSV + Chart PNG">CSV + Chart PNG</option>
+            <option value="CSV only">CSV only</option>
+            <option value="Summary only">Summary only</option>
           </select>
         </Row>
       </Card>
@@ -476,30 +419,29 @@ function NotificationsSection() {
       <Card>
         <CardLabel label="Slack Integration" />
         <Row label="Enable Slack notifications">
-          <Toggle on={slackEnabled} onToggle={() => setSlackEnabled(!slackEnabled)} />
+          <Toggle on={settings.slack_enabled} onToggle={() => updateSetting({ slack_enabled: !settings.slack_enabled })} />
         </Row>
-        {slackEnabled && (
+        {settings.slack_enabled && (
           <>
             <Row label="Webhook URL" sub="Slack incoming webhook for your channel">
-              <TextInput value={slackWebhook} onChange={setSlackWebhook} placeholder="https://hooks.slack.com/..." width={260} />
+              <TextInput value={webhook} onChange={setWebhook} placeholder="https://hooks.slack.com/..." width={260} />
             </Row>
             <Row label="Channel">
-              <TextInput value="#data-alerts" onChange={() => {}} width={160} />
+              <TextInput value={channel} onChange={setChannel} placeholder="#data-alerts" width={160} />
             </Row>
           </>
         )}
-        <SaveBtn />
+        <SaveBtn onClick={() => updateSetting({ slack_webhook: webhook, slack_channel: channel })} />
       </Card>
     </>
   );
 }
 
-// ── API Keys ──────────────────────────────────────────────
+// ── API Keys (Mocked) ─────────────────────────────────────
 
 function ApiKeysSection() {
   const [keys] = useState([
     { name: 'Production Dashboard', prefix: 'qm_live_4xK9', created: 'Jan 12, 2026', last: '2 hours ago', scopes: ['read', 'execute'] },
-    { name: 'Data Pipeline Script', prefix: 'qm_live_8mR2', created: 'Feb 3, 2026',  last: '5 days ago',  scopes: ['read'] },
   ]);
 
   return (
@@ -507,38 +449,25 @@ function ApiKeysSection() {
       <PageTitle title="API Keys" sub="Programmatic access to your QueryMind workspace." />
 
       <Card>
-        <CardLabel label="Active Keys" />
+        <CardLabel label="Active Keys (Demo View)" />
         {keys.map((k, i) => (
           <div key={i} style={{ padding: '12px 0', borderBottom: i < keys.length - 1 ? `1px solid ${T.border}` : 'none' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
               <div>
                 <div style={{ fontSize: '0.84rem', color: T.text2, fontWeight: 600, marginBottom: 4 }}>{k.name}</div>
                 <div style={{ fontFamily: T.fontMono, fontSize: '0.72rem', color: T.accent, marginBottom: 6 }}>{k.prefix}••••••••••••</div>
-                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 4 }}>
-                  {k.scopes.map(s => (
-                    <span key={s} style={{ fontSize: '0.6rem', fontFamily: T.fontMono, padding: '1px 6px', borderRadius: 4, background: T.accentDim, color: T.accent, border: '1px solid rgba(0,229,255,0.2)' }}>{s}</span>
-                  ))}
-                </div>
-                <div style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>Created {k.created} · Last used {k.last}</div>
               </div>
               <button style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid rgba(248,113,113,0.2)', background: 'transparent', color: T.red, fontSize: '0.72rem', fontFamily: T.fontMono, cursor: 'pointer', flexShrink: 0 }}>Revoke</button>
             </div>
           </div>
         ))}
-        <button style={{
-          marginTop: 14, padding: '9px 18px', borderRadius: 8,
-          border: `1px solid ${T.border2}`, background: T.s2,
-          color: T.text2, fontSize: '0.82rem', fontFamily: T.fontBody, cursor: 'pointer',
-        }}>
-          + Generate New Key
-        </button>
       </Card>
-
+      
       <Card style={{ background: T.yellowDim, borderColor: 'rgba(245,158,11,0.2)' }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <span style={{ fontSize: '1.1rem' }}>⚠️</span>
           <div style={{ fontSize: '0.78rem', color: T.yellow, lineHeight: 1.6 }}>
-            API keys grant full access to your workspace. Never share them in client-side code or public repositories. Revoke and rotate keys if you suspect they've been compromised.
+            API keys management requires Kong integration and is currently read-only in this environment.
           </div>
         </div>
       </Card>
@@ -546,73 +475,66 @@ function ApiKeysSection() {
   );
 }
 
-// ── Billing ───────────────────────────────────────────────
+// ── Billing (Mocked) ──────────────────────────────────────
+
+import { getBillingInfo, UserSubscription } from '../services/api';
 
 function BillingSection() {
-  const usage = { queries: 2847, limit: 5000, ai: 384, aiLimit: 500 };
+  const navigate = useNavigate();
+  const [sub, setSub] = useState<UserSubscription | null>(null);
+
+  useEffect(() => {
+    getBillingInfo().then(setSub).catch(console.error);
+  }, []);
+
+  const handleUpgrade = () => {
+    navigate('/upgrade');
+  };
+
+  if (!sub) return <div style={{ color: T.text3, fontSize: '0.85rem' }}>Loading subscription details...</div>;
+
+  const isPro = sub.plan_type === 'pro';
 
   return (
     <>
       <PageTitle title="Billing & Plan" sub="Manage your subscription, usage, and payment details." />
 
       {/* Current Plan */}
-      <Card style={{ background: 'linear-gradient(135deg, rgba(124,58,255,0.08), rgba(0,229,255,0.05))', borderColor: 'rgba(124,58,255,0.2)' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <Card style={{ background: isPro ? 'linear-gradient(135deg, rgba(124,58,255,0.08), rgba(0,229,255,0.05))' : T.s2, borderColor: isPro ? 'rgba(124,58,255,0.2)' : T.border }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.1rem', color: T.text }}>Pro Plan</span>
-              <span style={{ fontSize: '0.62rem', fontFamily: T.fontMono, padding: '2px 8px', borderRadius: 4, background: T.purpleDim, color: T.purple, border: '1px solid rgba(124,58,255,0.3)' }}>ACTIVE</span>
+              <span style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.2rem', color: isPro ? T.purple : T.text, textTransform: 'capitalize' }}>
+                {isPro ? 'Pro Plan' : 'Free Plan'} {isPro && '(Active)'}
+              </span>
             </div>
-            <div style={{ fontSize: '0.82rem', color: T.text3, marginBottom: 10 }}>Billed monthly · Next renewal Mar 29, 2026</div>
-            <div style={{ fontSize: '1.3rem', fontFamily: T.fontHead, color: T.text }}>$49<span style={{ fontSize: '0.82rem', color: T.text3, fontFamily: T.fontBody }}>/month</span></div>
+            <div style={{ fontSize: '0.82rem', color: T.text3 }}>{isPro ? 'Billed via Enterprise licensing' : 'Basic limits. Upgrade to unlock.'}</div>
           </div>
-          <button style={{
-            padding: '9px 18px', borderRadius: 8, border: '1px solid rgba(248,113,113,0.2)',
-            background: 'transparent', color: T.red, fontSize: '0.78rem', fontFamily: T.fontBody, cursor: 'pointer',
-          }}>Cancel Plan</button>
+          {!isPro && (
+            <button 
+              onClick={handleUpgrade}
+              style={{
+                padding: '10px 24px', borderRadius: 10, border: 'none',
+                background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`,
+                color: '#fff', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer'
+              }}
+            >
+              Upgrade to PRO
+            </button>
+          )}
         </div>
       </Card>
 
       {/* Usage */}
       <Card>
-        <CardLabel label="This Month's Usage" />
-        <UsageBar label="Query Runs" value={usage.queries} max={usage.limit} color={T.accent} />
-        <UsageBar label="AI Requests" value={usage.ai} max={usage.aiLimit} color={T.purple} />
-        <UsageBar label="Saved Queries" value={47} max={200} color={T.green} />
-        <UsageBar label="Dashboards" value={6} max={20} color={T.yellow} />
+        <CardLabel label="Estimated This Month's Usage" />
+        <UsageBar label="Query Runs" value={sub.queries_used} max={sub.queries_limit} color={T.accent} />
+        <UsageBar label="AI Requests" value={sub.ai_used} max={sub.ai_limit} color={T.purple} />
       </Card>
-
-      {/* Payment method */}
-      <Card>
-        <CardLabel label="Payment Method" />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 44, height: 28, borderRadius: 6, background: T.s3, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontFamily: T.fontMono, color: T.accent }}>VISA</div>
-            <div>
-              <div style={{ fontSize: '0.82rem', color: T.text2 }}>Visa ending in 4242</div>
-              <div style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>Expires 08/2027</div>
-            </div>
-          </div>
-          <button style={{ padding: '5px 12px', borderRadius: 7, border: `1px solid ${T.border2}`, background: T.s2, color: T.text2, fontSize: '0.72rem', fontFamily: T.fontBody, cursor: 'pointer' }}>Update</button>
-        </div>
-      </Card>
-
-      {/* Billing history */}
-      <Card>
-        <CardLabel label="Billing History" />
-        {[
-          { date: 'Feb 28, 2026', amount: '$49.00', status: 'Paid' },
-          { date: 'Jan 31, 2026', amount: '$49.00', status: 'Paid' },
-          { date: 'Dec 31, 2025', amount: '$49.00', status: 'Paid' },
-        ].map((inv, i, arr) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < arr.length - 1 ? `1px solid ${T.border}` : 'none' }}>
-            <span style={{ fontSize: '0.82rem', color: T.text2, fontFamily: T.fontMono }}>{inv.date}</span>
-            <span style={{ fontSize: '0.82rem', color: T.text2 }}>{inv.amount}</span>
-            <span style={{ fontSize: '0.68rem', fontFamily: T.fontMono, padding: '2px 8px', borderRadius: 4, background: T.greenDim, color: T.green, border: '1px solid rgba(34,211,165,0.2)' }}>{inv.status}</span>
-            <button style={{ padding: '3px 10px', borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', color: T.text3, fontSize: '0.68rem', fontFamily: T.fontMono, cursor: 'pointer' }}>PDF</button>
-          </div>
-        ))}
-      </Card>
+      
+      <div style={{ fontSize: '0.75rem', color: T.text3, marginTop: 24 }}>
+        * Billing panels are integrated via independent Stripe checkout links handled by account administrators.
+      </div>
     </>
   );
 }

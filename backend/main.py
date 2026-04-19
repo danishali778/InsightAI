@@ -33,7 +33,7 @@ from common import register_exception_handlers
 from config import APP_HOST, APP_PORT, ALLOWED_ORIGINS
 log_to_file("[startup] Configuration and common utils loaded.")
 
-from routers import analytics, database, query, chat, query_history, query_library, dashboard_widgets
+from routers import analytics, database, query, chat, query_history, query_library, dashboard_widgets, settings_page, webhooks
 log_to_file("[startup] Routers imported successfully.")
 
 @asynccontextmanager
@@ -97,6 +97,8 @@ app.include_router(query_history.router)
 app.include_router(query_library.router)
 app.include_router(dashboard_widgets.router)
 app.include_router(analytics.router)
+app.include_router(settings_page.router)
+app.include_router(webhooks.router, prefix="/api")
 
 
 @app.get("/api/health")

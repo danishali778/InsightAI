@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  onboardUser: () => Promise<void>;
   isDevMode: boolean;
 }
 
@@ -44,14 +45,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user && !DEV_MODE) {
+        // Silently ensure onboarding on every load
+        try {
+          const { request } = await import('../services/http');
+          await request('/settings/onboard', { method: 'POST' });
+        } catch (e) {
+          console.warn("Onboarding check failed", e);
+        }
+      }
       setLoading(false);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -68,8 +78,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
+  const onboardUser = async () => {
+    if (DEV_MODE) return;
+    const { request } = await import('../services/http');
+    try {
+      await request('/settings/onboard', { method: 'POST' });
+    } catch (err) {
+      console.error('Failed to onboard user:', err);
+      throw err;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut, isDevMode: DEV_MODE }}>
+    <AuthContext.Provider value={{ user, session, loading, signOut, onboardUser, isDevMode: DEV_MODE }}>
       {!loading && children}
     </AuthContext.Provider>
   );

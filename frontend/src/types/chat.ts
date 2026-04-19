@@ -14,6 +14,8 @@ export interface ChatMessageView {
   column_metadata?: Record<string, string>;
   error?: string;
   is_pinned?: boolean;
+  parent_id?: string;
+  prev_query_id?: string;
 }
 
 export interface ChatSidebarProps {
