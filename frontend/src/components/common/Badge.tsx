@@ -92,7 +92,7 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
       fontWeight: 500,
       whiteSpace: 'nowrap',
       transition: `all ${T.transitionShort}`,
-      ...(style as any),
+      ...(style as React.CSSProperties),
     };
 
     return (
