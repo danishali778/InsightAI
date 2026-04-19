@@ -83,7 +83,7 @@ export function MessageBubble({
         label: 'Settings',
         onClick: () => setModalOpen(true)
       });
-    } catch (err) {
+    } catch {
       addToast('Failed to add to dashboard', 'error');
       setModalOpen(true); // Fallback to modal on error
     } finally {
