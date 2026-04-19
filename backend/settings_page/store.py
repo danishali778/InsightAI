@@ -76,7 +76,10 @@ def get_user_subscription(user_id: str) -> UserSubscription:
             
         return UserSubscription(**response.data[0])
     except Exception as e:
-        print(f"[Usage Store] Failed to fetch/insert subscription for {user_id} (likely MOCK_USER). Falling back to memory: {e}")
+        print(
+            f"[Usage Store] Failed to fetch/insert subscription for {user_id}"
+            f" (likely MOCK_USER). Falling back to memory: {e}"
+        )
         return UserSubscription(**defaults)
 
 def increment_usage(user_id: str, type: str) -> bool:
@@ -90,13 +93,23 @@ def increment_usage(user_id: str, type: str) -> bool:
         if type == "query":
             if sub.queries_used >= sub.queries_limit:
                 return False
-            supabase.table("user_subscriptions").update({"queries_used": sub.queries_used + 1}).eq("owner_id", user_id).execute()
+            (
+                supabase.table("user_subscriptions")
+                .update({"queries_used": sub.queries_used + 1})
+                .eq("owner_id", user_id)
+                .execute()
+            )
             return True
-            
+
         elif type == "ai":
             if sub.ai_used >= sub.ai_limit:
                 return False
-            supabase.table("user_subscriptions").update({"ai_used": sub.ai_used + 1}).eq("owner_id", user_id).execute()
+            (
+                supabase.table("user_subscriptions")
+                .update({"ai_used": sub.ai_used + 1})
+                .eq("owner_id", user_id)
+                .execute()
+            )
             return True
     except Exception as e:
         print(f"[Usage Store] Silently ignoring update error for {user_id}: {e}")
@@ -145,7 +158,12 @@ def onboard_user(user_id: str) -> bool:
             supabase.table("user_settings").insert(defaults).execute()
         
         # 2. Check if user already has a subscription
-        existing_sub = supabase.table("user_subscriptions").select("owner_id").eq("owner_id", user_id).execute()
+        existing_sub = (
+            supabase.table("user_subscriptions")
+            .select("owner_id")
+            .eq("owner_id", user_id)
+            .execute()
+        )
         if not existing_sub.data:
             # Create default subscription
             sub_defaults = {
