@@ -33,8 +33,8 @@ def call_jules_ai(diff_text):
     Since Jules might use an OpenAI-compatible endpoint format, we structure it as such.
     """
     if not JULES_API_KEY:
-        print("Error: JULES_API_KEY is not set.")
-        sys.exit(1)
+        print("Warning: JULES_API_KEY is not set. Please set the JULES_API_KEY secret. Skipping AI review.")
+        return []
 
     if not diff_text:
         print("No diff to analyze.")
@@ -88,7 +88,7 @@ def call_jules_ai(diff_text):
             return json.loads(ai_response)
     except urllib.error.HTTPError as e:
         print(f"Jules API Error: {e.code} - {e.read().decode('utf-8')}")
-        sys.exit(1)
+        return []
     except Exception as e:
         print(f"Failed to communicate with Jules AI or parse response: {e}")
         # Return a mock response for testing purposes if API isn't live
@@ -147,8 +147,8 @@ def create_github_issues(issues):
 
 def main():
     if not GITHUB_TOKEN or not GITHUB_REPOSITORY:
-        print("Missing GitHub environment variables.")
-        sys.exit(1)
+        print("Warning: Missing GitHub environment variables. Cannot proceed with github APIs.")
+        return []
 
     diff = get_git_diff()
     issues = call_jules_ai(diff)
