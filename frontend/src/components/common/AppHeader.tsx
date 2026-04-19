@@ -81,7 +81,7 @@ export function AppHeader({ title, subtitle, badge, children }: AppHeaderProps) 
       {/* Right: Page-specific actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {children}
-        
+
         {/* Universal User Menu Placeholder */}
         <div style={{
           width: 30,
@@ -105,6 +105,7 @@ export function AppHeader({ title, subtitle, badge, children }: AppHeaderProps) 
 }
 
 // Reusable Icon components for Header Actions
+// eslint-disable-next-line react-refresh/only-export-components
 export const HeaderIcons = {
   Share: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
