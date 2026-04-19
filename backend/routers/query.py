@@ -4,13 +4,18 @@ from common.auth import get_current_user, User
 from database import connection_manager
 from query_executor.models import QueryRequest, QueryResult
 from query_executor.executor import execute_query
+from common.rate_limit import RateLimitChecker
 
 
 router = APIRouter(prefix="/api/query", tags=["Query"])
 
 
 @router.post("/execute", response_model=QueryResult)
-def execute_sql_query(request: QueryRequest, current_user: User = Depends(get_current_user)):
+def execute_sql_query(
+    request: QueryRequest, 
+    current_user: User = Depends(get_current_user),
+    _: User = Depends(RateLimitChecker("query"))
+):
     """Execute a read-only SQL query against a connected database."""
     engine = connection_manager.get_engine(current_user.id, request.connection_id)
     if not engine:

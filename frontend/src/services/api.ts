@@ -235,3 +235,58 @@ export function getDashboardStats(dashboardId?: string) {
 export function getAnalyticsOverview() {
   return request<AnalyticsOverviewResponse>('/analytics/overview');
 }
+
+// --- Settings ---
+
+export interface UserSettings {
+  full_name: string | null;
+  job_title: string | null;
+  timezone: string;
+  theme: string;
+  accent_color: string;
+  density: string;
+  show_run_counts: boolean;
+  animate_charts: boolean;
+  syntax_highlighting: boolean;
+  ai_model: string;
+  stream_responses: boolean;
+  default_row_limit: number;
+  auto_save_queries: boolean;
+  system_prompt: string;
+  email_scheduled: boolean;
+  email_failed: boolean;
+  email_alerts: boolean;
+  delivery_format: string;
+  slack_enabled: boolean;
+  slack_webhook: string | null;
+  slack_channel: string | null;
+  owner_id: string;
+}
+
+export function getSettings() {
+  return request<UserSettings>('/settings');
+}
+
+export function updateSettings(data: Partial<UserSettings>) {
+  return jsonRequest<UserSettings>('/settings', 'PUT', data);
+}
+
+// --- Billing ---
+
+export interface UserSubscription {
+  owner_id: string;
+  plan_type: string;
+  queries_used: number;
+  queries_limit: number;
+  ai_used: number;
+  ai_limit: number;
+  next_reset_date: string;
+}
+
+export function getBillingInfo() {
+  return request<UserSubscription>('/settings/billing');
+}
+
+export function upgradePlan() {
+  return request<UserSubscription>('/settings/billing/upgrade', { method: 'POST' });
+}

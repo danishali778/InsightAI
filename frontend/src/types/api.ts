@@ -118,6 +118,8 @@ export interface ChatMessageRecord {
   chart_recommendation?: ChartRecommendation | null;
   error?: string | null;
   is_pinned?: boolean;
+  parent_id?: string | null;
+  prev_query_id?: string | null;
   timestamp: string;
 }
 
@@ -173,6 +175,8 @@ export interface ChatUiMessage {
   error?: string;
   column_metadata?: Record<string, string>;
   is_pinned?: boolean;
+  parent_id?: string;
+  prev_query_id?: string;
 }
 
 export interface EditSqlRequest {

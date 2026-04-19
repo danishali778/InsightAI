@@ -9,6 +9,22 @@ import { LibraryPage } from './pages/LibraryPage';
 import { ConnectionsPage } from './pages/ConnectionsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { AuthPage } from './pages/AuthPage';
+import { UpgradePage } from './pages/UpgradePage';
+import { useAuth } from './context/AuthContext';
+import { Navigate } from 'react-router-dom';
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, isDevMode } = useAuth();
+  
+  if (loading) return null; // Or a nice splash screen
+  
+  if (!user && !isDevMode) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  return <>{children}</>;
+}
 
 function App() {
   return (
@@ -17,12 +33,14 @@ function App() {
         <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/library" element={<LibraryPage />} />
-          <Route path="/connections" element={<ConnectionsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+          <Route path="/library" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
+          <Route path="/connections" element={<ProtectedRoute><ConnectionsPage /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />
         </Routes>
         </BrowserRouter>
       </ToastProvider>

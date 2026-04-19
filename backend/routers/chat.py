@@ -11,13 +11,18 @@ from ai_core.graph import run_chat
 from ai_core import session_manager
 from ai_core.visualization_agent import generate_visualization_blueprint
 from query_executor.executor import execute_query
+from common.rate_limit import RateLimitChecker
 
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
 
 @router.post("", response_model=ChatResponse)
-def send_chat_message(request: ChatRequest, current_user: User = Depends(get_current_user)):
+def send_chat_message(
+    request: ChatRequest, 
+    current_user: User = Depends(get_current_user),
+    _: User = Depends(RateLimitChecker("ai"))
+):
     """Send a message and get AI-generated SQL + results."""
     user_id = current_user.id
     
@@ -48,11 +53,17 @@ def send_chat_message(request: ChatRequest, current_user: User = Depends(get_cur
             title += "..."
         session_manager.rename_session(user_id, session_id, title)
 
+    # Find previous query in this session
+    prev_query_id = None
+    if session_id:
+        prev_query_id = session_manager.get_latest_user_message_id(user_id, session_id)
+
     # Save user message to session
     user_msg = ChatMessage(
         role="user",
         content=request.message,
         connection_id=request.connection_id,
+        prev_query_id=prev_query_id
     )
     session_manager.add_message(user_id, session_id, user_msg)
 
@@ -82,7 +93,8 @@ def send_chat_message(request: ChatRequest, current_user: User = Depends(get_cur
             results={"rows": result.get("rows", [])},
             columns=result.get("columns", []),
             chart_recommendation=result.get("chart_recommendation"),
-            error=result.get("error")
+            error=result.get("error"),
+            parent_id=user_msg.id
         )
         assistant_msg_id = assistant_msg.id
         session_manager.add_message(user_id, session_id, assistant_msg)
@@ -93,6 +105,14 @@ def send_chat_message(request: ChatRequest, current_user: User = Depends(get_cur
 
     # Build response
     error = result.get("error", "")
+    chart_rec = result.get("chart_recommendation")
+    
+    # Sanitize chart recommendation to prevent Pydantic validation errors if AI sends None for lists
+    if chart_rec and isinstance(chart_rec, dict):
+        if chart_rec.get("y_columns") is None:
+            chart_rec["y_columns"] = []
+        if chart_rec.get("tooltip_columns") is None:
+            chart_rec["tooltip_columns"] = []
     return ChatResponse(
         session_id=session_id,
         message_id=assistant_msg_id,
@@ -103,10 +123,11 @@ def send_chat_message(request: ChatRequest, current_user: User = Depends(get_cur
         rows=result.get("rows", []),
         row_count=result.get("row_count", 0),
         execution_time_ms=result.get("execution_time_ms", 0.0),
-        chart_recommendation=result.get("chart_recommendation"),
+        chart_recommendation=chart_rec,
         error=error if error else None,
         column_metadata=result.get("column_metadata", {}),
         is_pinned=False,
+        prev_query_id=prev_query_id
     )
 
 

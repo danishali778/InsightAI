@@ -47,7 +47,7 @@ export function LandingPage() {
                         Join thousands of analysts and teams who've replaced manual SQL with QueryMind. Free forever for individuals.
                     </p>
                     <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <a href="/chat" className="btn-glow" style={{ background: 'var(--accent)', color: '#fff', padding: '15px 36px', borderRadius: 10, fontWeight: 700, fontSize: '1rem', textDecoration: 'none', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.2)' }}>
+                        <a href="/auth" className="btn-glow" style={{ background: 'var(--accent)', color: '#fff', padding: '15px 36px', borderRadius: 10, fontWeight: 700, fontSize: '1rem', textDecoration: 'none', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.2)' }}>
                             Get Started for Free →
                         </a>
                         <a href="#" style={{ background: '#fff', border: '1px solid var(--border)', color: 'var(--text)', padding: '15px 36px', borderRadius: 10, fontWeight: 600, fontSize: '1rem', textDecoration: 'none', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>

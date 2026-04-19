@@ -8,9 +8,9 @@ class ChartRecommendation(BaseModel):
     """Chart recommendation returned for a query result."""
     type: str
     x_column: Optional[str] = None
-    y_columns: list[str] = Field(default_factory=list)
+    y_columns: Optional[list[str]] = Field(default_factory=list)
     color_column: Optional[str] = None
-    tooltip_columns: list[str] = Field(default_factory=list)
+    tooltip_columns: Optional[list[str]] = Field(default_factory=list)
     is_grouped: bool = False
     is_dual_axis: bool = False
     title: str
@@ -30,6 +30,8 @@ class ChatMessage(BaseModel):
     chart_recommendation: Optional[Any] = None  # Using Any for persistence flexibility
     is_pinned: bool = False
     error: Optional[str] = None
+    parent_id: Optional[str] = None
+    prev_query_id: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
 
     def __init__(self, **data):
@@ -79,6 +81,7 @@ class ChatResponse(BaseModel):
     error: Optional[str] = None
     column_metadata: dict = Field(default_factory=dict)
     is_pinned: bool = False
+    prev_query_id: Optional[str] = None
 
 
 class SessionSummary(BaseModel):

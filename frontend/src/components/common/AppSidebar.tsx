@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { T } from '../dashboard/tokens';
+import { useSettingsStore } from '../../store/settingsStore';
 
 interface NavItemProps {
   icon: string;
@@ -102,6 +103,10 @@ export function NavSection({ onDashboardHover }: { onDashboardHover?: (hovering:
 
 /** Full app sidebar — used by Dashboard, Library, Connections, Analytics */
 export function AppSidebar({ onDashboardHover }: { onDashboardHover?: (hovering: boolean) => void }) {
+  const { settings } = useSettingsStore();
+  const displayName = settings?.full_name || 'User';
+  const avatarInitials = displayName.substring(0, 2).toUpperCase();
+
   return (
     <aside style={{
       width: 240, flexShrink: 0,
@@ -144,9 +149,9 @@ export function AppSidebar({ onDashboardHover }: { onDashboardHover?: (hovering:
             background: `linear-gradient(135deg, ${T.purple}, ${T.accent})`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '0.68rem', fontWeight: 700, color: '#fff',
-          }}>AK</div>
+          }}>{avatarInitials}</div>
           <div>
-            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: T.text }}>Ahmad Khan</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: T.text }}>{displayName}</div>
             <div style={{ fontSize: '0.62rem', color: T.accent, fontFamily: T.fontMono }}>PRO PLAN</div>
           </div>
         </div>

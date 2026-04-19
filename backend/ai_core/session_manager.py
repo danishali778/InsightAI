@@ -51,8 +51,9 @@ def get_session(user_id: str, session_id: str) -> Optional[ChatSession]:
         .execute()
         
     messages = [ChatMessage(**m) for m in messages_resp.data]
+    chained_messages = reconstruct_dual_chain(messages)
     
-    return ChatSession(**session_data, messages=messages)
+    return ChatSession(**session_data, messages=chained_messages)
 
 
 @supabase_retry
@@ -222,3 +223,82 @@ def get_history_for_llm(user_id: str, session_id: str) -> list[dict]:
     except Exception as e:
         print(f"Error fetching history from Supabase (side-effect): {str(e)}")
         return []
+
+
+@supabase_retry
+def get_latest_user_message_id(user_id: str, session_id: str) -> Optional[str]:
+    """Get the ID of the most recent USER message in a session."""
+    try:
+        response = supabase.table("chat_messages") \
+            .select("id") \
+            .eq("session_id", session_id) \
+            .eq("owner_id", user_id) \
+            .eq("role", "user") \
+            .order("created_at", desc=True) \
+            .limit(1) \
+            .execute()
+            
+        if response.data:
+            return response.data[0]["id"]
+        return None
+    except Exception as e:
+        print(f"Error fetching latest user message: {str(e)}")
+        return None
+
+
+def reconstruct_dual_chain(messages: list[ChatMessage]) -> list[ChatMessage]:
+    """
+    Reconstruct the conversation history using prev_query_id and parent_id links.
+    Algorithm:
+    1. Organize all user messages by their prev_query_id.
+    2. Organize all assistant messages by their parent_id.
+    3. Start with the user message where prev_query_id is None.
+    4. Follow the queries sequentially, inserting their associated assistant responses in between.
+    """
+    if not messages:
+        return []
+
+    # 1. Map queries by prev_query_id
+    # Note: Using a list for responses in case one query has multiple answers
+    user_msgs_by_prev = {}
+    assistant_msgs_by_parent = {}
+    
+    for msg in messages:
+        if msg.role == "user":
+            user_msgs_by_prev[msg.prev_query_id] = msg
+        elif msg.role == "assistant":
+            if msg.parent_id not in assistant_msgs_by_parent:
+                assistant_msgs_by_parent[msg.parent_id] = []
+            assistant_msgs_by_parent[msg.parent_id].append(msg)
+
+    # 2. Build the chain starting from the root (prev_query_id is None)
+    chain = []
+    current_user_msg = user_msgs_by_prev.get(None)
+    
+    while current_user_msg:
+        # Add the User Message
+        chain.append(current_user_msg)
+        
+        # Add any Assistant Responses for this user message
+        responses = assistant_msgs_by_parent.get(current_user_msg.id, [])
+        # Sort responses by time if there are multiple
+        responses.sort(key=lambda x: x.created_at)
+        chain.extend(responses)
+        
+        # Move to the next User Message in the sequence
+        current_user_msg = user_msgs_by_prev.get(current_user_msg.id)
+
+    # 3. Safety Check: If the chain is empty but we have messages, 
+    # fall back to chronological order (for legacy data)
+    if not chain and messages:
+        return sorted(messages, key=lambda x: x.created_at)
+
+    # Also check if we missed any orphaned messages (rare)
+    if len(chain) < len(messages):
+        # Find messages not in chain
+        chain_ids = {m.id for m in chain}
+        orphans = [m for m in messages if m.id not in chain_ids]
+        # Append orphans at the end or handle appropriately
+        chain.extend(sorted(orphans, key=lambda x: x.created_at))
+
+    return chain

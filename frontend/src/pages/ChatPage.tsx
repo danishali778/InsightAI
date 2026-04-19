@@ -19,6 +19,7 @@ export function ChatPage() {
   const [messages, setMessages] = useState<ChatMessageView[]>([]);
   const [loading, setLoading] = useState(false);
   const [showConnectModal, setShowConnectModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [schemaOpen, setSchemaOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const skipNextFetch = useRef(false);
@@ -48,6 +49,8 @@ export function ChatPage() {
         column_metadata: message.column_metadata || undefined,
         error: message.error || undefined,
         is_pinned: message.is_pinned ?? false,
+        parent_id: message.parent_id || undefined,
+        prev_query_id: message.prev_query_id || undefined,
       }));
       setMessages(msgs);
       // Auto-switch to the session's last-used connection
@@ -113,13 +116,19 @@ export function ChatPage() {
         column_metadata: r.column_metadata || undefined,
         error: r.error || undefined,
         is_pinned: r.is_pinned ?? false,
+        parent_id: userMsg.id, // Direct link
+        prev_query_id: r.prev_query_id || undefined,
       };
       
       setMessages(prev => {
         const updated = [...prev];
         // The last message in 'prev' is the user message we just added
         if (updated.length > 0 && updated[updated.length - 1].role === 'user') {
-          updated[updated.length - 1] = { ...updated[updated.length - 1], id: r.user_message_id };
+          updated[updated.length - 1] = { 
+            ...updated[updated.length - 1], 
+            id: r.user_message_id,
+            prev_query_id: r.prev_query_id || undefined
+          };
         }
         return [...updated, assistantMsg];
       });
@@ -129,8 +138,13 @@ export function ChatPage() {
         setActiveSessionId(r.session_id);
         api.listSessions().then(setSessions);
       }
-    } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: '', error: err instanceof Error ? err.message : 'Something went wrong.' }]);
+    } catch (err: any) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('LIMIT_EXCEEDED') || msg.includes('402')) {
+        setShowPaywall(true);
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: '', error: msg }]);
+      }
     } finally { setLoading(false); }
   };
 
@@ -316,6 +330,52 @@ export function ChatPage() {
       </div>
 
       <ConnectionModal isOpen={showConnectModal} onClose={() => setShowConnectModal(false)} onConnected={handleRefreshConnections} />
+
+      {/* Paywall Overlay */}
+      {showPaywall && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(12px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          animation: 'fadeIn 0.3s ease-out'
+        }}>
+          <div style={{
+            background: T.s1, border: `1px solid ${T.border}`, borderRadius: 24,
+            padding: '40px 40px', maxWidth: 440, width: '100%', textAlign: 'center',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,58,255,0.1) inset'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: 16 }}>⚡</div>
+            <h2 style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.8rem', color: T.text, margin: '0 0 12px 0' }}>Usage Limit Reached</h2>
+            <p style={{ fontSize: '0.95rem', color: T.text3, lineHeight: 1.6, margin: '0 0 32px 0' }}>
+              You have hit your free tier limit for AI requests. Upgrade to Pro for unlimited AI analytics, background sync, and more.
+            </p>
+            <button 
+              onClick={() => { window.location.href = '/upgrade'; }}
+              style={{
+                width: '100%', padding: '14px 0', borderRadius: 12, border: 'none', cursor: 'pointer',
+                background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`,
+                color: '#fff', fontSize: '1rem', fontWeight: 700, fontFamily: T.fontBody,
+                boxShadow: '0 8px 24px rgba(124,58,255,0.25)', marginBottom: 12, transition: 'transform 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              Upgrade to PRO
+            </button>
+            <button
+              onClick={() => setShowPaywall(false)}
+              style={{
+                width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', cursor: 'pointer',
+                background: 'transparent', color: T.text3, fontSize: '0.9rem', fontWeight: 600, transition: 'color 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = T.text2}
+              onMouseLeave={e => e.currentTarget.style.color = T.text3}
+            >
+              Maybe Later
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes thinkbounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-5px);opacity:1} }
