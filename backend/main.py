@@ -61,19 +61,22 @@ logger.info("[startup] Routers imported successfully.")
 async def lifespan(app: FastAPI):
     from database.connection_manager import seed_dev_connection
     from query_library.scheduler import init_scheduler, restore_all_jobs, shutdown_scheduler
+    from dashboard.scheduler import init_scheduler as init_dash_scheduler, restore_all_widget_jobs, shutdown_scheduler as shutdown_dash_scheduler
 
     logger.info("[startup] Lifespan started.")
     try:
         logger.info("[startup] Seeding dev connection...")
-        seed_dev_connection()
+        await seed_dev_connection()
         logger.info("[startup] Seeding dev connection DONE.")
 
-        logger.info("[startup] Initializing scheduler...")
+        logger.info("[startup] Initializing schedulers...")
         init_scheduler()
-        logger.info("[startup] Initializing scheduler DONE.")
+        init_dash_scheduler()
+        logger.info("[startup] Initializing schedulers DONE.")
 
         logger.info("[startup] Restoring all jobs...")
-        restore_all_jobs()
+        await restore_all_jobs()
+        await restore_all_widget_jobs()
         logger.info("[startup] Restoring all jobs DONE.")
 
         logger.info("[startup] Lifespan setup complete. App should start now.")
@@ -83,6 +86,7 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("[startup] Shutting down.")
     shutdown_scheduler()
+    shutdown_dash_scheduler()
 
 
 app = FastAPI(
@@ -121,6 +125,7 @@ logger.info("[startup] CORS allowed origins: %s", origins)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_headers=["*"],
     allow_headers=["*"],
     allow_methods=["*"],
     allow_credentials=True,

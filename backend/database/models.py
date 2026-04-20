@@ -14,6 +14,14 @@ class ConnectionRequest(BaseModel):
     password: Optional[str] = None
     ssl_mode: str = "disable"   # disable | require | verify-full
     readonly: bool = True
+    
+    # SSH Tunneling parameters (Optional)
+    use_ssh: bool = False
+    ssh_host: Optional[str] = None
+    ssh_port: Optional[int] = 22
+    ssh_username: Optional[str] = None
+    ssh_password: Optional[str] = None
+    ssh_private_key: Optional[str] = None
 
 
 class ConnectionResponse(BaseModel):
@@ -69,6 +77,14 @@ class TestConnectionRequest(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
     ssl_mode: str = "disable"
+    
+    # SSH Tunneling parameters for testing
+    use_ssh: bool = False
+    ssh_host: Optional[str] = None
+    ssh_port: Optional[int] = 22
+    ssh_username: Optional[str] = None
+    ssh_password: Optional[str] = None
+    ssh_private_key: Optional[str] = None
 
 
 class TestConnectionResponse(BaseModel):
@@ -92,6 +108,8 @@ class ActiveConnection(BaseModel):
     tables_count: int = 0
     ssl_mode: str = "disable"
     readonly: bool = True
+    use_ssh: bool = False
+    ssh_host: Optional[str] = None
 
 
 class UpdateConnectionSettingsRequest(BaseModel):

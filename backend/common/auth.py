@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from database.retry import async_supabase_retry
 
 load_dotenv()
 
@@ -115,14 +116,28 @@ async def get_current_user(
             )
 
         # --- DATABASE TRUTH CHECK ---
-        # If not in mock-auth mode, verify the user exists in our DB
         if not _MOCK_AUTH_ACTIVE and verify_existence:
-            from database.supabase_client import supabase
-            user_check = supabase.table("user_settings").select("owner_id").eq("owner_id", user_id).execute()
-            if not user_check.data:
+            try:
+                from database.supabase_client import async_supabase
+                from database.retry import async_supabase_retry
+
+                @async_supabase_retry
+                async def check_user():
+                    return await async_supabase.table("user_settings").select("owner_id").eq("owner_id", user_id).execute()
+                
+                user_check = await check_user()
+                if not user_check.data:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="User account has been deactivated or deleted.",
+                    )
+            except HTTPException:
+                raise
+            except Exception as db_err:
+                logger.error("Authentication Database Error (Truth Check): %s", db_err, exc_info=True)
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User account has been deactivated or deleted.",
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Auth system infrastructure error. Please try again later.",
                 )
 
         return User(id=user_id, email=email)
@@ -140,14 +155,18 @@ async def get_current_user(
         )
 
     except HTTPException:
+        # Re-raise explicit HTTPExceptions (like the 401/500 from the Truth Check)
         raise
 
-    except Exception:
+    except Exception as e:
         if _MOCK_AUTH_ACTIVE:
             return MOCK_USER
+        
+        # Log unexpected errors as 500s, not 401s, to avoid logout loops
+        logger.error("Unexpected Auth Middleware Error: %s", e, exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal authentication service error.",
         )
 
 
