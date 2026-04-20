@@ -11,6 +11,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AuthPage } from './pages/AuthPage';
 import { UpgradePage } from './pages/UpgradePage';
+import { SharedDashboardPage } from './pages/SharedDashboardPage';
 import { useAuth } from './context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
@@ -34,6 +35,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/s/:token" element={<SharedDashboardPage />} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />

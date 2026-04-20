@@ -218,8 +218,8 @@ function DashboardRail({
                   <DashboardCreateForm
                     value={newDashName}
                     onChange={onNewDashNameChange}
-                    onCreate={onCreate}
-                    onCancel={onCancelCreate}
+                    onCreate={handleCreateDash}
+                    onCancel={() => setShowCreateForm(false)}
                     creating={creating}
                     compact
                     ctaLabel="Add"
@@ -449,7 +449,7 @@ function EmptyState() {
       {/* Hint */}
       <div style={{
         marginTop: 32, display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 166px', borderRadius: 8, // Fixed padding from previous broken state
+        padding: '8px 166px', borderRadius: 8,
         background: 'rgba(0,229,255,0.04)',
         border: '1px solid rgba(0,229,255,0.08)',
       }}>
@@ -527,18 +527,9 @@ function DashboardCanvas({
     return {
       lg: widgets.map((w): GridLayoutItem => {
         const isKPI = w.viz_type === 'kpi';
-        const isStandardChart = !isKPI && w.viz_type !== 'table';
         
         let safeW = w.w;
         let safeH = w.h;
-
-        // Ironclad Safeguards
-        if (isKPI) {
-          safeW = 5; // 25% width
-          safeH = 5; // Compact height
-        } else if (isStandardChart) {
-          safeH = 7; // Chart height
-        }
 
         return {
           i: w.id,
@@ -546,8 +537,8 @@ function DashboardCanvas({
           y: w.y,
           w: safeW,
           h: safeH,
-          minW: isKPI ? 5 : w.minW,
-          minH: safeH
+          minW: isKPI ? 5 : 4,
+          minH: isKPI ? 4 : 5
         };
       })
     };
@@ -558,26 +549,12 @@ function DashboardCanvas({
     currentLayout.forEach((item) => {
       const widget = widgets.find(w => w.id === item.i);
       if (widget) {
-        const isKPI = widget.viz_type === 'kpi';
-        const isStandardChart = !isKPI && widget.viz_type !== 'table';
-        
-        let finalW = item.w;
-        let finalH = item.h;
-
-        // Ironclad Safeguards
-        if (isKPI) {
-          finalW = 5;
-          finalH = 5;
-        } else if (isStandardChart) {
-          finalH = 7;
-        }
-
-        if (widget.x !== item.x || widget.y !== item.y || widget.w !== finalW || widget.h !== finalH) {
+        if (widget.x !== item.x || widget.y !== item.y || widget.w !== item.w || widget.h !== item.h) {
           onUpdateWidget(item.i, {
             x: item.x,
             y: item.y,
-            w: finalW,
-            h: finalH
+            w: item.w,
+            h: item.h
           });
         }
       }
@@ -672,13 +649,15 @@ function DashboardCanvas({
       />
 
       {widgets.length > 0 ? (
-        <div className="dash-section dash-section-d2" style={{ paddingBottom: 14 }}>
+        <div id="dashboard-grid" className="dash-section dash-section-d2" style={{ paddingBottom: 14, background: T.bg }}>
           <ResponsiveGridLayout
             layouts={layouts}
             breakpoints={{ lg: 1024, md: 996, sm: 768, xs: 480, xxs: 0 }}
             cols={{ lg: 20, md: 15, sm: 10, xs: 5, xxs: 2 }}
             rowHeight={30}
             draggableHandle=".widget-drag-handle"
+            isDraggable={true}
+            isResizable={true}
             onLayoutChange={(_, allLayouts) => handleLayoutChange(allLayouts.lg || [])}
             margin={[20, 20]}
           >
@@ -796,15 +775,12 @@ export function DashboardPage() {
       const isStandardChart = !isKPI && w.viz_type !== 'table';
 
       if (isKPI) {
-        // Quad-KPI Row Standard: 25% width, Height 5
         newW = 5;
         newH = 5;
       } else if (w.w < 3) {
-        console.log(`Auto-repairing squashed widget: ${w.title}`);
         newW = 10;
         newH = Math.max(w.h, 7);
       } else if (isStandardChart && w.h !== 7) {
-        console.log(`🔍 Auto-shrinking/aligning widget: ${w.title} (${w.h} -> 7)`);
         newH = 7;
       }
 
@@ -814,7 +790,6 @@ export function DashboardPage() {
       return w;
     });
 
-    // KPI GRAVITY: Herd KPIs to top (y=0) while keeping existing sequence
     const kpis = normalizedWidgets.filter(w => w.viz_type === 'kpi').sort((a, b) => a.x - b.x);
     const nonKpis = normalizedWidgets.filter(w => w.viz_type !== 'kpi');
     
@@ -828,22 +803,16 @@ export function DashboardPage() {
       })),
       ...nonKpis.map(w => ({
         ...w,
-        // Slide charts down if they would overlap the protected KPI space
         y: Math.max(w.y, kpiRowsUsed)
       }))
     ];
 
-    console.log('🔍 FETCH RAW:', widgetResult.map(w => ({ title: w.title, h: w.h, type: w.viz_type })));
-    console.log('🔍 FETCH HERDED:', herdedWidgets.map(w => ({ title: w.title, x: w.x, y: w.y, h: w.h })));
-
     setWidgets(herdedWidgets);
     setStats(statsResult);
 
-    // Persist repairs to DB
     herdedWidgets.forEach(w => {
       const original = widgetResult.find(ow => ow.id === w.id);
       if (original && (original.w !== w.w || original.h !== w.h || original.x !== w.x || original.y !== w.y)) {
-        console.log('🔍 AUTO-REPAIR SYNC:', w.title, { w: w.w, h: w.h, x: w.x, y: w.y });
         updateDashboardWidget(w.id, { x: w.x, y: w.y, w: w.w, h: w.h });
       }
     });
@@ -873,7 +842,6 @@ export function DashboardPage() {
   };
 
   const handleUpdateWidget = useCallback(async (id: string, patch: UpdateDashboardWidgetRequest) => {
-    console.log('🔍 SAVING TO DB:', id, patch);
     setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
     try {
       await updateDashboardWidget(id, patch);
@@ -903,6 +871,32 @@ export function DashboardPage() {
 
   const activeDash = dashboards.find((dashboard) => dashboard.id === activeDashId);
 
+  const handleExportPNG = async () => {
+    if (!activeDash) return;
+    const { exportToPNG } = await import('../utils/exportUtils');
+    await exportToPNG('dashboard-grid', `${activeDash.name.replace(/\s+/g, '_')}_Dashboard`);
+  };
+
+  const handleShareClick = async () => {
+    if (!activeDash) return;
+    try {
+      let token = activeDash.share_token;
+      if (!activeDash.is_public || !token) {
+        const updated = await updateDashboard(activeDash.id, { is_public: true });
+        token = updated.share_token;
+        await reloadDashboards();
+      }
+      if (token) {
+        const url = `${window.location.origin}/s/${token}`;
+        await navigator.clipboard.writeText(url);
+        alert(`Public link area enabled and copied to clipboard!\n${url}`);
+      }
+    } catch (err) {
+      console.error('Failed to create share link:', err);
+      alert('Failed to create share link.');
+    }
+  };
+
   return (
     <MainShell
       title={activeDash?.name || 'Dashboards'}
@@ -915,8 +909,8 @@ export function DashboardPage() {
       headerActions={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button style={headerIconBtnStyle} title="Search"><HeaderIcons.Search /></button>
-          <button style={headerActionBtnStyle} title="Share"><HeaderIcons.Share /> Share</button>
-          <button style={headerActionBtnStyle} title="Export"><HeaderIcons.Download /> Export</button>
+          <button onClick={handleShareClick} style={headerActionBtnStyle} title="Share"><HeaderIcons.Share /> Share URL</button>
+          <button onClick={handleExportPNG} style={headerActionBtnStyle} title="Export Report"><HeaderIcons.Download /> Export PNG</button>
           <button 
             onClick={() => setShowCreateForm(true)}
             style={{
@@ -949,7 +943,6 @@ export function DashboardPage() {
           creating={creating}
           externalHover={sidebarTriggeredHover}
         />
-        {/* Main Dashboard Content */}
         <div className="dash-scroll" style={{
           flex: 1, overflowY: 'auto', overflowX: 'hidden',
           padding: '24px 32px 48px', background: T.bg,
