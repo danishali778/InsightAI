@@ -53,7 +53,7 @@ from common import register_exception_handlers
 from config import APP_HOST, APP_PORT, ALLOWED_ORIGINS
 logger.info("[startup] Configuration and common utils loaded.")
 
-from routers import analytics, database, query, chat, query_history, query_library, dashboard_widgets, settings_page, webhooks
+from routers import analytics, database, query, chat, query_history, query_library, dashboard_widgets, settings_page, webhooks, ai_audit
 logger.info("[startup] Routers imported successfully.")
 
 
@@ -61,19 +61,22 @@ logger.info("[startup] Routers imported successfully.")
 async def lifespan(app: FastAPI):
     from database.connection_manager import seed_dev_connection
     from query_library.scheduler import init_scheduler, restore_all_jobs, shutdown_scheduler
+    from dashboard.scheduler import init_scheduler as init_dash_scheduler, restore_all_widget_jobs, shutdown_scheduler as shutdown_dash_scheduler
 
     logger.info("[startup] Lifespan started.")
     try:
         logger.info("[startup] Seeding dev connection...")
-        seed_dev_connection()
+        await seed_dev_connection()
         logger.info("[startup] Seeding dev connection DONE.")
 
-        logger.info("[startup] Initializing scheduler...")
+        logger.info("[startup] Initializing schedulers...")
         init_scheduler()
-        logger.info("[startup] Initializing scheduler DONE.")
+        init_dash_scheduler()
+        logger.info("[startup] Initializing schedulers DONE.")
 
         logger.info("[startup] Restoring all jobs...")
-        restore_all_jobs()
+        await restore_all_jobs()
+        await restore_all_widget_jobs()
         logger.info("[startup] Restoring all jobs DONE.")
 
         logger.info("[startup] Lifespan setup complete. App should start now.")
@@ -83,6 +86,7 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("[startup] Shutting down.")
     shutdown_scheduler()
+    shutdown_dash_scheduler()
 
 
 app = FastAPI(
@@ -138,6 +142,7 @@ app.include_router(dashboard_widgets.router)
 app.include_router(analytics.router)
 app.include_router(settings_page.router)
 app.include_router(webhooks.router, prefix="/api")
+app.include_router(ai_audit.router)
 
 
 @app.get("/api/health")
