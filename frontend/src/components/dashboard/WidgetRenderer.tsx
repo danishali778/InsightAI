@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { refreshDashboardWidget, getWidgetInsight } from '../../services/api';
+import { exportToCSV } from '../../utils/exportUtils';
 import { T } from './tokens';
 import type { DashboardWidgetItem } from '../../types/dashboard';
 import { resolveWidgetSize } from '../../types/dashboard';
@@ -41,7 +42,7 @@ function IconRefresh({ spinning }: { spinning?: boolean }) {
 
 function IconResize() {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="15 3 21 3 21 9" />
       <polyline points="9 21 3 21 3 15" />
       <line x1="21" y1="3" x2="14" y2="10" />
@@ -416,30 +417,15 @@ export function WidgetRenderer({
    const onToggleSize = () => {
     const isPie = widget.viz_type === 'pie' || widget.viz_type === 'donut' || chartType === 'pie' || chartType === 'donut';
     let nextW = 10;
-    let nextH = 7; // Standard Height
+    let nextH = widget.h || 7;
 
     if (isPie) {
-      if (widget.w >= 10) {
-        nextW = 7; // ~35%
-        nextH = 7; 
-      } else {
-        nextW = 10; // 50%
-        nextH = 7;
-      }
+      nextW = widget.w >= 10 ? 7 : 10;
     } else {
-      if (widget.w < 10) {
-        nextW = 10; // 50%
-        nextH = 7;
-      } else if (widget.w >= 10 && widget.w < 13) {
-        nextW = 13; // 65%
-        nextH = 7;
-      } else if (widget.w >= 13 && widget.w < 20) {
-        nextW = 20; // 100%
-        nextH = 7;
-      } else {
-        nextW = 10; // Back to 50%
-        nextH = 7;
-      }
+      if (widget.w < 10) nextW = 10;
+      else if (widget.w >= 10 && widget.w < 13) nextW = 13;
+      else if (widget.w >= 13 && widget.w < 20) nextW = 20;
+      else nextW = 10;
     }
 
     onUpdateWidget(widget.id, { w: nextW, h: nextH });
@@ -504,7 +490,31 @@ export function WidgetRenderer({
               width: 2, height: 2, borderRadius: '50%',
               background: T.text3, display: 'inline-block',
             }} />
-            <span>{widget.cadence}</span>
+            <select 
+              value={widget.cadence || 'Manual only'}
+              onChange={(e) => onUpdateWidget(widget.id, { cadence: e.target.value })}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: T.text3,
+                fontFamily: T.fontMono,
+                fontSize: '0.62rem',
+                cursor: 'pointer',
+                outline: 'none',
+                appearance: 'none',
+                padding: '0 4px',
+                marginLeft: '-4px',
+                borderRadius: '4px'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              <option value="Manual only">Manual only ▼</option>
+              <option value="Hourly">Hourly ⚡</option>
+              <option value="Daily">Daily 🗓️</option>
+              <option value="Weekly">Weekly 📅</option>
+              <option value="Monthly">Monthly 📆</option>
+            </select>
             {widget.cadence !== 'Manual only' && <LiveIndicator />}
           </div>
         </div>
@@ -547,14 +557,7 @@ export function WidgetRenderer({
         <button
           className="dash-action-btn"
           onClick={onToggleSize}
-          style={{ width: 26, height: 26 }}
-           title={(() => {
-            const isPie = widget.viz_type === 'pie' || widget.viz_type === 'donut' || chartType === 'pie' || chartType === 'donut';
-            if (isPie) {
-              return widget.size === 'half' ? 'Collapse to 35% width' : 'Expand to 50% width';
-            }
-            return widget.size === 'half' ? 'Expand to 65% width' : widget.size === 'three-quarter' ? 'Expand to full width' : 'Collapse to 50% width';
-          })()}
+          style={{ width: 28, height: 28, color: T.text3 }}
         >
           <IconResize />
         </button>
@@ -582,6 +585,22 @@ export function WidgetRenderer({
         >
           {loadingInsight ? '...' : '✨'}
         </button>
+
+        {/* Export Data */}
+        {widget.rows && widget.rows.length > 0 && (
+          <button
+            className="dash-action-btn"
+            onClick={() => exportToCSV(widget.rows, `${widget.title.replace(/\s+/g, '_')}_export`)}
+            title="Download Data (CSV)"
+            style={{ width: 26, height: 26 }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </button>
+        )}
 
         {/* Refresh */}
         {canRefresh && (
