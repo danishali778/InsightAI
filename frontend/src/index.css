@@ -379,17 +379,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background: transparent;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--muted);
   cursor: pointer;
   transition: all 0.18s ease;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 .dash-action-btn:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 229, 255, 0.04);
 }
 .dash-action-btn--danger:hover {
   border-color: rgba(248, 113, 113, 0.3);
@@ -521,5 +521,86 @@
 @media (max-width: 900px) {
   .steps-connector::before {
     display: none;
+  }
+}
+
+/* ============================================================
+   GRID RESIZE HANDLES
+   ============================================================ */
+
+/* ============================================================
+   GRID RESIZE HANDLES (CORE + CUSTOM)
+   ============================================================ */
+
+/* Core RGL positioning in case library CSS fails */
+.react-resizable-handle {
+  position: absolute !important;
+  width: 32px !important;
+  height: 32px !important;
+  bottom: 0px !important;
+  right: 0px !important;
+  cursor: nwse-resize !important;
+  z-index: 1000 !important;
+}
+
+/* Custom UI styling */
+.react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 14px;
+  height: 14px;
+  border-right: 3px solid var(--accent);
+  border-bottom: 3px solid var(--accent);
+  border-radius: 0 0 4px 0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.2), inset -2px -2px 0 rgba(255,255,255,0.2);
+  pointer-events: none;
+}
+
+/* Second line for that 'drag' feel */
+.react-resizable-handle::before {
+  content: '';
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 6px;
+  height: 60%;
+  border-right: 2px solid rgba(0, 229, 255, 0.4);
+  border-bottom: 2px solid rgba(0, 229, 255, 0.4);
+  border-radius: 0 0 2px 0;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.react-grid-item:hover .react-resizable-handle::after {
+  border-color: #00e5ff;
+  width: 18px;
+  height: 18px;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.6));
+}
+
+.react-resizable-handle:active::after {
+  transform: scale(0.8) translate(-2px, -2px);
+  border-color: #fff;
+}
+
+/* Ensure handles aren't hidden by widget card overflow */
+.react-grid-item {
+  overflow: visible !important;
+}
+
+/* Hide handles on mobile */
+@media (max-width: 650px) {
+  .react-resizable-handle {
+    display: none !important;
+  }
+}
+
+/* Hide handles on small screens where dragging is hard */
+@media (max-width: 600px) {
+  .react-resizable-handle {
+    display: none !important;
   }
 }
