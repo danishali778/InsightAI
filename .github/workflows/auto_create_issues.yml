@@ -1,0 +1,129 @@
+name: Generate Audit Issues
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create BUG Issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "[BUG] CORS Configuration Allows Localhost Unconditionally" \
+            --label "bug" \
+            --body "### 🏗️ Category
+          BUG
+
+          ### 📝 Problem Description
+          The CORS configuration unconditionally appends localhost origins (http://localhost:5173, etc.) to the \`origins\` list, regardless of whether the application is running in production. The \`APP_ENV\` environment variable is ignored for this logic.
+
+          ### 📉 Impact
+          This is a security misconfiguration that allows local development servers to make cross-origin requests to production endpoints, increasing the attack surface.
+
+          ### 🛠️ Proposed Solution
+          Wrap the localhost origin appending logic in a check for \`APP_ENV == 'development'\`. Ensure localhost origins are not added in production environments.
+
+          ### 📍 Location
+          - File: backend/main.py
+          - Lines: 114-118"
+
+      - name: Create SECURITY Issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "[SECURITY] SQL Injection Vulnerability in Dashboard Filters" \
+            --label "security" \
+            --body "### 🏗️ Category
+          SECURITY
+
+          ### 📝 Problem Description
+          The \`apply_global_filters\` function directly interpolates the \`status\` filter value into the SQL query string (\`wrapped += f\" AND status = '{status}'\"\`) without escaping or parameterizing the input.
+
+          ### 📉 Impact
+          An attacker could provide a malicious string for the \`status\` filter, breaking out of the single quotes to execute arbitrary SQL commands. This could lead to unauthorized data access or modification.
+
+          ### 🛠️ Proposed Solution
+          Use parameterized queries (e.g., SQLAlchemy parameters) or strictly validate/sanitize the \`status\` value against an allowlist before injecting it into the query.
+
+          ### 📍 Location
+          - File: backend/routers/dashboard_widgets.py
+          - Lines: 34-37"
+
+      - name: Create ENHANCEMENT Issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "[ENHANCEMENT] Performance Bottleneck in serialize_data" \
+            --label "enhancement" \
+            --body "### 🏗️ Category
+          ENHANCEMENT
+
+          ### 📝 Problem Description
+          The \`serialize_data\` function recursively iterates over all rows and dictionaries to convert Decimal, Date, and Time objects to JSON-serializable types. For large result sets (e.g., 500 rows with many columns), this deep recursion creates significant CPU overhead.
+
+          ### 📉 Impact
+          Query execution times are artificially inflated, reducing API throughput and increasing latency for end-users when retrieving large datasets.
+
+          ### 🛠️ Proposed Solution
+          Replace the recursive \`serialize_data\` function with a custom JSONEncoder or use a faster serialization library like \`orjson\` that handles these data types natively in C.
+
+          ### 📍 Location
+          - File: backend/query_executor/executor.py
+          - Lines: 11-20"
+
+      - name: Create TECH-DEBT Issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "[TECH-DEBT] Plaintext Database Password Storage" \
+            --label "bug" \
+            --body "### 🏗️ Category
+          TECH-DEBT
+
+          ### 📝 Problem Description
+          Database passwords are saved in plain text when creating a connection, as indicated by the comment \`# Note: Encrypt in production\`. The \`password\` field is directly inserted into the Supabase \`database_connections\` table.
+
+          ### 📉 Impact
+          If the Supabase database is compromised, all user database credentials would be exposed in plaintext, leading to a massive security breach of connected external databases.
+
+          ### 🛠️ Proposed Solution
+          Implement symmetric encryption (e.g., AES-GCM using cryptography's Fernet) before storing the password in the database, and decrypt it only when building the SQLAlchemy engine.
+
+          ### 📍 Location
+          - File: backend/database/connection_manager.py
+          - Lines: 145-147"
+
+      - name: Create DOCUMENTATION Issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "[DOCUMENTATION] Missing APP_ENV Documentation" \
+            --label "documentation" \
+            --body "### 🏗️ Category
+          DOCUMENTATION
+
+          ### 📝 Problem Description
+          The \`APP_ENV\` environment variable is defined in \`.env.example\` but is completely missing from the \`README.md\` documentation and environment variable setup guide.
+
+          ### 📉 Impact
+          New developers or operators deploying the application might overlook this critical variable, potentially causing unintended environment behavior (like insecure CORS setups) in production.
+
+          ### 🛠️ Proposed Solution
+          Update the \`Environment Variables\` section in \`README.md\` to include \`APP_ENV\`, clearly explaining its purpose and the differences between 'development' and 'production' modes.
+
+          ### 📍 Location
+          - File: README.md
+          - Lines: 66-70"
