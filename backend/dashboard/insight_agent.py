@@ -1,12 +1,12 @@
 import os
 from typing import List, Dict, Any
 import json
-from groq import Groq
+from groq import AsyncGroq
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
 
-def generate_widget_insight(title: str, viz_type: str, data: List[Dict[str, Any]], filters: Dict[str, Any]) -> str:
-    """Generate a quick AI insight for a specific widget."""
+async def generate_widget_insight(title: str, viz_type: str, data: List[Dict[str, Any]], filters: Dict[str, Any]) -> str:
+    """Generate a quick AI insight for a specific widget asynchronously."""
     if not data:
         return "Not enough data to generate insights yet."
     
@@ -27,12 +27,11 @@ def generate_widget_insight(title: str, viz_type: str, data: List[Dict[str, Any]
     - Be specific (mention numbers or trends).
     - Be professional but punchy.
     - Focus on what shifted or what stands out.
-    - If there's a clear trend, highlight it.
-    - Return ONLY the insight text. No preamble.
+    - Return ONLY the insight text.
     """
     
     try:
-        chat_completion = client.chat.completions.create(
+        chat_completion = await client.chat.completions.create(
             messages=[
                 {"role": "system", "content": "You provide short, professional data insights."},
                 {"role": "user", "content": prompt},
@@ -44,4 +43,4 @@ def generate_widget_insight(title: str, viz_type: str, data: List[Dict[str, Any]
         return chat_completion.choices[0].message.content.strip()
     except Exception as e:
         print(f"Error generating insight: {e}")
-        return "Analysis momentarily unavailable. Please try again shortly."
+        return "Analysis momentarily unavailable."

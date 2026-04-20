@@ -21,6 +21,8 @@ class Dashboard(BaseModel):
     name: str
     icon: str = "📊"
     filters: dict = Field(default_factory=dict)
+    is_public: bool = False
+    share_token: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -40,6 +42,7 @@ class UpdateDashboardRequest(BaseModel):
     name: Optional[str] = None
     icon: Optional[str] = None
     filters: Optional[dict] = None
+    is_public: Optional[bool] = None
 
 
 class DashboardWidget(BaseModel):
@@ -95,6 +98,7 @@ class UpdateWidgetRequest(BaseModel):
     size: Optional[str] = None
     columns: Optional[list[str]] = None
     rows: Optional[list[dict]] = None
+    cadence: Optional[str] = None
     x: Optional[int] = None
     y: Optional[int] = None
     w: Optional[int] = None

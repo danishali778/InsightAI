@@ -34,8 +34,7 @@ export function ConnectionsSidebar() {
 
         <div style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '1.5px', color: T.text3, textTransform: 'uppercase', padding: '8px 8px 4px', fontFamily: T.fontMono, marginTop: 8 }}>Workspace</div>
         <NavItem active={location.pathname === '/connections'} onClick={() => navigate('/connections')} icon="N" label="Connections" badge="3" />
-        <NavItem icon="!" label="Alerts" badge="2" badgeRed />
-        <NavItem icon="G" label="Settings" />
+        <NavItem active={location.pathname === '/settings'} onClick={() => navigate('/settings')} icon="G" label="Settings" />
       </div>
 
       <div style={{ marginTop: 'auto', padding: '12px 14px', borderTop: `1px solid ${T.border}` }}>

@@ -18,7 +18,6 @@ const NAV_ITEMS: SidebarItem[] = [
 
 const WORKSPACE_ITEMS: SidebarItem[] = [
   { icon: 'N', label: 'Connections', badge: '3', path: '/connections' },
-  { icon: '!', label: 'Alerts', badge: '2', badgeColor: true },
   { icon: 'G', label: 'Settings' },
 ];
 

@@ -8,5 +8,5 @@ router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 
 
 @router.get("/overview")
-def get_analytics_overview(current_user: User = Depends(get_current_user)):
-    return build_analytics_overview(current_user.id)
+async def get_analytics_overview(current_user: User = Depends(get_current_user)):
+    return await build_analytics_overview(current_user.id)

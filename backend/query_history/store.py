@@ -2,12 +2,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from .models import QueryRecord
-from database.supabase_client import supabase
-from database.retry import supabase_retry
+from database.supabase_client import async_supabase
+from database.retry import async_supabase_retry
 
 
-@supabase_retry
-def log_query(
+@async_supabase_retry
+async def log_query(
     user_id: str,
     connection_id: str,
     sql: str,
@@ -16,7 +16,7 @@ def log_query(
     execution_time_ms: Optional[float] = None,
     row_count: Optional[int] = None,
 ) -> QueryRecord:
-    """Log a query execution to Supabase. Called automatically after every query."""
+    """Log a query execution to Supabase asynchronously."""
     row = {
         "owner_id": user_id,
         "connection_id": connection_id,
@@ -25,10 +25,10 @@ def log_query(
         "error": error,
         "execution_time_ms": execution_time_ms,
         "row_count": row_count,
-        "triggered_by": "manual", # Default for ad-hoc
+        "triggered_by": "manual",
     }
     
-    response = supabase.table("query_executions").insert(row).execute()
+    response = await async_supabase.table("query_executions").insert(row).execute()
     if not response.data:
         raise Exception("Failed to log query execution")
         
@@ -46,22 +46,22 @@ def log_query(
     )
 
 
-@supabase_retry
-def get_history(
+@async_supabase_retry
+async def get_history(
     user_id: str,
     connection_id: Optional[str] = None,
     limit: int = 20,
 ) -> list[QueryRecord]:
-    """Get recent query history for a user, optionally filtered by connection."""
-    query = supabase.table("query_executions") \
+    """Get recent query history for a user asynchronously."""
+    query = async_supabase.table("query_executions") \
         .select("*") \
         .eq("owner_id", user_id) \
-        .is_("query_id", "null") # Only ad-hoc queries for this general history
+        .is_("query_id", "null")
         
     if connection_id:
         query = query.eq("connection_id", connection_id)
         
-    response = query.order("ran_at", desc=True).limit(limit).execute()
+    response = await query.order("ran_at", desc=True).limit(limit).execute()
     
     return [
         QueryRecord(
@@ -79,11 +79,10 @@ def get_history(
     ]
 
 
-@supabase_retry
-def get_stats(user_id: str, connection_id: str) -> dict:
-    """Get quick stats for a connection's query activity."""
-    # We'll fetch the last 100 executions for this user/connection to calculate stats
-    response = supabase.table("query_executions") \
+@async_supabase_retry
+async def get_stats(user_id: str, connection_id: str) -> dict:
+    """Get quick stats for a connection's query activity asynchronously."""
+    response = await async_supabase.table("query_executions") \
         .select("success, execution_time_ms") \
         .eq("owner_id", user_id) \
         .eq("connection_id", connection_id) \

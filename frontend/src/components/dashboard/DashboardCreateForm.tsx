@@ -40,17 +40,27 @@ export function DashboardCreateForm({
   placeholder = 'Dashboard name',
   ctaLabel = 'Create',
 }: DashboardCreateFormProps) {
+  const D = {
+    surface: 'rgba(255,255,255,0.03)',
+    border: 'rgba(255,255,255,0.1)',
+    text: '#f8fafc',
+    textMuted: '#94a3b8',
+    accent: '#0ea5e9',
+    accentGlow: 'rgba(14,165,233,0.15)',
+  };
+
   return (
     <div
       style={{
         display: 'flex',
-        gap: compact ? 6 : 8,
+        gap: compact ? 8 : 12,
         alignItems: 'center',
-        padding: compact ? '4px 0' : '10px 13px',
-        background: compact ? 'transparent' : T.s3,
-        border: compact ? 'none' : '1px solid rgba(0,229,255,0.2)',
-        borderRadius: compact ? 0 : 10,
+        padding: compact ? '4px' : '14px 18px',
+        background: compact ? 'transparent' : 'rgba(15,23,42,0.6)',
+        border: compact ? 'none' : `1px solid ${D.border}`,
+        borderRadius: compact ? 0 : 16,
         width: '100%',
+        backdropFilter: compact ? 'none' : 'blur(10px)',
       }}
     >
       <input
@@ -65,14 +75,24 @@ export function DashboardCreateForm({
         style={{
           flex: 1,
           minWidth: 0,
-          background: compact ? T.s3 : 'transparent',
-          border: compact ? '1px solid rgba(0,229,255,0.15)' : 'none',
-          borderRadius: compact ? 7 : 0,
-          padding: compact ? '6px 10px' : 0,
-          color: T.text,
+          background: D.surface,
+          border: `1px solid ${D.border}`,
+          borderRadius: 12,
+          padding: '10px 14px',
+          color: D.text,
           fontFamily: T.fontBody,
-          fontSize: compact ? '0.74rem' : '0.82rem',
+          fontSize: compact ? '0.8rem' : '0.88rem',
           outline: 'none',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+        }}
+        onFocus={e => {
+          e.currentTarget.style.borderColor = D.accent;
+          e.currentTarget.style.boxShadow = `0 0 15px ${D.accentGlow}, inset 0 2px 4px rgba(0,0,0,0.1)`;
+        }}
+        onBlur={e => {
+          e.currentTarget.style.borderColor = D.border;
+          e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.1)';
         }}
       />
       {onCancel && (
@@ -80,24 +100,25 @@ export function DashboardCreateForm({
           onClick={onCancel}
           title="Cancel"
           style={{
-            width: compact ? 28 : 'auto',
-            height: compact ? 28 : 'auto',
-            padding: compact ? 0 : '6px 10px',
-            borderRadius: 7,
-            border: `1px solid ${T.border}`,
-            background: 'transparent',
-            color: T.text3,
-            fontSize: compact ? '0.68rem' : '0.74rem',
+            width: compact ? 36 : 'auto',
+            height: compact ? 36 : 'auto',
+            padding: compact ? 0 : '8px 14px',
+            borderRadius: 12,
+            border: `1px solid ${D.border}`,
+            background: 'rgba(255,255,255,0.02)',
+            color: D.textMuted,
+            fontSize: compact ? '0.74rem' : '0.82rem',
             cursor: 'pointer',
             fontFamily: T.fontBody,
+            fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
             transition: 'all 0.2s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = T.text3; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'transparent'; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = D.border; e.currentTarget.style.color = D.textMuted; }}
         >
           {compact ? <IconClose /> : 'Cancel'}
         </button>
@@ -105,33 +126,36 @@ export function DashboardCreateForm({
       <button
         onClick={onCreate}
         disabled={!value.trim() || creating}
-        title={ctaLabel}
+        title={ctaLabel || 'Confirm'}
         style={{
-          width: compact ? 28 : 'auto',
-          height: compact ? 28 : 'auto',
-          padding: compact ? 0 : '6px 12px',
-          borderRadius: 7,
+          width: compact ? 36 : 'auto',
+          height: compact ? 36 : 'auto',
+          padding: compact ? 0 : '8px 16px',
+          borderRadius: 12,
           border: 'none',
           background: T.accent,
           color: '#000',
-          fontFamily: T.fontBody,
-          fontSize: compact ? '0.68rem' : '0.74rem',
-          fontWeight: 700,
+          fontFamily: T.fontHead,
+          fontSize: compact ? '0.78rem' : '0.88rem',
+          fontWeight: 800,
           cursor: !value.trim() || creating ? 'not-allowed' : 'pointer',
-          opacity: !value.trim() || creating ? 0.5 : 1,
+          opacity: !value.trim() || creating ? 0.4 : 1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          boxShadow: compact ? `0 0 10px ${T.accent}33` : 'none',
+          boxShadow: !value.trim() || creating ? 'none' : `0 4px 12px ${D.accentGlow}`,
+          transition: 'all 0.2s',
         }}
+        onMouseEnter={e => { if (!creating && value.trim()) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+        onMouseLeave={e => { if (!creating) e.currentTarget.style.transform = 'translateY(0)'; }}
       >
         {creating ? (
           <div style={{ width: 14, height: 14, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         ) : compact ? (
           <IconCheck />
         ) : (
-          ctaLabel
+          ctaLabel || 'Confirm'
         )}
       </button>
 

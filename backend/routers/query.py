@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
+import anyio
 
 from common.auth import get_current_user, User
 from database import connection_manager
@@ -11,21 +12,26 @@ router = APIRouter(prefix="/api/query", tags=["Query"])
 
 
 @router.post("/execute", response_model=QueryResult)
-def execute_sql_query(
+async def execute_sql_query(
     request: QueryRequest, 
     current_user: User = Depends(get_current_user),
     _: User = Depends(RateLimitChecker("query"))
 ):
-    """Execute a read-only SQL query against a connected database."""
-    engine = connection_manager.get_engine(current_user.id, request.connection_id)
+    """Execute a read-only SQL query asynchronously."""
+    user_id = current_user.id
+    engine = await connection_manager.get_engine(user_id, request.connection_id)
     if not engine:
-        raise HTTPException(status_code=404, detail="Connection not found. Connect to a database first.")
+        raise HTTPException(status_code=404, detail="Connection not found.")
 
-    return execute_query(
-        current_user.id,
-        engine=engine,
-        sql=request.sql,
-        row_limit=request.row_limit or 500,
-        connection_id=request.connection_id,
-        readonly=True, # Always enforce readonly from API
+    readonly = await connection_manager.get_readonly(user_id, request.connection_id)
+
+    # Offload sync query execution to thread pool
+    return await anyio.to_thread.run_sync(
+        execute_query,
+        user_id,
+        engine,
+        request.sql,
+        request.row_limit or 500,
+        request.connection_id,
+        readonly
     )

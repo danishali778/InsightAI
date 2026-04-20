@@ -14,7 +14,7 @@ def _json_serializable(obj):
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
-def generate_visualization_blueprint(user_message: str, sql: str, preview_rows: list[dict], column_metadata: dict, is_edited: bool = False) -> dict | None:
+async def generate_visualization_blueprint(user_message: str, sql: str, preview_rows: list[dict], column_metadata: dict, is_edited: bool = False) -> dict | None:
     """
     Call the LLM to analyze the query context and results, and return an explicit chart blueprint.
     """
@@ -141,7 +141,7 @@ HARD RULES — NEVER BREAK THESE
 3. NEVER use line or area if x_column is a non-temporal category
 4. ALWAYS put extra columns in tooltip_columns — never on an axis
 5. ALWAYS set is_grouped: true when color_column is not null
-6. DUAL AXIS: Set `is_dual_axis: true` if numeric columns have vastly different scales (e.g. comparing Salaries in 100k vs. Counts in 10s, or currency vs. percentages).
+6. DUAL AXIS: Set `is_dual_axis: true` if numeric columns have vastly different scales.
 7. Return ONLY the JSON — nothing outside the code block
 """
 
@@ -160,9 +160,9 @@ Data Preview (first 5 rows):
 """
 
     if is_edited:
-        human_message += "\n\nCRITICAL: The user has MANUALLY EDITED the SQL. The provided SQL is now the Source of Truth. Ensure your visualization matches the columns and data structure of the SQL exactly, even if it deviates from the Original Question."
+        human_message += "\n\nCRITICAL: The user has MANUALLY EDITED the SQL. Provided SQL is now Truth."
 
-    human_message += "\n\nBased on this, generate the optimal chart visualization JSON blueprint."
+    human_message += "\n\nBased on this, generate the visualization JSON blueprint."
 
     llm = get_llm()
     messages = [
@@ -170,39 +170,23 @@ Data Preview (first 5 rows):
         HumanMessage(content=human_message)
     ]
     
-    response = llm.invoke(messages)
+    response = await llm.ainvoke(messages)
     content = response.content
 
-    print(f"[visualization_agent] Raw LLM response:\n{content}")
-
-    # Extract JSON
     match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL | re.IGNORECASE)
     if match:
         json_str = match.group(1).strip()
     else:
-        # Fallback to finding the first {
         match = re.search(r'({.*})', content, re.DOTALL)
-        if match:
-            json_str = match.group(1).strip()
-        else:
-            return None
+        if match: json_str = match.group(1).strip()
+        else: return None
 
     try:
         blueprint = json.loads(json_str)
         chart_type = blueprint.get("type")
-        if chart_type == "table":
-            # Table needs no axis columns — return as-is
+        if chart_type in ["table", "kpi"] or (chart_type and blueprint.get("x_column") and blueprint.get("y_columns")):
             return blueprint
-            
-        if chart_type == "kpi":
-            # KPI only needs y_columns — x_column can be null
-            if blueprint.get("y_columns"):
-                return blueprint
-                
-        if chart_type and blueprint.get("x_column") and blueprint.get("y_columns"):
-            return blueprint
-        print(f"[visualization_agent] Blueprint missing required fields: {list(blueprint.keys())}")
     except json.JSONDecodeError:
-        print(f"[visualization_agent] Failed to parse JSON: {json_str}")
+        pass
 
     return None

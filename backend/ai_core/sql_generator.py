@@ -23,7 +23,7 @@ def get_llm() -> ChatGroq:
     return _llm
 
 
-def generate_sql(messages: list[dict]) -> tuple[str, dict, str]:
+async def generate_sql(messages: list[dict]) -> tuple[str, dict, str]:
     """
     Send conversation to LLM and get SQL back.
     Returns (explanation, metadata_dict, sql_query).
@@ -42,7 +42,7 @@ def generate_sql(messages: list[dict]) -> tuple[str, dict, str]:
         elif msg["role"] == "assistant":
             lc_messages.append(AIMessage(content=msg["content"]))
 
-    response = llm.invoke(lc_messages)
+    response = await llm.ainvoke(lc_messages)
     response_text = response.content
 
     # Extract SQL, explanation, and metadata
@@ -54,21 +54,18 @@ def generate_sql(messages: list[dict]) -> tuple[str, dict, str]:
 
 
 def extract_sql(text: str) -> str:
-    """Extract SQL query from LLM response (looks for ```sql ... ``` blocks)."""
-    # Try to find SQL in code blocks
+    """Extract SQL query from LLM response."""
     patterns = [
-        r'```sql\s*\n?(.*?)\n?\s*```',   # ```sql ... ```
-        r'```\s*\n?(.*?)\n?\s*```',       # ``` ... ```
+        r'```sql\s*\n?(.*?)\n?\s*```',
+        r'```\s*\n?(.*?)\n?\s*```',
     ]
 
     for pattern in patterns:
         match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
         if match:
             sql = match.group(1).strip()
-            if sql:
-                return sql
+            if sql: return sql
 
-    # Fallback: look for lines starting with SELECT/WITH
     lines = text.split('\n')
     sql_lines = []
     in_sql = False
@@ -81,24 +78,18 @@ def extract_sql(text: str) -> str:
             if stripped.endswith(';'):
                 break
 
-    if sql_lines:
-        return '\n'.join(sql_lines).strip()
-
+    if sql_lines: return '\n'.join(sql_lines).strip()
     return ""
 
 
 def extract_explanation(text: str) -> str:
     """Extract the explanation part from the LLM response."""
-    # Look for EXPLANATION: prefix
     match = re.search(r'EXPLANATION:\s*(.+?)(?=```|$)', text, re.DOTALL | re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
+    if match: return match.group(1).strip()
 
-    # Fallback: take text before the first code block
     parts = text.split('```')
     if parts:
         explanation = parts[0].strip()
-        # Remove "EXPLANATION:" prefix if present
         explanation = re.sub(r'^EXPLANATION:\s*', '', explanation, flags=re.IGNORECASE)
         return explanation if explanation else "Here's the SQL query for your question."
 
@@ -109,40 +100,23 @@ def extract_metadata(text: str) -> dict:
     """Extract the metadata JSON part from the LLM response."""
     match = re.search(r'METADATA:\s*```json\s*(.*?)\s*```', text, re.DOTALL | re.IGNORECASE)
     if match:
-        try:
-            return json.loads(match.group(1).strip())
-        except json.JSONDecodeError:
-            pass
+        try: return json.loads(match.group(1).strip())
+        except json.JSONDecodeError: pass
     
-    # Fallback to look for just a JSON block preceded by METADATA
     match = re.search(r'METADATA:.*?({.*?})', text, re.DOTALL | re.IGNORECASE)
     if match:
-        try:
-            return json.loads(match.group(1).strip())
-        except json.JSONDecodeError:
-            pass
+        try: return json.loads(match.group(1).strip())
+        except json.JSONDecodeError: pass
             
     return {}
 
 
-def generate_error_correction(messages: list[dict], sql: str, error: str) -> tuple[str, dict, str]:
-    """
-    Feed the error back to the LLM for self-correction.
-    Returns (explanation, metadata, corrected_sql).
-    """
+async def generate_error_correction(messages: list[dict], sql: str, error: str) -> tuple[str, dict, str]:
+    """Feed the error back for self-correction."""
     error_message = {
         "role": "user",
-        "content": f"""The SQL query you generated had an error when executed:
-
-Query:
-```sql
-{sql}
-```
-
-Error: {error}
-
-Please fix the SQL query and try again. Return the corrected query in the same format."""
+        "content": f"""The SQL query you generated had an error when executed:\n\nQuery:\n```sql\n{sql}\n```\n\nError: {error}\n\nPlease fix and try again."""
     }
 
     corrected_messages = messages + [error_message]
-    return generate_sql(corrected_messages)
+    return await generate_sql(corrected_messages)

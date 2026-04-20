@@ -1,0 +1,38 @@
+name: Jules issue creator
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2        # gets the last 2 commits so we can see the diff
+
+      - name: Get changed files
+        id: changes
+        run: |
+          git diff --name-only HEAD~1 HEAD > changed_files.txt
+          echo "Files changed:"
+          cat changed_files.txt
+
+      - name: Call Jules to create issues
+        run: |
+          curl -X POST https://api.jules.google/v1/sessions \
+            -H "Authorization: Bearer ${{ secrets.JULES_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repo": "danishali778/InsightAI",
+              "branch": "main",
+              "prompt": "Analyze the latest push to main. Review the changed files, identify bugs, missing tests, security issues, and code quality problems. Create a separate GitHub issue for each problem you find, with file name, line number, description, suggested fix, and appropriate labels."
+            }'

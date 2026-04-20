@@ -532,22 +532,14 @@ function DashboardCanvas({
         let safeW = w.w;
         let safeH = w.h;
 
-        // Ironclad Safeguards
-        if (isKPI) {
-          safeW = 5; // 25% width
-          safeH = 5; // Compact height
-        } else if (isStandardChart) {
-          safeH = 7; // Chart height
-        }
-
         return {
           i: w.id,
           x: w.x,
           y: w.y,
           w: safeW,
           h: safeH,
-          minW: isKPI ? 5 : w.minW,
-          minH: safeH
+          minW: isKPI ? 5 : 4,
+          minH: isKPI ? 4 : 5
         };
       })
     };
@@ -561,23 +553,12 @@ function DashboardCanvas({
         const isKPI = widget.viz_type === 'kpi';
         const isStandardChart = !isKPI && widget.viz_type !== 'table';
         
-        let finalW = item.w;
-        let finalH = item.h;
-
-        // Ironclad Safeguards
-        if (isKPI) {
-          finalW = 5;
-          finalH = 5;
-        } else if (isStandardChart) {
-          finalH = 7;
-        }
-
-        if (widget.x !== item.x || widget.y !== item.y || widget.w !== finalW || widget.h !== finalH) {
+        if (widget.x !== item.x || widget.y !== item.y || widget.w !== item.w || widget.h !== item.h) {
           onUpdateWidget(item.i, {
             x: item.x,
             y: item.y,
-            w: finalW,
-            h: finalH
+            w: item.w,
+            h: item.h
           });
         }
       }
@@ -672,13 +653,15 @@ function DashboardCanvas({
       />
 
       {widgets.length > 0 ? (
-        <div className="dash-section dash-section-d2" style={{ paddingBottom: 14 }}>
+        <div id="dashboard-grid" className="dash-section dash-section-d2" style={{ paddingBottom: 14, background: T.bg }}>
           <ResponsiveGridLayout
             layouts={layouts}
             breakpoints={{ lg: 1024, md: 996, sm: 768, xs: 480, xxs: 0 }}
             cols={{ lg: 20, md: 15, sm: 10, xs: 5, xxs: 2 }}
             rowHeight={30}
             draggableHandle=".widget-drag-handle"
+            isDraggable={true}
+            isResizable={true}
             onLayoutChange={(_, allLayouts) => handleLayoutChange(allLayouts.lg || [])}
             margin={[20, 20]}
           >
@@ -903,6 +886,32 @@ export function DashboardPage() {
 
   const activeDash = dashboards.find((dashboard) => dashboard.id === activeDashId);
 
+  const handleExportPNG = async () => {
+    if (!activeDash) return;
+    const { exportToPNG } = await import('../utils/exportUtils');
+    await exportToPNG('dashboard-grid', `${activeDash.name.replace(/\s+/g, '_')}_Dashboard`);
+  };
+
+  const handleShareClick = async () => {
+    if (!activeDash) return;
+    try {
+      let token = activeDash.share_token;
+      if (!activeDash.is_public || !token) {
+        const updated = await updateDashboard(activeDash.id, { is_public: true });
+        token = updated.share_token;
+        await reloadDashboards();
+      }
+      if (token) {
+        const url = `${window.location.origin}/s/${token}`;
+        await navigator.clipboard.writeText(url);
+        alert(`Public link area enabled and copied to clipboard!\n${url}`);
+      }
+    } catch (err) {
+      console.error('Failed to create share link:', err);
+      alert('Failed to create share link.');
+    }
+  };
+
   return (
     <MainShell
       title={activeDash?.name || 'Dashboards'}
@@ -915,8 +924,8 @@ export function DashboardPage() {
       headerActions={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button style={headerIconBtnStyle} title="Search"><HeaderIcons.Search /></button>
-          <button style={headerActionBtnStyle} title="Share"><HeaderIcons.Share /> Share</button>
-          <button style={headerActionBtnStyle} title="Export"><HeaderIcons.Download /> Export</button>
+          <button onClick={handleShareClick} style={headerActionBtnStyle} title="Share"><HeaderIcons.Share /> Share URL</button>
+          <button onClick={handleExportPNG} style={headerActionBtnStyle} title="Export Report"><HeaderIcons.Download /> Export PNG</button>
           <button 
             onClick={() => setShowCreateForm(true)}
             style={{

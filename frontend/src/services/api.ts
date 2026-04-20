@@ -232,6 +232,14 @@ export function getDashboardStats(dashboardId?: string) {
   return request<DashboardStats>(`/dashboard/stats${params}`);
 }
 
+export function getSharedDashboard(token: string) {
+  return request<DashboardSummary>(`/dashboard/shared/${token}`);
+}
+
+export function getSharedDashboardWidgets(token: string) {
+  return request<DashboardWidget[]>(`/dashboard/shared/${token}/widgets`);
+}
+
 export function getAnalyticsOverview() {
   return request<AnalyticsOverviewResponse>('/analytics/overview');
 }

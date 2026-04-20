@@ -95,7 +95,6 @@ export function NavSection({ onDashboardHover }: { onDashboardHover?: (hovering:
 
       <div style={{ ...sectionLabel, paddingTop: 16 }}>Workspace</div>
       <NavItem icon="N" label="Connections" path="/connections" active={p === '/connections'} />
-      <NavItem icon="!" label="Alerts" />
       <NavItem icon="G" label="Settings" path="/settings" active={p === '/settings'} />
     </div>
   );

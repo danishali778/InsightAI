@@ -47,7 +47,8 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     if (response.status === 401) {
       // Force sign out if the backend rejects the token (Database Truth Check failed)
-      console.warn("Session invalid or user deleted. Forcing sign out.");
+      const detail = payload && typeof payload === 'object' && 'detail' in payload ? payload.detail : 'No detail provided';
+      console.warn(`[AUTH] Session invalid (401). Reason: ${detail}. Forcing sign out.`);
       await supabase.auth.signOut();
       window.location.href = '/'; // Kick to landing page
     }

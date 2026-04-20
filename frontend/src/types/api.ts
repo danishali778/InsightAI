@@ -50,6 +50,12 @@ export interface ConnectDatabaseRequest {
   password: string;
   ssl_mode?: string;
   readonly?: boolean;
+  use_ssh?: boolean;
+  ssh_host?: string;
+  ssh_port?: number;
+  ssh_username?: string;
+  ssh_password?: string;
+  ssh_private_key?: string;
 }
 
 export interface ConnectDatabaseResponse extends DatabaseConnection {
@@ -63,6 +69,13 @@ export interface TestConnectionRequest {
   database: string;
   username: string;
   password: string;
+  ssl_mode?: string;
+  use_ssh?: boolean;
+  ssh_host?: string;
+  ssh_port?: number;
+  ssh_username?: string;
+  ssh_password?: string;
+  ssh_private_key?: string;
 }
 
 export interface TestConnectionResponse {
@@ -320,6 +333,8 @@ export interface DashboardSummary {
   name: string;
   icon: string;
   filters: Record<string, any>;
+  is_public: boolean;
+  share_token?: string | null;
   created_at: string;
   widget_count: number;
 }
@@ -328,6 +343,7 @@ export interface UpdateDashboardRequest {
   name?: string;
   icon?: string;
   filters?: Record<string, any>;
+  is_public?: boolean;
 }
 
 export interface DashboardChartConfig {
@@ -390,6 +406,7 @@ export interface UpdateDashboardWidgetRequest {
   viz_type?: string;
   columns?: string[];
   rows?: Array<Record<string, unknown>>;
+  cadence?: string;
   x?: number;
   y?: number;
   w?: number;

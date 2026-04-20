@@ -52,7 +52,7 @@ async def lemonsqueezy_webhook(request: Request, x_signature: str = Header(None)
                 raise HTTPException(status_code=400, detail="No user_id found in custom_data")
             
             # Officially upgrade user in the database
-            upgrade_to_pro(user_id)
+            await upgrade_to_pro(user_id)
             print(f"[Webhook] Success! Upgraded user {user_id} to PRO via Lemon Squeezy.")
 
         return {"status": "success"}

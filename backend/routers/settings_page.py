@@ -7,53 +7,53 @@ from settings_page.models import UserSettingsResponse, UserSettingsUpdate
 router = APIRouter(prefix="/api/settings", tags=["User Settings"])
 
 @router.get("", response_model=UserSettingsResponse)
-def get_user_settings(current_user: User = Depends(get_current_user)):
-    """Get the current authenticated user's settings. Defaults are injected if none exist."""
+async def get_user_settings(current_user: User = Depends(get_current_user)):
+    """Get the current authenticated user's settings asynchronously."""
     try:
-        return store.get_user_settings(current_user.id)
+        return await store.get_user_settings(current_user.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch settings: {str(e)}")
 
 @router.put("", response_model=UserSettingsResponse)
-def update_user_settings(
+async def update_user_settings(
     updates: UserSettingsUpdate,
     current_user: User = Depends(get_current_user)
 ):
-    """Partially update user settings."""
+    """Partially update user settings asynchronously."""
     try:
-        return store.update_user_settings(current_user.id, updates)
+        return await store.update_user_settings(current_user.id, updates)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update settings: {str(e)}")
 
 # --- Billing & Subscriptions ---
 
 @router.get("/billing", response_model=store.UserSubscription)
-def get_billing_info(current_user: User = Depends(get_current_user)):
-    """Get the user's current subscription tier and usage limit counters."""
+async def get_billing_info(current_user: User = Depends(get_current_user)):
+    """Get the user's current subscription asynchronously."""
     try:
-        return store.get_user_subscription(current_user.id)
+        return await store.get_user_subscription(current_user.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch billing info: {str(e)}")
 
 @router.post("/billing/upgrade", response_model=store.UserSubscription)
-def trigger_mock_upgrade(current_user: User = Depends(get_current_user)):
-    """Mock webhook: Upgrades the user to Pro and instantly resets/increases their limits."""
+async def trigger_mock_upgrade(current_user: User = Depends(get_current_user)):
+    """Mock upgrade asynchronously."""
     try:
-        return store.upgrade_to_pro(current_user.id)
+        return await store.upgrade_to_pro(current_user.id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to upgrade: {str(e)}")
 
 
 @router.post("/onboard")
-def onboard_user(current_user: User = Depends(get_user_no_check)):
-    """Register the user in the database (Source of Truth)."""
-    success = store.onboard_user(current_user.id)
+async def onboard_user(current_user: User = Depends(get_user_no_check)):
+    """Register the user asynchronously."""
+    success = await store.onboard_user(current_user.id)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to initialize user session.")
     return {"status": "success"}
 
 
 @router.get("/me")
-def check_auth(current_user: User = Depends(get_current_user)):
-    """A lightweight endpoint for the frontend to verify that the user still exists in the DB."""
+async def check_auth(current_user: User = Depends(get_current_user)):
+    """Lite auth check."""
     return {"id": current_user.id, "email": current_user.email}

@@ -1,13 +1,13 @@
 """
 Generates query template recommendations from a database schema using the LLM.
-Templates are generated in a background thread and cached per connection_id.
+Templates are generated asynchronously and cached per connection_id.
 """
 import json
 import re
 import uuid
-import threading
+import asyncio
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -53,7 +53,7 @@ class DynamicTemplate:
 _cache: dict[str, list[DynamicTemplate]] = {}
 _by_id: dict[str, DynamicTemplate] = {}
 _status: dict[str, str] = {}  # 'generating' | 'ready' | 'error'
-_lock = threading.Lock()
+_lock = asyncio.Lock()
 
 
 def get_status(connection_id: str) -> str:
@@ -68,29 +68,25 @@ def get_template_by_id(template_id: str) -> Optional[DynamicTemplate]:
     return _by_id.get(template_id)
 
 
-def clear_connection(connection_id: str) -> None:
+async def clear_connection(connection_id: str) -> None:
     """Called when a DB connection is disconnected — clears its cached templates."""
-    with _lock:
+    async with _lock:
         old = _cache.pop(connection_id, [])
         for t in old:
             _by_id.pop(t.id, None)
         _status.pop(connection_id, None)
 
 
-def generate_in_background(connection_id: str, schema_text: str, db_type: str) -> None:
-    """Spawn a background daemon thread to generate and cache templates."""
-    with _lock:
+async def generate_in_background(connection_id: str, schema_text: str, db_type: str) -> None:
+    """Fire and forget template generation."""
+    async with _lock:
         _status[connection_id] = "generating"
-
-    thread = threading.Thread(
-        target=_run_generation,
-        args=(connection_id, schema_text, db_type),
-        daemon=True,
-    )
-    thread.start()
+    
+    # Run in background without awaiting the full process
+    asyncio.create_task(_run_generation_task(connection_id, schema_text, db_type))
 
 
-def _run_generation(connection_id: str, schema_text: str, db_type: str) -> None:
+async def _run_generation_task(connection_id: str, schema_text: str, db_type: str) -> None:
     try:
         from ai_core.sql_generator import get_llm
         llm = get_llm()
@@ -121,24 +117,20 @@ Rules for the SQL:
 - Add ORDER BY and LIMIT 100 to all queries
 - Use column aliases for readability"""
 
-        response = llm.invoke([
+        response = await llm.ainvoke([
             SystemMessage(content="You are a SQL expert. Output only raw JSON arrays with no surrounding text or markdown."),
             HumanMessage(content=prompt),
         ])
 
         raw = response.content.strip()
-        print(f"[AI] Raw Response length: {len(raw)}")
-        # Debug: Print the first 200 chars to see if it's JSON
-        print(f"[AI] Preview: {raw[:200]}...")
-
+        
         try:
             templates = _parse_response(connection_id, raw)
         except Exception as parse_err:
             print(f"[AI] JSON Parsing Error: {str(parse_err)}")
-            print(f"[AI] Full Raw Response: {raw}")
             raise parse_err
 
-        with _lock:
+        async with _lock:
             old = _cache.get(connection_id, [])
             for t in old:
                 _by_id.pop(t.id, None)
@@ -146,12 +138,11 @@ Rules for the SQL:
             for t in templates:
                 _by_id[t.id] = t
             _status[connection_id] = "ready"
-            print(f"[AI] Succeed! Generated {len(templates)} templates.")
 
     except Exception as e:
         print(f"[AI] ERROR: Generation failed for connection {connection_id}")
         traceback.print_exc()
-        with _lock:
+        async with _lock:
             _status[connection_id] = "error"
 
 
@@ -161,19 +152,15 @@ def _parse_response(connection_id: str, raw: str) -> list[DynamicTemplate]:
     raw = re.sub(r'```\s*', '', raw)
     
     # 2. Extract only the JSON array [ ... ]
-    # We find the first '[' and the LAST ']'.
-    # If the last ']' is missing (TRUNCATION), we try to find the last '}' and append a ']'
     start = raw.find('[')
     end = raw.rfind(']')
     
     if start != -1:
         if end == -1 or end < start:
-            # TRUNCATION DETECTED: Missing ending ]
-            # Find the last successful object end '}'
+            # TRUNCATION DETECTED
             last_brace = raw.rfind('}')
             if last_brace != -1:
                 raw = raw[start:last_brace+1] + "]"
-                print(f"[AI] Detected truncated JSON. Attempting recovery by closing the array at char {last_brace}.")
         else:
             raw = raw[start:end+1]
     

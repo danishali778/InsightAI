@@ -5,7 +5,11 @@ import { connectDatabase } from '../../services/api';
 export function NewConnectionModal({ isOpen, onClose, onSaved }: { isOpen: boolean, onClose: () => void, onSaved?: () => void }) {
   const [step, setStep] = useState(1);
   const [selectedConnector, setSelectedConnector] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', host: 'localhost', port: '', database: '', username: '', password: '', ssl_mode: 'disable', readonly: true });
+  const [formData, setFormData] = useState({ 
+    name: '', host: 'localhost', port: '', database: '', username: '', password: '', 
+    ssl_mode: 'disable', readonly: true,
+    use_ssh: false, ssh_host: '', ssh_port: '22', ssh_username: '', ssh_password: '', ssh_private_key: ''
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,6 +107,36 @@ export function NewConnectionModal({ isOpen, onClose, onSaved }: { isOpen: boole
                 </div>
               </div>
 
+              {/* SSH Tunnel Options */}
+              <div style={{ height: 1, background: T.border, margin: '18px 0' }} />
+              <div style={{ fontSize: '0.68rem', fontWeight: 600, letterSpacing: '1.2px', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', marginBottom: 12 }}>SSH Tunnel (Bastion Host)</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 24, marginBottom: formData.use_ssh ? 14 : 0 }}>
+                <button type="button" onClick={() => setFormData(prev => ({...prev, use_ssh: !prev.use_ssh}))} style={{ width: 38, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', background: formData.use_ssh ? T.accent : T.s4, position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                  <div style={{ position: 'absolute', top: 2, left: formData.use_ssh ? 20 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                </button>
+                <span style={{ fontSize: '0.78rem', color: formData.use_ssh ? T.text : T.text3 }}>Use Secure SSH Tunnel</span>
+              </div>
+              
+              {formData.use_ssh && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, background: 'rgba(0,0,0,0.2)', padding: 16, borderRadius: 12, border: `1px solid ${T.border}` }}>
+                  <ModalInput label="SSH Host" placeholder="bastion.corp.com" value={formData.ssh_host} onChange={v => setFormData(prev => ({...prev, ssh_host: v}))} />
+                  <ModalInput label="SSH Port" placeholder="22" value={formData.ssh_port} onChange={v => setFormData(prev => ({...prev, ssh_port: v}))} />
+                  <ModalInput label="SSH Username" placeholder="ubuntu" value={formData.ssh_username} onChange={v => setFormData(prev => ({...prev, ssh_username: v}))} />
+                  <ModalInput label="SSH Password" placeholder="••••••" value={formData.ssh_password} onChange={v => setFormData(prev => ({...prev, ssh_password: v}))} password />
+                  <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: '0.72rem', color: T.text2, fontWeight: 600, fontFamily: T.fontMono }}>SSH Private Key (Optional)</label>
+                    <textarea
+                      placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;..."
+                      value={formData.ssh_private_key}
+                      onChange={e => setFormData(prev => ({...prev, ssh_private_key: e.target.value}))}
+                      style={{ background: T.s3, border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 13px', color: T.text, fontFamily: T.fontMono, fontSize: '0.75rem', outline: 'none', width: '100%', minHeight: 80, transition: 'border-color 0.2s', resize: 'vertical' }}
+                      onFocus={e => e.target.style.borderColor = 'rgba(0,229,255,0.3)'}
+                      onBlur={e => e.target.style.borderColor = T.border}
+                    />
+                  </div>
+                </div>
+              )}
+
               {error && <div style={{ marginTop: 12, padding: '9px 14px', borderRadius: 8, background: T.redDim, color: T.red, fontSize: '0.78rem', border: `1px solid rgba(248,113,113,0.2)` }}>{error}</div>}
             </div>
           )}
@@ -136,10 +170,21 @@ export function NewConnectionModal({ isOpen, onClose, onSaved }: { isOpen: boole
                 name: formData.name || undefined,
                 ssl_mode: formData.ssl_mode,
                 readonly: formData.readonly,
+                use_ssh: formData.use_ssh,
+                ssh_host: formData.use_ssh ? formData.ssh_host : undefined,
+                ssh_port: formData.use_ssh ? (parseInt(formData.ssh_port) || 22) : undefined,
+                ssh_username: formData.use_ssh ? formData.ssh_username : undefined,
+                ssh_password: formData.use_ssh ? formData.ssh_password : undefined,
+                ssh_private_key: formData.use_ssh ? formData.ssh_private_key : undefined,
               } as any);
               onSaved?.();
               // Reset form
-              setStep(1); setSelectedConnector(null); setFormData({ name: '', host: 'localhost', port: '', database: '', username: '', password: '', ssl_mode: 'disable', readonly: true });
+              setStep(1); setSelectedConnector(null); 
+              setFormData({ 
+                name: '', host: 'localhost', port: '', database: '', username: '', password: '', 
+                ssl_mode: 'disable', readonly: true,
+                use_ssh: false, ssh_host: '', ssh_port: '22', ssh_username: '', ssh_password: '', ssh_private_key: ''
+              });
             } catch (err: any) {
               setError(err.message || 'Failed to connect');
             } finally {

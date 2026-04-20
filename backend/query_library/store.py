@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from .models import SavedQuery, SaveQueryRequest, UpdateQueryRequest, QueryRunRecord, ScheduleConfig
-from database.supabase_client import supabase
-from database.retry import supabase_retry
+from database.supabase_client import async_supabase
+from database.retry import async_supabase_retry
 
 
 def _normalize_sql(sql: str) -> str:
@@ -35,19 +35,14 @@ def _map_to_saved_query(row: dict) -> SavedQuery:
     )
 
 
-@supabase_retry
-def find_duplicate(user_id: str, sql: str, connection_id: Optional[str] = None) -> Optional[SavedQuery]:
-    """Check if a query with the same SQL already exists for this user."""
-    # Note: Exact string matching is easier in SQL. 
-    # For robust normalization, we'd need to fetch and compare locally OR use a DB function.
-    # For now, we'll fetch all queries for the user and connection and compare.
-    query = supabase.table("saved_queries").select("*").eq("owner_id", user_id)
-    if connection_id:
-        query = query.eq("connection_id", connection_id)
-    else:
-        query = query.is_("connection_id", "null")
+@async_supabase_retry
+async def find_duplicate(user_id: str, sql: str, connection_id: Optional[str] = None) -> Optional[SavedQuery]:
+    """Check if a query with the same SQL already exists for this user asynchronously."""
+    query = async_supabase.table("saved_queries").select("*").eq("owner_id", user_id)
+    if connection_id: query = query.eq("connection_id", connection_id)
+    else: query = query.is_("connection_id", "null")
     
-    response = query.execute()
+    response = await query.execute()
     normalized_input = _normalize_sql(sql)
     
     for row in response.data:
@@ -56,12 +51,11 @@ def find_duplicate(user_id: str, sql: str, connection_id: Optional[str] = None) 
     return None
 
 
-@supabase_retry
-def save_query(user_id: str, req: SaveQueryRequest) -> tuple[SavedQuery, bool]:
-    """Create a new saved query. Returns (query, created)."""
-    existing = find_duplicate(user_id, req.sql, req.connection_id)
-    if existing:
-        return existing, False
+@async_supabase_retry
+async def save_query(user_id: str, req: SaveQueryRequest) -> tuple[SavedQuery, bool]:
+    """Create a new saved query asynchronously. Returns (query, created)."""
+    existing = await find_duplicate(user_id, req.sql, req.connection_id)
+    if existing: return existing, False
 
     metadata = {
         "folder_name": req.folder_name,
@@ -71,7 +65,6 @@ def save_query(user_id: str, req: SaveQueryRequest) -> tuple[SavedQuery, bool]:
     }
     
     schedule = req.schedule.model_dump() if req.schedule else {}
-
     row = {
         "owner_id": user_id,
         "title": req.title,
@@ -82,183 +75,119 @@ def save_query(user_id: str, req: SaveQueryRequest) -> tuple[SavedQuery, bool]:
         "schedule": schedule
     }
     
-    response = supabase.table("saved_queries").insert(row).execute()
-    if not response.data:
-        raise Exception("Failed to save query")
-        
+    response = await async_supabase.table("saved_queries").insert(row).execute()
+    if not response.data: raise Exception("Failed to save query")
     return _map_to_saved_query(response.data[0]), True
 
 
-@supabase_retry
-def get_query(user_id: str, query_id: str) -> Optional[SavedQuery]:
-    """Get a single saved query by ID."""
-    response = supabase.table("saved_queries") \
-        .select("*") \
-        .eq("id", query_id) \
-        .eq("owner_id", user_id) \
-        .execute()
-        
-    if not response.data:
-        return None
+@async_supabase_retry
+async def get_query(user_id: str, query_id: str) -> Optional[SavedQuery]:
+    """Get a single saved query by ID asynchronously."""
+    response = await async_supabase.table("saved_queries").select("*").eq("id", query_id).eq("owner_id", user_id).execute()
+    if not response.data: return None
     return _map_to_saved_query(response.data[0])
 
 
-@supabase_retry
-def list_queries(
+@async_supabase_retry
+async def list_queries(
     user_id: str,
     folder: Optional[str] = None,
     tag: Optional[str] = None,
     connection_id: Optional[str] = None,
     recently_run: bool = False,
 ) -> list[SavedQuery]:
-    """List all saved queries for a user, with optional filters."""
-    query = supabase.table("saved_queries").select("*").eq("owner_id", user_id)
-
-    if connection_id:
-        query = query.eq("connection_id", connection_id)
+    """List all saved queries for a user (async)."""
+    query = async_supabase.table("saved_queries").select("*").eq("owner_id", user_id)
+    if connection_id: query = query.eq("connection_id", connection_id)
         
-    response = query.execute()
+    response = await query.execute()
     result = [_map_to_saved_query(row) for row in response.data]
 
     if folder and folder not in ("All Queries", "Recently Run", "Scheduled"):
         result = [q for q in result if q.folder_name == folder]
-    
     if folder == "Scheduled":
         result = [q for q in result if q.schedule and q.schedule.enabled]
-        
     if tag:
         result = [q for q in result if tag in q.tags]
-        
     if recently_run or folder == "Recently Run":
-        result = [q for q in result if q.last_run_at is not None]
-        result.sort(key=lambda q: q.last_run_at, reverse=True)  # type: ignore
+        result = [q for q in result if q.last_run_at]
+        result.sort(key=lambda q: q.last_run_at, reverse=True)
         return result
 
-    # Sort by most recently updated
     result.sort(key=lambda q: q.updated_at, reverse=True)
     return result
 
 
-@supabase_retry
-def update_query(user_id: str, query_id: str, req: UpdateQueryRequest) -> Optional[SavedQuery]:
-    """Update an existing saved query (partial update)."""
-    # Fetch existing to merge metadata/schedule if needed
-    existing = get_query(user_id, query_id)
-    if not existing:
-        return None
+@async_supabase_retry
+async def update_query(user_id: str, query_id: str, req: UpdateQueryRequest) -> Optional[SavedQuery]:
+    """Update existing saved query (async)."""
+    existing = await get_query(user_id, query_id)
+    if not existing: return None
 
     update_data = req.model_dump(exclude_unset=True)
     row_update = {}
-    
-    # Map top-level fields
     for field in ["title", "sql", "description", "connection_id"]:
-        if field in update_data:
-            row_update[field] = update_data[field]
+        if field in update_data: row_update[field] = update_data[field]
             
-    # Map metadata fields
-    metadata = {
-        "folder_name": existing.folder_name,
-        "icon": existing.icon,
-        "icon_bg": existing.icon_bg,
-        "tags": existing.tags
-    }
-    
+    metadata = {"folder_name": existing.folder_name, "icon": existing.icon, "icon_bg": existing.icon_bg, "tags": existing.tags}
     metadata_changed = False
     for field in ["folder_name", "icon", "icon_bg", "tags"]:
         if field in update_data:
             metadata[field] = update_data[field]
             metadata_changed = True
-            
-    if metadata_changed:
-        row_update["metadata"] = metadata
-        
-    # Map schedule
+    if metadata_changed: row_update["metadata"] = metadata
     if "schedule" in update_data:
         row_update["schedule"] = update_data["schedule"].model_dump() if update_data["schedule"] else {}
 
-    if not row_update:
-        return existing
-
-    response = supabase.table("saved_queries") \
-        .update(row_update) \
-        .eq("id", query_id) \
-        .eq("owner_id", user_id) \
-        .execute()
-        
-    if not response.data:
-        return None
+    if not row_update: return existing
+    response = await async_supabase.table("saved_queries").update(row_update).eq("id", query_id).eq("owner_id", user_id).execute()
+    if not response.data: return None
     return _map_to_saved_query(response.data[0])
 
 
-@supabase_retry
-def delete_query(user_id: str, query_id: str) -> bool:
-    """Delete a saved query."""
-    response = supabase.table("saved_queries") \
-        .delete() \
-        .eq("id", query_id) \
-        .eq("owner_id", user_id) \
-        .execute()
+@async_supabase_retry
+async def delete_query(user_id: str, query_id: str) -> bool:
+    """Delete saved query (async)."""
+    response = await async_supabase.table("saved_queries").delete().eq("id", query_id).eq("owner_id", user_id).execute()
     return len(response.data) > 0
 
 
-@supabase_retry
-def increment_run_count(user_id: str, query_id: str) -> Optional[SavedQuery]:
-    """Bump run count and update last_run_at."""
-    # We need to fetch current run_count first as Supabase doesn't have a simple atomic increment in Python SDK easily
-    # Actually, we can use a RPC or just update. Since it's user-specific, race conditions are less of a concern.
-    existing = get_query(user_id, query_id)
-    if not existing:
-        return None
+@async_supabase_retry
+async def increment_run_count(user_id: str, query_id: str) -> Optional[SavedQuery]:
+    """Bump run count (async)."""
+    existing = await get_query(user_id, query_id)
+    if not existing: return None
     
     now = datetime.now(timezone.utc).isoformat()
-    row_update = {
-        "run_count": existing.run_count + 1,
-        "last_run_at": now
-    }
-    
-    response = supabase.table("saved_queries") \
-        .update(row_update) \
-        .eq("id", query_id) \
-        .eq("owner_id", user_id) \
-        .execute()
-        
-    if not response.data:
-        return None
+    row_update = {"run_count": existing.run_count + 1, "last_run_at": now}
+    response = await async_supabase.table("saved_queries").update(row_update).eq("id", query_id).eq("owner_id", user_id).execute()
+    if not response.data: return None
     return _map_to_saved_query(response.data[0])
 
 
-def create_folder(user_id: str, name: str) -> bool:
-    """Explicit folders are not yet supported in DB schema, but we can infer them from metadata."""
-    # This was previously in-memory _explicit_folders. 
-    # For now, we'll just return True as folders are dynamically inferred from metadata.
-    return True
-
-
-def list_folders(user_id: str) -> list[dict]:
-    """Get unique folder names with counts."""
-    queries = list_queries(user_id)
+async def list_folders(user_id: str) -> list[dict]:
+    """Folders handled dynamically (async)."""
+    queries = await list_queries(user_id)
     folders: dict[str, int] = {}
     for q in queries:
         folders[q.folder_name] = folders.get(q.folder_name, 0) + 1
     return [{"name": name, "count": count} for name, count in sorted(folders.items())]
 
 
-def list_tags(user_id: str) -> list[str]:
-    """Get all unique tags across saved queries."""
-    queries = list_queries(user_id)
+async def list_tags(user_id: str) -> list[str]:
+    """Tags from metadata (async)."""
+    queries = await list_queries(user_id)
     tags: set[str] = set()
-    for q in queries:
-        tags.update(q.tags)
+    for q in queries: tags.update(q.tags)
     return sorted(tags)
 
 
-def get_stats(user_id: str) -> dict:
-    """Get library-wide statistics."""
-    queries = list_queries(user_id)
+async def get_stats(user_id: str) -> dict:
+    """Library stats (async)."""
+    queries = await list_queries(user_id)
     total = len(queries)
     scheduled = len([q for q in queries if q.schedule and q.schedule.enabled])
     total_runs = sum(q.run_count for q in queries)
-
     return {
         "total_queries": total,
         "scheduled": scheduled,
@@ -268,38 +197,17 @@ def get_stats(user_id: str) -> dict:
     }
 
 
-@supabase_retry
-def get_scheduled_queries(user_id: Optional[str] = None) -> list[SavedQuery]:
-    """Return all queries with an enabled schedule. If user_id is None, returns for all users (scheduler use)."""
-    query = supabase.table("saved_queries").select("*")
-    if user_id:
-        query = query.eq("owner_id", user_id)
-        
-    response = query.execute()
-    result = [_map_to_saved_query(row) for row in response.data]
-    return [q for q in result if q.schedule and q.schedule.enabled]
+@async_supabase_retry
+async def get_scheduled_queries(user_id: Optional[str] = None) -> list[SavedQuery]:
+    """Scheduled queries (async)."""
+    query = async_supabase.table("saved_queries").select("*")
+    if user_id: query = query.eq("owner_id", user_id)
+    response = await query.execute()
+    return [q for q in [_map_to_saved_query(row) for row in response.data] if q.schedule and q.schedule.enabled]
 
 
-@supabase_retry
-def update_schedule(user_id: str, query_id: str, config: Optional[ScheduleConfig]) -> Optional[SavedQuery]:
-    """Update just the schedule field of a query."""
-    row_update = {
-        "schedule": config.model_dump() if config else {}
-    }
-    
-    response = supabase.table("saved_queries") \
-        .update(row_update) \
-        .eq("id", query_id) \
-        .eq("owner_id", user_id) \
-        .execute()
-        
-    if not response.data:
-        return None
-    return _map_to_saved_query(response.data[0])
-
-
-@supabase_retry
-def log_run(
+@async_supabase_retry
+async def log_run(
     user_id: str,
     query_id: str,
     success: bool,
@@ -308,12 +216,9 @@ def log_run(
     error: Optional[str] = None,
     triggered_by: str = "manual",
 ) -> QueryRunRecord:
-    """Record a run of a saved query in query_executions."""
-    # We need the SQL to log it in the unified table
-    query = get_query(user_id, query_id)
-    if not query:
-        raise Exception(f"Query {query_id} not found for logging")
-
+    """Log a saved query run (async)."""
+    query = await get_query(user_id, query_id)
+    if not query: raise Exception("Query not found")
     row = {
         "query_id": query_id,
         "owner_id": user_id,
@@ -325,51 +230,29 @@ def log_run(
         "error": error,
         "triggered_by": triggered_by
     }
-    
-    response = supabase.table("query_executions").insert(row).execute()
-    if not response.data:
-        raise Exception("Failed to log run")
-        
+    response = await async_supabase.table("query_executions").insert(row).execute()
+    if not response.data: raise Exception("Log failed")
     row = response.data[0]
     return QueryRunRecord(
-        id=str(row["id"]),
-        query_id=str(row["query_id"]),
-        sql=row["sql"],
+        id=str(row["id"]), query_id=str(row["query_id"]), sql=row["sql"],
         connection_id=str(row["connection_id"]) if row.get("connection_id") else None,
-        owner_id=str(row["owner_id"]),
-        success=row["success"],
-        row_count=row["row_count"],
-        execution_time_ms=row["execution_time_ms"],
-        error=row.get("error"),
-        triggered_by=row["triggered_by"],
-        ran_at=datetime.fromisoformat(row["ran_at"])
+        owner_id=str(row["owner_id"]), success=row["success"], row_count=row["row_count"],
+        execution_time_ms=row["execution_time_ms"], error=row.get("error"),
+        triggered_by=row["triggered_by"], ran_at=datetime.fromisoformat(row["ran_at"])
     )
 
 
-@supabase_retry
-def get_run_history(user_id: str, query_id: str, limit: int = 20) -> list[QueryRunRecord]:
-    """Get run history for a saved query, newest first."""
-    response = supabase.table("query_executions") \
-        .select("*") \
-        .eq("query_id", query_id) \
-        .eq("owner_id", user_id) \
-        .order("ran_at", desc=True) \
-        .limit(limit) \
-        .execute()
-        
+@async_supabase_retry
+async def get_run_history(user_id: str, query_id: str, limit: int = 20) -> list[QueryRunRecord]:
+    """Run history for a query (async)."""
+    response = await async_supabase.table("query_executions").select("*").eq("query_id", query_id).eq("owner_id", user_id).order("ran_at", desc=True).limit(limit).execute()
     return [
         QueryRunRecord(
-            id=str(row["id"]),
-            query_id=str(row["query_id"]),
-            sql=row["sql"],
+            id=str(row["id"]), query_id=str(row["query_id"]), sql=row["sql"],
             connection_id=str(row["connection_id"]) if row.get("connection_id") else None,
-            owner_id=str(row["owner_id"]),
-            success=row["success"],
-            row_count=row["row_count"],
-            execution_time_ms=row["execution_time_ms"],
-            error=row.get("error"),
-            triggered_by=row["triggered_by"],
-            ran_at=datetime.fromisoformat(row["ran_at"])
+            owner_id=str(row["owner_id"]), success=row["success"], row_count=row["row_count"],
+            execution_time_ms=row["execution_time_ms"], error=row.get("error"),
+            triggered_by=row["triggered_by"], ran_at=datetime.fromisoformat(row["ran_at"])
         )
         for row in response.data
     ]
