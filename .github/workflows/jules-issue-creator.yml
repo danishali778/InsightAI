@@ -1,0 +1,43 @@
+name: Jules Issue Creator
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Trigger Jules AI Audit
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        run: |
+          if [ -z "$JULES_API_KEY" ]; then
+            echo "::error::JULES_API_KEY secret is missing."
+            exit 1
+          fi
+
+          curl -X POST "https://jules.googleapis.com/v1alpha/sessions" \
+            -H "X-Goog-Api-Key: $JULES_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "prompt": "Analyze the latest changes pushed to main in danishali778/InsightAI. Look for bugs, security risks, missing tests, and architectural improvements. For each significant issue found, create a separate GitHub issue with a clear title, description of the problem, and a suggested code-level fix.",
+              "sourceContext": {
+                "source": "sources/github/danishali778/InsightAI",
+                "githubRepoContext": {
+                  "startingBranch": "main"
+                }
+              },
+              "title": "Post-push code audit"
+            }'
