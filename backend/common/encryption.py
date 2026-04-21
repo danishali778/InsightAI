@@ -11,11 +11,15 @@ def _get_cipher() -> Fernet:
     global _cipher_suite
     if _cipher_suite is None:
         key_str = os.getenv("ENCRYPTION_KEY")
+        dev_mode = os.getenv("BACKEND_DEV_MODE", "false").lower() == "true"
+
         if not key_str:
-            logger.warning("ENCRYPTION_KEY not found in environment. Using a fallback key for development ONLY.")
-            # Deterministic fallback key strictly for dev if missing. 
-            # In production, this warns loudly and should be fixed.
-            key_str = "TZZoA4e_0aRy3zO0u7FzjHwBq2L8y6b9R9oV8XmQ_Jw=" 
+            if dev_mode:
+                logger.warning("ENCRYPTION_KEY not found in environment. Using a fallback key for development ONLY.")
+                key_str = "TZZoA4e_0aRy3zO0u7FzjHwBq2L8y6b9R9oV8XmQ_Jw=" 
+            else:
+                logger.error("CRITICAL: ENCRYPTION_KEY missing in production environment!")
+                raise RuntimeError("ENCRYPTION_KEY must be set in production")
         
         try:
             _cipher_suite = Fernet(key_str.encode('utf-8'))

@@ -171,6 +171,9 @@ def update_session(session_id: str, request: UpdateSessionRequest, current_user:
     
     # Re-fetch for current state
     session = session_manager.get_session(user_id, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found after update.")
+
     return SessionSummary(
         id=session.id,
         owner_id=session.owner_id,

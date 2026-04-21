@@ -2,6 +2,7 @@ import React from 'react';
 import { AppSidebar } from './AppSidebar';
 import { AppHeader } from './AppHeader';
 import { T } from '../dashboard/tokens';
+import { DashboardBackground } from '../layout/DashboardBackground';
 
 interface MainShellProps {
   title: string;
@@ -34,10 +35,12 @@ export function MainShell({
       height: '100vh', 
       width: '100vw', 
       overflow: 'hidden', 
-      background: T.bg, 
+      background: 'transparent', // Let mesh background show through
       fontFamily: T.fontBody,
       color: T.text,
+      position: 'relative'
     }}>
+      <DashboardBackground />
       {/* Main Sidebar */}
       {!hideSidebar && <AppSidebar activeId={activeId} onHover={onDashboardHover} />}
 
