@@ -47,7 +47,7 @@ export function ChatInput({ connections, activeConnectionId, onConnectionChange,
           boxShadow: isFocused ? T.shadow.glow : '0 2px 8px rgba(0,0,0,0.02)',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         }}>
-          {/* DB Selector (Professional Pill Style) */}
+          {/* DB Selector (Professional Style) */}
           <div style={{ position: 'relative', marginTop: 2 }}>
             <button
               onClick={() => setShowDropdown(!showDropdown)}
