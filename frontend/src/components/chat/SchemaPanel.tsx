@@ -72,10 +72,10 @@ export function SchemaPanel({ connectionId, visible }: ChatSchemaPanelProps) {
 
   return (
     <div style={{
-      width: 270, flexShrink: 0, background: T.s1, borderLeft: `1px solid ${T.border}`,
+      width: 280, flexShrink: 0, background: T.s1, borderLeft: `1px solid ${T.border}`,
       display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden',
     }}>
-      <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ padding: '18px 16px 14px', borderBottom: `1px solid ${T.border}`, background: T.s2 }}>
         <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.85rem', color: T.text, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span>Schema Explorer</span>
           <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono }}>
@@ -84,9 +84,11 @@ export function SchemaPanel({ connectionId, visible }: ChatSchemaPanelProps) {
         </div>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tables & columns..."
           style={{
-            width: '100%', background: T.s2, border: `1px solid ${T.border}`,
-            borderRadius: 7, padding: '6px 10px', color: T.text2,
-            fontFamily: T.fontBody, fontSize: '0.75rem', outline: 'none',
+            width: '100%', background: T.s1, border: `1px solid ${T.border}`,
+            borderRadius: 8, padding: '8px 12px', color: T.text,
+            fontFamily: T.fontBody, fontSize: '0.78rem', outline: 'none',
+            boxSizing: 'border-box',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.02) inset',
           }}
         />
       </div>

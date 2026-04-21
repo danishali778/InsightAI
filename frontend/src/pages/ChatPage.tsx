@@ -211,9 +211,9 @@ export function ChatPage() {
           connections={connections}
         />
 
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', borderTop: `1px solid ${T.border}` }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, position: 'relative' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
               {/* Pinned Messages Bar */}
               {messages.some(m => m.is_pinned) && (
                 <div style={{ padding: '0 24px 16px', borderBottom: `1px solid ${T.border}`, marginBottom: 16 }}>
