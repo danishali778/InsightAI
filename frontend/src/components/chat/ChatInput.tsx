@@ -4,6 +4,7 @@ import type { ChatInputProps } from '../../types/chat';
 
 export function ChatInput({ connections, activeConnectionId, onConnectionChange, onSend, loading }: ChatInputProps) {
   const [text, setText] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
@@ -13,26 +14,18 @@ export function ChatInput({ connections, activeConnectionId, onConnectionChange,
     if (!text.trim() || loading) return;
     onSend(text.trim());
     setText('');
-    if (textRef.current) textRef.current.style.height = 'auto';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); handleSend(); }
   };
 
-  useEffect(() => {
-    if (textRef.current) {
-      textRef.current.style.height = 'auto';
-      textRef.current.style.height = Math.min(textRef.current.scrollHeight, 120) + 'px';
-    }
-  }, [text]);
-
   return (
     <div style={{ 
       borderTop: `1px solid ${T.border}`,
       background: 'rgba(255, 255, 255, 0.85)',
       backdropFilter: 'blur(20px)',
-      padding: '12px 24px 16px',
+      padding: '8px 24px 10px',
       flexShrink: 0,
       zIndex: 10,
     }}>
@@ -45,17 +38,17 @@ export function ChatInput({ connections, activeConnectionId, onConnectionChange,
       }}>
         <div style={{
           display: 'flex',
-          alignItems: 'flex-end',
+          alignItems: 'flex-start',
           gap: 12,
-          background: T.s2,
-          border: `1px solid ${T.border}`,
+          background: T.s1,
+          border: `1px solid ${isFocused ? T.accent : T.border}`,
           borderRadius: 14,
-          padding: '8px 12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-          transition: 'all 0.2s',
+          padding: '10px 14px',
+          boxShadow: isFocused ? T.shadow.glow : '0 2px 8px rgba(0,0,0,0.02)',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         }}>
           {/* DB Selector (Professional Style) */}
-          <div style={{ position: 'relative', marginBottom: 4 }}>
+          <div style={{ position: 'relative', marginTop: 2 }}>
             <button
               onClick={() => setShowDropdown(!showDropdown)}
               style={{
@@ -116,8 +109,10 @@ export function ChatInput({ connections, activeConnectionId, onConnectionChange,
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             placeholder="Ask your data anything..."
-            rows={1}
+            rows={2}
             style={{
               flex: 1,
               background: 'transparent',
@@ -125,17 +120,20 @@ export function ChatInput({ connections, activeConnectionId, onConnectionChange,
               outline: 'none',
               color: T.text,
               fontFamily: T.fontBody,
-              fontSize: '0.94rem',
+              fontSize: '0.92rem',
               resize: 'none',
-              maxHeight: 160,
-              padding: '6px 0',
-              lineHeight: 1.55,
+              height: 48,
+              overflowY: 'auto',
+              padding: '2px 0',
+              lineHeight: 1.5,
+              scrollbarWidth: 'thin',
+              scrollbarColor: `${T.border2} transparent`,
             }}
           />
 
           {/* Action Row Inside */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-             <span style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono }}>{text.length} / 2048</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+             <span style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, opacity: 0.8 }}>{text.length} / 2048</span>
              <button
               onClick={handleSend}
               disabled={loading || !text.trim()}
