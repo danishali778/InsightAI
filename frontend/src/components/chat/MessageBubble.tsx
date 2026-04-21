@@ -119,7 +119,7 @@ export function MessageBubble({
               onClick={() => message.sql && navigator.clipboard.writeText(message.sql)}
               style={{ background: 'none', border: 'none', color: T.accent, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', fontFamily: T.fontBody }}
             >
-              Copy
+              Copy Link
             </button>
           </div>
 
@@ -172,13 +172,59 @@ export function MessageBubble({
 
             <button
               onClick={handleDashboardClick}
+            <button
+              onClick={handleDashboardClick}
+              disabled={isSmartSaving}
               style={{
                 padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`,
-                background: '#fff', color: T.text2,
-                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                background: isSmartSaving ? T.s2 : '#fff', 
+                color: T.text2,
+                fontSize: '0.75rem', fontWeight: 600, cursor: isSmartSaving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'all 0.2s',
               }}
             >
-              Add to Dashboard
+              {isSmartSaving ? '⏳...' : (
+                <>
+                  <Plus size={14} strokeWidth={2.5} />
+                  Add to Dashboard
+                </>
+              )}
+            </button>
+
+            {onTogglePin && message.id && (
+              <button
+                onClick={async () => {
+                  if (onTogglePin && message.id) {
+                    setIsPinning(true);
+                    try { await onTogglePin(message.id, !message.is_pinned); } finally { setIsPinning(false); }
+                  }
+                }}
+                disabled={isPinning}
+                style={{
+                  padding: '6px 12px', borderRadius: 8, 
+                  border: `1px solid ${message.is_pinned ? T.accent : T.border}`,
+                  background: message.is_pinned ? T.accentDim : '#fff',
+                  color: message.is_pinned ? T.accent : T.text2,
+                  fontSize: '0.75rem', fontWeight: 600, cursor: isPinning ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s',
+                }}
+              >
+                <Pin size={14} strokeWidth={2.5} style={{ transform: message.is_pinned ? 'rotate(45deg)' : 'none', transition: 'transform 0.3s' }} />
+                {message.is_pinned ? 'Pinned' : 'Pin Result'}
+              </button>
+            )}
+
+            <button
+              style={{
+                padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.accent}`,
+                background: 'transparent', color: T.accent,
+                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = T.accent; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.accent; }}
+            >
+              <RotateCcw size={14} strokeWidth={2.5} />
+              Regenerate
             </button>
 
             <div style={{ flex: 1 }} />

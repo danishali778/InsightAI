@@ -179,7 +179,28 @@ export function ChatPage() {
         color: T.green,
         icon: <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.green }} />
       } : undefined}
-      headerActions={null}
+      headerActions={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button 
+            onClick={() => setSchemaOpen(!schemaOpen)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 14px', borderRadius: 8,
+              border: `1px solid ${schemaOpen ? T.accent : T.border}`,
+              background: schemaOpen ? T.accentDim : 'transparent',
+              color: schemaOpen ? T.accent : T.text2,
+              fontSize: '0.76rem', cursor: 'pointer', fontFamily: T.fontBody,
+              transition: 'all 0.18s ease',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+            Schema {schemaOpen ? 'Open' : ''}
+          </button>
+        </div>
+      }
     >
       <div style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <ChatSidebar
