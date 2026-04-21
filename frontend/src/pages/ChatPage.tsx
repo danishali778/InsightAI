@@ -5,7 +5,6 @@ import { Sidebar as ChatSidebar } from '../components/chat/Sidebar';
 import { ChatInput } from '../components/chat/ChatInput';
 import { MessageBubble } from '../components/chat/MessageBubble';
 import { ConnectionModal } from '../components/chat/ConnectionModal';
-import { SchemaPanel } from '../components/chat/SchemaPanel';
 import { T } from '../components/dashboard/tokens';
 import * as api from '../services/api';
 import type { ChatMessageView } from '../types/chat';
@@ -20,7 +19,6 @@ export function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [schemaOpen, setSchemaOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const skipNextFetch = useRef(false);
 
@@ -174,6 +172,7 @@ export function ChatPage() {
       title={activeSession?.title || 'New Chat'}
       subtitle={activeConn ? `${activeConn.db_type} • ${activeConn.database}` : 'Select a connection'}
       hideSidebar={true}
+      hideHeader={true}
       activeId="chat"
       badge={activeConn ? {
         text: 'Live',
@@ -203,21 +202,42 @@ export function ChatPage() {
         </div>
       }
     >
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
         <ChatSidebar
           sessions={sessions} activeSessionId={activeSessionId}
           onSelectSession={setActiveSessionId} onNewChat={handleNewChat}
           onDeleteSession={handleDeleteSession} onRenameSession={handleRenameSession}
-          connections={connections}
+          connections={connections} activeConnectionId={activeConnectionId}
         />
 
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', borderTop: `1px solid ${T.border}` }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, position: 'relative' }}>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0 24px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ 
+          flex: 1, 
+          minWidth: 0, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          overflow: 'hidden', 
+          background: 'transparent',
+          position: 'relative'
+        }}>
+          {/* Main Stage (Messages + Centering Logic) */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0, overflow: 'hidden' }}>
+            <div 
+              id="chat-messages-scroll"
+              style={{ 
+                width: '100%', 
+                maxWidth: 1200, // Standard professional width for readability
+                display: 'flex', 
+                flexDirection: 'column',
+                overflowY: 'auto', 
+                padding: '0 60px 40px', // Standardized horizontal padding
+                scrollBehavior: 'smooth' 
+              }}
+            >
+              <div style={{ width: '100%', paddingTop: 24 }}>
               {/* Pinned Messages Bar */}
-              {messages.some(m => m.is_pinned) && (
-                <div style={{ padding: '0 24px 16px', borderBottom: `1px solid ${T.border}`, marginBottom: 16 }}>
-                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              {messages.filter(m => m.is_pinned).length > 0 && (
+                <div style={{ padding: '0 24px 16px', borderBottom: `1px solid #e5e5e5`, marginBottom: 16 }}>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 600, color: T.text3, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontFamily: T.fontMono }}>
                     <span style={{ color: T.accent }}>📍</span> Pinned Results
                   </div>
                   <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
@@ -249,7 +269,7 @@ export function ChatPage() {
               )}
 
               {messages.length === 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 14 }}>
                   <div style={{ width: 56, height: 56, borderRadius: 16, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: '#fff', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.2)', marginBottom: 8, fontFamily: T.fontHead }}>Q</div>
                   <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.5rem', color: T.text, letterSpacing: -0.5 }}>What would you like to know?</div>
                   <div style={{ fontSize: '0.88rem', color: T.text3, maxWidth: 420, textAlign: 'center', lineHeight: 1.65, fontWeight: 300 }}>
@@ -281,37 +301,33 @@ export function ChatPage() {
               ))}
 
               {loading && (
-                <div style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: 8 }}>
-                  <div style={{
-                    maxWidth: 400, background: T.s1, border: `1px solid ${T.border}`,
-                    borderRadius: '4px 14px 14px 14px', padding: '14px 18px',
-                    display: 'flex', alignItems: 'center', gap: 12,
-                  }}>
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      {[0, 1, 2].map(i => (
-                        <div key={i} style={{
-                          width: 6, height: 6, borderRadius: '50%', background: T.accent,
-                          animation: `thinkbounce 1.2s ${i * 0.2}s infinite`,
-                        }} />
-                      ))}
+                <div style={{ padding: '24px 32px', display: 'flex', gap: 12 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800 }}>Q</div>
+                  <div style={{ padding: '12px 18px', background: 'rgba(255,255,255,0.6)', borderRadius: '4px 18px 18px 18px', border: `1px solid #e5e5e5` }}>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent, animation: 'thinkbounce 1.2s 0s infinite' }} />
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent, animation: 'thinkbounce 1.2s 0.2s infinite' }} />
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent, animation: 'thinkbounce 1.2s 0.4s infinite' }} />
                     </div>
-                    <span style={{ fontSize: '0.78rem', color: T.text3, fontFamily: T.fontMono }}>Generating SQL...</span>
                   </div>
                 </div>
               )}
 
               <div ref={messagesEndRef} />
             </div>
+          </div>
+        </div>
 
+        <div style={{ display: 'flex', justifyContent: 'center', background: 'transparent', flexShrink: 0 }}>
+          <div style={{ width: '100%', maxWidth: 1200, padding: '0 60px' }}>
             <ChatInput
               connections={connections} activeConnectionId={activeConnectionId}
               onConnectionChange={setActiveConnectionId} onSend={handleSend} loading={loading}
             />
           </div>
-
-          <SchemaPanel connectionId={activeConnectionId} visible={schemaOpen} />
         </div>
       </div>
+    </div>
 
       <ConnectionModal isOpen={showConnectModal} onClose={() => setShowConnectModal(false)} onConnected={handleRefreshConnections} />
 

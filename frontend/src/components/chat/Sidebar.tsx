@@ -4,7 +4,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import type { ChatSidebarProps } from '../../types/chat';
 import { DeleteSessionModal } from './DeleteSessionModal';
 
-export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession, onRenameSession, connections }: ChatSidebarProps) {
+export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession, onRenameSession, connections, activeConnectionId }: ChatSidebarProps) {
   const { settings } = useSettingsStore();
   const displayName = settings?.full_name || 'User';
   const avatarInitials = displayName.substring(0, 2).toUpperCase();
@@ -49,31 +49,66 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
     const m: Record<string, string> = { postgresql: 'PG', mysql: 'MY', sqlite: 'SL' };
     return m[t?.toLowerCase()] || t?.slice(0, 2).toUpperCase() || '??';
   };
+  const activeConn = connections.find(c => c.id === activeConnectionId);
 
   return (
-    <aside style={{ width: 260, flexShrink: 0, background: T.s1, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      {/* Logo + New Chat */}
-      <div style={{ padding: '16px 14px 10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.15rem', letterSpacing: -0.5, padding: '4px 6px', marginBottom: 12, color: T.text }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: `linear-gradient(135deg, ${T.accent}, ${T.purple})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: '#000', fontWeight: 800 }}>Q</div>
-          Query<span style={{ color: T.accent }}>Mind</span>
+    <aside style={{ 
+      width: 280, 
+      flexShrink: 0, 
+      background: '#f9f9f8', 
+      borderRight: `1px solid #e5e5e5`, 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100%', 
+      overflow: 'hidden' 
+    }}>
+      {/* Logo + Active Connection */}
+      <div style={{ padding: '24px 20px 10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.25rem', letterSpacing: -0.6, marginBottom: 16, color: '#1a1a1a' }}>
+          {/* Grid Logo Icon */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, width: 22, height: 22 }}>
+            <div style={{ background: '#1a1a1a', borderRadius: 2 }} />
+            <div style={{ background: '#3b82f6', borderRadius: 2 }} />
+            <div style={{ background: '#6366f1', borderRadius: 2 }} />
+            <div style={{ background: '#d1d1d1', borderRadius: 2 }} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline' }}>
+            Query<span style={{ color: '#3b82f6' }}>Mind</span>
+          </div>
         </div>
+
+        {/* Active Connection Pill - White Border Style */}
+        <div style={{ 
+          display: 'inline-flex', alignItems: 'center', gap: 8, 
+          padding: '4px 12px', borderRadius: 20, 
+          background: '#fff', border: `1px solid #e5e5e5`, 
+          boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+          marginBottom: 20
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeConn ? '#22c55e' : '#ef4444' }} />
+          <span style={{ fontSize: '0.7rem', color: '#666', fontWeight: 500, fontFamily: T.fontBody }}>
+            {activeConn?.database || 'ecommerce_analytics'}
+            <span style={{ color: '#999', marginLeft: 4, fontWeight: 400 }}>- {dbTypeLabel(activeConn?.db_type || 'pg')}</span>
+          </span>
+        </div>
+
         <button onClick={onNewChat} style={{
-          width: '100%', padding: '9px 14px',
-          background: `linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,255,0.1))`,
-          border: '1px solid rgba(0,229,255,0.25)', borderRadius: 9, color: T.accent,
-          fontFamily: T.fontBody, fontSize: '0.82rem', fontWeight: 600,
-          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
+          width: '100%', padding: '10px 14px',
+          background: '#fff',
+          border: `1px solid #1a1a1a`, borderRadius: 8, color: '#1a1a1a',
+          fontFamily: T.fontBody, fontSize: '0.85rem', fontWeight: 600,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
         }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,58,255,0.15))'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,255,0.1))'; e.currentTarget.style.transform = 'none'; }}
+          onMouseEnter={e => e.currentTarget.style.background = '#fcfcfc'}
+          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
         >
-          <span style={{ fontSize: '1rem' }}>+</span> New Conversation
+          <span style={{ fontSize: '1.2rem', fontWeight: 300, color: '#1a1a1a', transform: 'translateY(-1px)' }}>+</span> New conversation
         </button>
       </div>
 
       {/* Search */}
-      <div style={{ padding: '0 14px 6px' }}>
+      <div style={{ padding: '0 20px 6px' }}>
         <div style={{ position: 'relative' }}>
           <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: '0.72rem', color: T.text3 }}>🔍</span>
           <input
@@ -89,7 +124,7 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
       </div>
 
       {/* Conversations */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 14px 10px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 20px 10px' }}>
         {grouped.map(group => (
           <div key={group.label}>
             <div style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: 1.5, color: T.text3, textTransform: 'uppercase', padding: '12px 6px 6px', fontFamily: T.fontMono }}>{group.label}</div>
@@ -100,17 +135,15 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
                 return (
                   <div key={s.id} onClick={() => onSelectSession(s.id)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px', borderRadius: 8,
-                      cursor: 'pointer', marginBottom: 1, border: `1px solid ${isActive ? 'rgba(0,229,255,0.15)' : 'transparent'}`,
-                      background: isActive || hoveredId === s.id ? T.s2 : 'transparent', position: 'relative', transition: 'background 0.15s',
+                      display: 'flex', alignItems: 'center', gap: 9, padding: '10px 12px',
+                      cursor: 'pointer', marginBottom: 1, 
+                      background: isActive ? '#fff' : hoveredId === s.id ? 'rgba(255,255,255,0.5)' : 'transparent', 
+                      position: 'relative', transition: 'background 0.15s',
                     }}
-                    onMouseEnter={() => {
-                      setHoveredId(s.id);
-                      // Fallback for logic that directly modifies style
-                    }}
+                    onMouseEnter={() => setHoveredId(s.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
-                    {isActive && <div style={{ position: 'absolute', left: -1, top: '20%', bottom: '20%', width: 2, borderRadius: 2, background: T.accent }} />}
+                    {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: '#3b82f6' }} />}
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.green, flexShrink: 0, boxShadow: '0 0 5px rgba(34,211,165,0.5)' }} />
                     {editingId === s.id ? (
                       <input
@@ -178,26 +211,24 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
         sessionTitle={sessions.find(s => s.id === deleteId)?.title || undefined}
       />
 
-      <div style={{ padding: '10px 14px', borderTop: `1px solid ${T.border}` }}>
-        <div style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: 1.5, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, marginBottom: 8 }}>Connections</div>
-        {connections.map(c => (
-          <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, cursor: 'pointer', marginBottom: 2 }}
-            onMouseEnter={e => { e.currentTarget.style.background = T.s2; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: c.status === 'connected' ? T.green : T.red, boxShadow: c.status === 'connected' ? '0 0 6px rgba(34,211,165,0.6)' : 'none', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.78rem', color: T.text2, flex: 1 }}>{c.database}</span>
-            <span style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono }}>{dbTypeLabel(c.db_type)}</span>
-          </div>
-        ))}
-      </div>
 
-      {/* User */}
-      <div style={{ padding: '12px 14px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: `linear-gradient(135deg, ${T.purple}, ${T.accent})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>{avatarInitials}</div>
+      {/* User Footer - Premium Image 2 Style */}
+      <div style={{ 
+        padding: '16px 20px', 
+        borderTop: `1px solid #e5e5e5`, 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 12, 
+        background: 'transparent' // Maintained beige feel
+      }}>
+        <div style={{ 
+          width: 32, height: 32, borderRadius: '50%', background: '#1a1a1a', 
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          fontSize: '0.8rem', fontWeight: 800, color: '#fff', flexShrink: 0
+        }}>U</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: T.text }}>{displayName}</div>
-          <div style={{ fontSize: '0.65rem', color: T.accent, fontFamily: T.fontMono }}>PRO PLAN</div>
+          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1a1a1a' }}>User</div>
+          <div style={{ fontSize: '0.72rem', color: '#3b82f6', fontWeight: 500 }}>Pro plan</div>
         </div>
       </div>
     </aside>

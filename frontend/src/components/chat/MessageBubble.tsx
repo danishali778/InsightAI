@@ -54,233 +54,212 @@ export function MessageBubble({
   };
 
   if (message.role === 'user') {
-    // ... (rest of user bubble)
     return (
-      <div style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+      <div style={{ padding: '4px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 12 }}>
         <div style={{
-          maxWidth: 520, background: T.s3, border: `1px solid ${T.border}`,
-          borderRadius: '16px 16px 4px 16px', padding: '12px 18px',
-          fontSize: '0.88rem', lineHeight: 1.6, color: T.text,
+          maxWidth: '70%', background: '#fafafa', border: `1px solid ${T.border}`,
+          borderRadius: '16px 16px 4px 16px', padding: '10px 16px',
+          fontSize: '0.92rem', lineHeight: 1.5, color: T.text,
           boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
         }}>
           {message.content}
         </div>
-        <div style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono, marginTop: 5, display: 'flex', gap: 8 }}>
-          <span>You</span><span>·</span><span>Just now</span>
-        </div>
       </div>
     );
   }
-
-  // Assistant
+// Assistant
   return (
-    <div id={message.id ? `msg-${message.id}` : undefined} style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: 8 }}>
-      <div style={{
-        maxWidth: 820, width: '100%', 
-        background: 'rgba(255, 255, 255, 0.75)', 
-        backdropFilter: T.glass.blur,
-        border: `1px solid ${T.border}`,
-        borderRadius: '4px 20px 20px 20px', overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.04)',
-      }}>
-        {/* Summary */}
-        <div style={{ padding: '16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start', borderBottom: `1px solid ${T.border}` }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-            background: T.accent,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: '#fff', fontWeight: 800,
-            fontFamily: T.fontHead,
-          }}>Q</div>
-          <div style={{ fontSize: '0.87rem', lineHeight: 1.65, color: T.text2 }}>
-            {message.error ? (
-              <span style={{ color: T.red }}>❌ {message.error}</span>
-            ) : (
-              message.content
-            )}
-          </div>
+    <div id={message.id ? `msg-${message.id}` : undefined} style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+      {/* AI Header & Content */}
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '0 12px 20px' }}>
+        {/* Grid Logo Icon */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, width: 20, height: 20, marginTop: 4, flexShrink: 0 }}>
+          <div style={{ background: '#1a1a1a', borderRadius: 2 }} />
+          <div style={{ background: T.accent, borderRadius: 2 }} />
+          <div style={{ background: T.purple, borderRadius: 2 }} />
+          <div style={{ background: '#d1d1d1', borderRadius: 2 }} />
         </div>
-
-        {/* SQL */}
-        {message.sql && (
-          <SqlBlock
-            sql={message.sql}
-            defaultOpen
-            title="GENERATED SQL"
-            onSave={onSqlSave && message.id ? async (newSql) => {
-              setIsSavingSql(true);
-              try {
-                await onSqlSave(message.id!, newSql);
-              } finally {
-                setIsSavingSql(false);
-              }
-            } : undefined}
-            isSaving={isSavingSql}
-          />
-        )}
-
-        {/* Results Table */}
-        {message.columns && message.rows && message.rows.length > 0 && (
-          <ResultsTable
-            columns={message.columns}
-            rows={message.rows}
-            rowCount={message.row_count}
-            executionTime={message.execution_time_ms}
-          />
-        )}
-
-        {/* Empty result notice */}
-        {!message.error && message.columns && message.rows && message.rows.length === 0 && (
-          <div style={{
-            padding: '16px 20px',
-            borderTop: `1px solid ${T.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}>
-            <span style={{ fontSize: '1rem' }}>🔍</span>
-            <div>
-              <div style={{ fontSize: '0.84rem', color: T.text2, fontWeight: 600 }}>
-                No results found
-              </div>
-              <div style={{ fontSize: '0.78rem', color: T.text3, marginTop: 2 }}>
-                The query ran successfully but returned 0 rows. Try adjusting your filters, date range, or search terms.
-              </div>
+        
+        <div style={{ fontSize: '1rem', lineHeight: 1.6, color: T.text, fontWeight: 450, flex: 1 }}>
+          {message.error ? (
+            <div style={{ color: T.red, background: 'rgba(239, 68, 68, 0.05)', padding: '12px 16px', borderRadius: 12, border: `1px solid ${T.red}20` }}>
+              <span style={{ fontWeight: 700, marginRight: 8 }}>Error</span>
+              {message.error}
             </div>
+          ) : (
+            message.content
+          )}
+        </div>
+      </div>
+
+      {/* Technical Result Box (SQL, Table, Charts) */}
+      {(message.sql || message.rows) && !message.error && (
+        <div style={{
+          marginLeft: 34, // Alignment with text
+          background: '#fff', 
+          border: `1px solid #e5e5e5`,
+          borderRadius: 16, 
+          overflow: 'hidden',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+        }}>
+          {/* Metadata Header */}
+          <div style={{ 
+            padding: '10px 16px', 
+            background: '#fcfcfc', 
+            borderBottom: `1px solid #e5e5e5`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: T.text3, fontWeight: 600, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent }} />
+              {message.sql ? `SQL generated - ${message.sql.length} chars` : 'Data results'}
+            </div>
+            <button 
+              onClick={() => message.sql && navigator.clipboard.writeText(message.sql)}
+              style={{ background: 'none', border: 'none', color: T.accent, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', fontFamily: T.fontBody }}
+            >
+              Copy Link
+            </button>
           </div>
-        )}
 
-        {/* Chart Section */}
-        {message.chart_recommendation && message.chart_recommendation.type !== 'table' && message.rows && message.columns && (
-          <BaseChartContainer
-            recommendation={message.chart_recommendation}
-            rows={message.rows}
-            columns={message.columns}
-            column_metadata={message.column_metadata}
-          />
-        )}
+          {/* SQL Block */}
+          {message.sql && (
+            <SqlBlock
+              sql={message.sql}
+              defaultOpen={false} // Match the reference: collapsed by default or integrated
+              onSave={onSqlSave && message.id ? async (newSql) => {
+                setIsSavingSql(true);
+                try { await onSqlSave(message.id!, newSql); } finally { setIsSavingSql(false); }
+              } : undefined}
+              isSaving={isSavingSql}
+            />
+          )}
 
-        {/* Action bar */}
-        {!message.error && (
-          <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {/* Results Table */}
+          {message.columns && message.rows && message.rows.length > 0 && (
+            <ResultsTable
+              columns={message.columns}
+              rows={message.rows}
+              rowCount={message.row_count}
+              executionTime={message.execution_time_ms}
+            />
+          )}
+
+          {/* Chart Section */}
+          {message.chart_recommendation && message.chart_recommendation.type !== 'table' && message.rows && message.columns && (
+            <BaseChartContainer
+              recommendation={message.chart_recommendation}
+              rows={message.rows}
+              columns={message.columns}
+              column_metadata={message.column_metadata}
+            />
+          )}
+
+          {/* Assistant Action Bar (Inside Box) */}
+          <div style={{ padding: '12px 16px', borderTop: `1px solid #e5e5e5`, display: 'flex', alignItems: 'center', gap: 10, background: '#fafafa' }}>
             <button
               onClick={handleLibraryClick}
               disabled={!!saveLabel || !message.sql || isSmartSaving}
               style={{
-                padding: '5px 12px', borderRadius: 6, border: `1px solid ${T.border}`,
-                background: isSmartSaving ? T.s2 : 'transparent',
-                color: saveLabel ? T.green : T.text3,
-                fontSize: '0.72rem', cursor: (!!saveLabel || !message.sql || isSmartSaving) ? 'default' : 'pointer', fontFamily: T.fontBody,
-                display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s',
+                padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`,
+                background: '#fff', color: saveLabel ? T.green : T.text2,
+                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               }}
-              onMouseEnter={e => { if (!saveLabel && message.sql && !isSmartSaving) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
-              onMouseLeave={e => { if (!saveLabel && message.sql && !isSmartSaving) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = saveLabel ? T.green : T.text3; } }}
             >
-              {isSmartSaving ? '⏳...' : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {saveLabel ? '✅' : <Save size={14} />}
-                  {saveLabel || 'Save Query'}
-                </div>
-              )}
+              {saveLabel ? 'Saved' : 'Save to Library'}
             </button>
+
+            <button
+              onClick={handleDashboardClick}
             <button
               onClick={handleDashboardClick}
               disabled={isSmartSaving}
               style={{
-                padding: '5px 12px', borderRadius: 6, border: `1px solid ${T.border}`,
-                background: isSmartSaving ? T.s2 : 'transparent',
-                color: T.text3,
-                fontSize: '0.72rem', cursor: isSmartSaving ? 'default' : 'pointer', fontFamily: T.fontBody,
-                display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s',
-                opacity: isSmartSaving ? 0.7 : 1,
+                padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`,
+                background: isSmartSaving ? T.s2 : '#fff', 
+                color: T.text2,
+                fontSize: '0.75rem', fontWeight: 600, cursor: isSmartSaving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'all 0.2s',
               }}
-              onMouseEnter={e => { if (!isSmartSaving) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
-              onMouseLeave={e => { if (!isSmartSaving) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; } }}
             >
               {isSmartSaving ? '⏳...' : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Plus size={14} />
-                  Dashboard
-                </div>
+                <>
+                  <Plus size={14} strokeWidth={2.5} />
+                  Add to Dashboard
+                </>
               )}
             </button>
+
             {onTogglePin && message.id && (
               <button
                 onClick={async () => {
                   if (onTogglePin && message.id) {
                     setIsPinning(true);
-                    try {
-                      await onTogglePin(message.id, !message.is_pinned);
-                    } finally {
-                      setIsPinning(false);
-                    }
+                    try { await onTogglePin(message.id, !message.is_pinned); } finally { setIsPinning(false); }
                   }
                 }}
                 disabled={isPinning}
                 style={{
-                  padding: '5px 12px', borderRadius: 6, 
+                  padding: '6px 12px', borderRadius: 8, 
                   border: `1px solid ${message.is_pinned ? T.accent : T.border}`,
-                  background: message.is_pinned ? T.accentDim : 'transparent',
-                  color: message.is_pinned ? T.accent : T.text3,
-                  fontSize: '0.72rem', cursor: isPinning ? 'default' : 'pointer', fontFamily: T.fontBody,
-                  display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s',
+                  background: message.is_pinned ? T.accentDim : '#fff',
+                  color: message.is_pinned ? T.accent : T.text2,
+                  fontSize: '0.75rem', fontWeight: 600, cursor: isPinning ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s',
                 }}
-                onMouseEnter={e => { if (!isPinning && !message.is_pinned) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
-                onMouseLeave={e => { if (!isPinning && !message.is_pinned) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; } }}
               >
-                {isPinning ? '...' : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Pin size={14} style={{ transform: message.is_pinned ? 'rotate(45deg)' : 'none', transition: 'transform 0.3s' }} />
-                    {message.is_pinned ? 'Pinned' : 'Pin Chat'}
-                  </div>
-                )}
+                <Pin size={14} strokeWidth={2.5} style={{ transform: message.is_pinned ? 'rotate(45deg)' : 'none', transition: 'transform 0.3s' }} />
+                {message.is_pinned ? 'Pinned' : 'Pin Result'}
               </button>
             )}
+
             <button
               style={{
-                padding: '5px 12px', borderRadius: 6, border: `1px solid ${T.accent}`,
-                background: 'transparent',
-                color: T.accent,
-                fontSize: '0.72rem', cursor: 'pointer', fontFamily: T.fontBody,
-                display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s',
+                padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.accent}`,
+                background: 'transparent', color: T.accent,
+                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = T.accent; e.currentTarget.style.color = '#fff'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.accent; }}
             >
-              <RotateCcw size={14} />
+              <RotateCcw size={14} strokeWidth={2.5} />
               Regenerate
             </button>
-            <span style={{ flex: 1 }} />
-            <div style={{ display: 'flex', gap: 12, color: T.text3, opacity: 0.6 }}>
-              <ThumbsUp size={14} style={{ cursor: 'pointer' }} aria-label="Like" />
-              <ThumbsDown size={14} style={{ cursor: 'pointer' }} aria-label="Dislike" />
+
+            <div style={{ flex: 1 }} />
+            
+            <div style={{ display: 'flex', gap: 14, color: T.text3 }}>
+              <ThumbsUp size={16} strokeWidth={2} style={{ cursor: 'pointer', opacity: 0.5 }} />
+              <ThumbsDown size={16} strokeWidth={2} style={{ cursor: 'pointer', opacity: 0.5 }} />
             </div>
           </div>
-        )}
-        
-        <SaveQueryModal
-          isOpen={saveModalOpen}
-          onClose={() => setSaveModalOpen(false)}
-          sql={message.sql || ''}
-          defaultTitle={message.chart_recommendation?.title || 'Saved from Chat'}
-          connectionId={connectionId}
-          onSaved={handleSaved}
-        />
-        <AddToDashboardModal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          message={{
-            title: message.chart_recommendation?.title || 'Data Query',
-            dbName: 'database',
-            rowCount: message.row_count || message.rows?.length,
-            sql: message.sql,
-            columns: message.columns,
-            rows: message.rows,
-            connectionId: connectionId,
-            chart_recommendation: message.chart_recommendation,
-            column_metadata: message.column_metadata,
-          }}
-        />
-      </div>
+        </div>
+      )}
+      
+      <SaveQueryModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        sql={message.sql || ''}
+        defaultTitle={message.chart_recommendation?.title || 'Saved from Chat'}
+        connectionId={connectionId}
+        onSaved={handleSaved}
+      />
+      <AddToDashboardModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        message={{
+          title: message.chart_recommendation?.title || 'Data Query',
+          dbName: 'database',
+          rowCount: message.row_count || message.rows?.length,
+          sql: message.sql,
+          columns: message.columns,
+          rows: message.rows,
+          connectionId: connectionId,
+          chart_recommendation: message.chart_recommendation,
+          column_metadata: message.column_metadata,
+        }}
+      />
     </div>
   );
 }

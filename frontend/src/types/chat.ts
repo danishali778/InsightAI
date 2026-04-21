@@ -26,6 +26,7 @@ export interface ChatSidebarProps {
   onDeleteSession: (id: string) => void;
   onRenameSession: (id: string, title: string) => void;
   connections: DatabaseConnection[];
+  activeConnectionId: string;
 }
 
 export interface ChatInputProps {
