@@ -135,7 +135,7 @@ export function SqlBlock({
         <div
           style={{
             margin: isCard ? 0 : undefined,
-            background: T.s1,
+            background: T.s2,
             border: `1px solid ${T.border}`,
             borderRadius: isCard ? 11 : 0,
             padding: isCard ? '10px 12px' : '14px 18px',

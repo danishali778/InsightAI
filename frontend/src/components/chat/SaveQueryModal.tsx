@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { T } from '../dashboard/tokens';
 import { saveQuery, listLibraryFolders } from '../../services/api';
+import { ChevronDown, Folder, Plus, X } from 'lucide-react';
 import type { FolderSummary } from '../../types/api';
 
 interface Props {
@@ -20,10 +21,18 @@ const inputStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.8px',
+  fontSize: '0.65rem', fontWeight: 600, letterSpacing: '1px',
   textTransform: 'uppercase', color: T.text3, fontFamily: T.fontMono,
-  marginBottom: 6, display: 'block',
+  marginBottom: 8, display: 'block', opacity: 0.8,
 };
+
+const glassInputStyle = (isFocused: boolean): React.CSSProperties => ({
+  ...inputStyle,
+  background: isFocused ? T.s1 : 'rgba(255, 255, 255, 0.4)',
+  borderColor: isFocused ? T.accent : T.border,
+  boxShadow: isFocused ? `0 0 0 3px ${T.accent}15` : 'none',
+  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+});
 
 export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionId, onSaved }: Props) {
   const [title, setTitle] = useState('');
@@ -38,7 +47,7 @@ export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionI
   useEffect(() => {
     if (!isOpen) return;
     setTitle(defaultTitle || 'Saved from Chat');
-    setSelectedFolder('Uncategorized');
+    setSelectedFolder(localStorage.getItem('lastUsedFolder') || 'Uncategorized');
     setNewFolderMode(false);
     setNewFolderName('');
     setError('');
@@ -48,6 +57,19 @@ export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionI
 
   if (!isOpen) return null;
 
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleFolderChange = (value: string) => {
     if (value === '__new__') {
       setNewFolderMode(true);
@@ -56,6 +78,7 @@ export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionI
       setNewFolderMode(false);
       setSelectedFolder(value);
     }
+    setIsDropdownOpen(false);
   };
 
   const handleSave = async () => {
@@ -74,6 +97,7 @@ export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionI
         folder_name: folderName,
       });
       onSaved(result.created);
+      localStorage.setItem('lastUsedFolder', folderName);
       onClose();
     } catch {
       setError('Failed to save. Please try again.');
@@ -97,11 +121,27 @@ export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionI
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{
-        width: 420, background: T.s1, border: `1px solid ${T.border2}`,
-        borderRadius: 16, overflow: 'hidden',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-      }}>
+      <div 
+        className="antigravity-modal-entry"
+        style={{
+          width: 440, 
+          background: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(24px) saturate(160%)',
+          border: `1px solid rgba(255, 255, 255, 0.4)`,
+          borderRadius: 24, overflow: 'hidden',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.5)',
+          position: 'relative',
+        }}
+      >
+        <style>{`
+          @keyframes antigravity-float-in {
+            0% { transform: translateY(20px) scale(0.98); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+          }
+          .antigravity-modal-entry {
+            animation: antigravity-float-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+        `}</style>
         {/* Header */}
         <div style={{
           padding: '16px 20px', borderBottom: `1px solid ${T.border}`,
@@ -116,10 +156,12 @@ export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionI
             </div>
           </div>
           <button onClick={onClose} style={{
-            width: 28, height: 28, borderRadius: 7, background: 'transparent',
+            width: 32, height: 32, borderRadius: 10, background: 'rgba(0,0,0,0.03)',
             border: `1px solid ${T.border}`, cursor: 'pointer', color: T.text3,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem',
-          }}>✕</button>
+            display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
+          }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}>
+            <X size={14} />
+          </button>
         </div>
 
         {/* Body */}
@@ -133,43 +175,86 @@ export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionI
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Monthly Revenue by Region"
-              style={inputStyle}
-              onFocus={e => e.currentTarget.style.borderColor = 'rgba(0,229,255,0.4)'}
-              onBlur={e => e.currentTarget.style.borderColor = T.border}
+              style={glassInputStyle(title === title)} // simple hook for focus later if needed, but using CSS is better
+              className="premium-input"
             />
+            <style>{`
+              .premium-input {
+                width: 100%; background: rgba(255, 255, 255, 0.4); border: 1px solid ${T.border};
+                border-radius: 12px; padding: 10px 14px; color: ${T.text};
+                font-family: ${T.fontBody}; fontSize: 0.9rem; outline: none;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+              }
+              .premium-input:focus {
+                background: #fff; border-color: ${T.accent}; box-shadow: 0 0 0 4px ${T.accent}15;
+              }
+            `}</style>
           </div>
 
-          {/* Folder */}
-          <div>
-            <label style={labelStyle}>Folder</label>
-            <select
-              value={selectedFolder}
-              onChange={e => handleFolderChange(e.target.value)}
-              style={{ ...inputStyle, cursor: 'pointer', appearance: 'none' as const }}
-              onFocus={e => e.currentTarget.style.borderColor = 'rgba(0,229,255,0.4)'}
-              onBlur={e => e.currentTarget.style.borderColor = T.border}
+          {/* Folder Custom Selector */}
+          <div ref={dropdownRef} style={{ position: 'relative' }}>
+            <label style={labelStyle}>Destination Folder</label>
+            <div 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              style={{
+                width: '100%', background: 'rgba(255, 255, 255, 0.4)', border: `1px solid ${isDropdownOpen ? T.accent : T.border}`,
+                borderRadius: 12, padding: '10px 14px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                transition: 'all 0.2s',
+                boxShadow: isDropdownOpen ? `0 0 0 4px ${T.accent}15` : 'none',
+              }}
             >
-              <option value="Uncategorized">📁 Uncategorized</option>
-              {folders
-                .filter(f => f.name !== 'Uncategorized' && f.name !== 'Public Library')
-                .map(f => (
-                  <option key={f.name} value={f.name}>📁 {f.name}</option>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.9rem', color: T.text2 }}>
+                <Folder size={16} style={{ color: T.accent }} />
+                {selectedFolder === '__new__' ? (newFolderName || 'New Folder...') : selectedFolder}
+              </div>
+              <ChevronDown size={16} style={{ color: T.text3, transform: isDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </div>
+
+            {isDropdownOpen && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8,
+                background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)',
+                border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden',
+                boxShadow: T.shadow.lg, zIndex: 10, padding: 6,
+              }}>
+                {/* Options */}
+                {[
+                  { id: 'Uncategorized', label: 'Uncategorized' },
+                  ...folders.filter(f => f.name !== 'Uncategorized' && f.name !== 'Public Library').map(f => ({ id: f.name, label: f.name })),
+                  { id: '__new__', label: 'Create new folder...', isAction: true }
+                ].map((opt, i) => (
+                  <div
+                    key={opt.id}
+                    onClick={() => handleFolderChange(opt.id)}
+                    style={{
+                      padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                      fontSize: '0.88rem', color: opt.isAction ? T.accent : T.text2,
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      background: selectedFolder === opt.id ? T.accentDim : 'transparent',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = opt.isAction ? `${T.accent}08` : T.s2}
+                    onMouseLeave={e => e.currentTarget.style.background = selectedFolder === opt.id ? T.accentDim : 'transparent'}
+                  >
+                    {opt.isAction ? <Plus size={14} /> : <Folder size={14} style={{ opacity: 0.6 }} />}
+                    {opt.label}
+                  </div>
                 ))}
-              <option disabled style={{ color: T.text3 }}>──────────────</option>
-              <option value="__new__">＋ Create new folder…</option>
-            </select>
+              </div>
+            )}
 
             {/* New folder input — appears inline */}
             {newFolderMode && (
-              <input
-                autoFocus
-                value={newFolderName}
-                onChange={e => setNewFolderName(e.target.value)}
-                placeholder="New folder name"
-                style={{ ...inputStyle, marginTop: 8 }}
-                onFocus={e => e.currentTarget.style.borderColor = 'rgba(0,229,255,0.4)'}
-                onBlur={e => e.currentTarget.style.borderColor = T.border}
-              />
+              <div style={{ marginTop: 12, position: 'relative' }}>
+                <input
+                  autoFocus
+                  value={newFolderName}
+                  onChange={e => setNewFolderName(e.target.value)}
+                  placeholder="Enter folder name..."
+                  className="premium-input"
+                />
+              </div>
             )}
           </div>
 
@@ -186,21 +271,32 @@ export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionI
 
         {/* Footer */}
         <div style={{
-          padding: '14px 20px', borderTop: `1px solid ${T.border}`,
-          display: 'flex', gap: 8, justifyContent: 'flex-end',
+          padding: '16px 24px', borderTop: `1px solid rgba(0,0,0,0.04)`,
+          display: 'flex', gap: 12, justifyContent: 'flex-end',
+          background: 'rgba(0,0,0,0.01)',
         }}>
           <button onClick={onClose} style={{
-            padding: '8px 18px', borderRadius: 8, fontSize: '0.78rem',
-            fontFamily: T.fontBody, cursor: 'pointer',
+            padding: '10px 20px', borderRadius: 14, fontSize: '0.82rem',
+            fontFamily: T.fontBody, cursor: 'pointer', fontWeight: 500,
             border: `1px solid ${T.border}`, background: 'transparent', color: T.text3,
-          }}>Cancel</button>
+            transition: 'all 0.2s',
+          }} onMouseEnter={e => { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; }}>
+            Cancel
+          </button>
           <button onClick={handleSave} disabled={saving} style={{
-            padding: '8px 20px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 600,
+            padding: '10px 24px', borderRadius: 14, fontSize: '0.82rem', fontWeight: 600,
             fontFamily: T.fontBody, cursor: saving ? 'default' : 'pointer',
-            border: `1px solid rgba(0,229,255,0.3)`, background: T.accentDim, color: T.accent,
+            border: 'none', background: T.accent, color: '#fff',
+            boxShadow: `0 8px 20px ${T.accent}30`,
             opacity: saving ? 0.7 : 1,
-          }}>
-            {saving ? '⏳ Saving…' : '📌 Save to Library'}
+            transition: 'all 0.2s',
+          }} onMouseEnter={e => { if (!saving) e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseLeave={e => { if (!saving) e.currentTarget.style.transform = 'translateY(0)'; }}>
+            {saving ? '⏳ Saving…' : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Folder size={14} />
+                Save Query
+              </div>
+            )}
           </button>
         </div>
       </div>

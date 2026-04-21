@@ -200,21 +200,6 @@ export function ChatPage() {
             </svg>
             Schema {schemaOpen ? 'Open' : ''}
           </button>
-          <button 
-            onClick={() => setShowConnectModal(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 14px', borderRadius: 8,
-              border: `1px solid ${activeConn ? T.border : T.accent}`,
-              background: activeConn ? 'transparent' : T.accent,
-              color: activeConn ? T.text2 : '#fff',
-              fontSize: '0.76rem', cursor: 'pointer', fontFamily: T.fontBody,
-              transition: 'all 0.18s ease',
-              fontWeight: activeConn ? 500 : 700,
-            }}
-          >
-            <HeaderIcons.Plus /> {activeConn ? 'Add Connection' : 'Connect DB'}
-          </button>
         </div>
       }
     >
@@ -223,7 +208,6 @@ export function ChatPage() {
           sessions={sessions} activeSessionId={activeSessionId}
           onSelectSession={setActiveSessionId} onNewChat={handleNewChat}
           onDeleteSession={handleDeleteSession} onRenameSession={handleRenameSession}
-          onOpenConnect={() => setShowConnectModal(true)}
           connections={connections}
         />
 
@@ -278,7 +262,7 @@ export function ChatPage() {
                         color: T.text2, fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
                         fontWeight: 500, boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                       }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; e.currentTarget.style.background = T.s1; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text2; e.currentTarget.style.background = T.s1; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >{s}</button>
                     ))}

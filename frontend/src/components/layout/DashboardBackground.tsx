@@ -1,4 +1,5 @@
 import React from 'react';
+import { T } from '../dashboard/tokens';
 
 /**
  * A premium, animated mesh gradient background.
@@ -16,8 +17,9 @@ export const DashboardBackground: React.FC = () => {
         bottom: 0,
         zIndex: -1,
         overflow: 'hidden',
-        background: '#fcfcfd', // Light mode base
+        background: T.bg, // Use system token
         pointerEvents: 'none',
+        transition: 'background 0.5s ease',
       }}
     >
       {/* Mesh Blob 1 */}

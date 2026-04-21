@@ -23,103 +23,163 @@ export function ChatInput({ connections, activeConnectionId, onConnectionChange,
   useEffect(() => {
     if (textRef.current) {
       textRef.current.style.height = 'auto';
-      textRef.current.style.height = Math.min(textRef.current.scrollHeight, 80) + 'px';
+      textRef.current.style.height = Math.min(textRef.current.scrollHeight, 120) + 'px';
     }
   }, [text]);
 
   return (
-    <div style={{ borderTop: `1px solid ${T.border}`, background: T.s1, padding: '12px 20px 14px', flexShrink: 0 }}>
-      {/* Context pills */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 9, alignItems: 'center' }}>
-        {activeConn && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            background: T.s2, border: `1px solid ${T.border}`,
-            borderRadius: 20, padding: '3px 10px',
-            fontSize: '0.68rem', fontFamily: T.fontMono, color: T.text3,
-          }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: T.accent }} />
-            {activeConn.database}
-          </div>
-        )}
-      </div>
-
-      {/* Input row */}
+    <div style={{ 
+      borderTop: `1px solid ${T.border}`,
+      background: 'rgba(255, 255, 255, 0.85)',
+      backdropFilter: 'blur(20px)',
+      padding: '12px 24px 16px',
+      flexShrink: 0,
+      zIndex: 10,
+    }}>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        background: T.s2, border: `1px solid ${T.border}`,
-        borderRadius: 12, padding: '10px 14px',
-        transition: 'border-color 0.2s',
+        maxWidth: 1000,
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
       }}>
-        {/* DB Selector */}
-        <div onClick={() => setShowDropdown(!showDropdown)} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: T.s3, border: `1px solid ${T.border}`,
-          borderRadius: 7, padding: '5px 10px', cursor: 'pointer',
-          transition: 'all 0.15s', flexShrink: 0, whiteSpace: 'nowrap', position: 'relative',
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 12,
+          background: T.s2,
+          border: `1px solid ${T.border}`,
+          borderRadius: 14,
+          padding: '8px 12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+          transition: 'all 0.2s',
         }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.green }} />
-          <span style={{ fontSize: '0.72rem', fontFamily: T.fontMono, color: T.text2 }}>
-            {activeConn?.database || 'Select DB'}
-          </span>
-          <span style={{ fontSize: '0.6rem', color: T.text3 }}>▾</span>
-          {showDropdown && (
-            <div style={{
-              position: 'absolute', bottom: '100%', left: 0, marginBottom: 4,
-              background: T.s3, border: `1px solid ${T.border2}`, borderRadius: 8,
-              padding: 4, zIndex: 100, minWidth: 180, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-            }}>
-              {connections.map(c => (
-                <div key={c.id} onClick={e => { e.stopPropagation(); onConnectionChange(c.id); setShowDropdown(false); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 6,
-                    cursor: 'pointer', fontSize: '0.78rem', color: c.id === activeConnectionId ? T.text : T.text2,
-                    background: c.id === activeConnectionId ? T.s2 : 'transparent',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = T.s2; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = c.id === activeConnectionId ? T.s2 : 'transparent'; }}
-                >
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.status === 'connected' ? T.green : T.red }} />
-                  <span style={{ fontFamily: T.fontMono }}>{c.database}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* DB Selector (Professional Style) */}
+          <div style={{ position: 'relative', marginBottom: 4 }}>
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'transparent',
+                border: `1px solid ${T.border}`,
+                borderRadius: 8,
+                padding: '5px 10px',
+                cursor: 'pointer',
+                color: T.text2,
+                fontSize: '0.72rem',
+                fontFamily: T.fontMono,
+                transition: 'all 0.15s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.background = T.s3; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'transparent'; }}
+            >
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeConn ? T.green : T.red, boxShadow: activeConn ? `0 0 4px ${T.green}40` : 'none' }} />
+              {activeConn?.database || 'Select DB'}
+              <span style={{ fontSize: '0.6rem', color: T.text3 }}>▾</span>
+            </button>
+
+            {showDropdown && (
+              <div style={{
+                position: 'absolute', bottom: 'calc(100% + 8px)', left: 0,
+                background: T.s1,
+                border: `1px solid ${T.border2}`,
+                borderRadius: 10,
+                padding: 4,
+                minWidth: 180,
+                boxShadow: T.shadow.lg,
+                zIndex: 100,
+              }}>
+                {connections.map(c => (
+                  <div key={c.id} onClick={e => { e.stopPropagation(); onConnectionChange(c.id); setShowDropdown(false); }}
+                    style={{
+                      padding: '8px 12px', borderRadius: 6, cursor: 'pointer',
+                      fontSize: '0.78rem', color: c.id === activeConnectionId ? T.text : T.text2,
+                      background: c.id === activeConnectionId ? T.s2 : 'transparent',
+                      display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = T.s2}
+                    onMouseLeave={e => e.currentTarget.style.background = c.id === activeConnectionId ? T.s2 : 'transparent'}
+                  >
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.status === 'connected' ? T.green : T.red }} />
+                    <span style={{ fontFamily: T.fontMono }}>{c.database}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <textarea
+            ref={textRef}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask your data anything..."
+            rows={1}
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: T.text,
+              fontFamily: T.fontBody,
+              fontSize: '0.94rem',
+              resize: 'none',
+              maxHeight: 160,
+              padding: '6px 0',
+              lineHeight: 1.55,
+            }}
+          />
+
+          {/* Action Row Inside */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+             <span style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono }}>{text.length} / 2048</span>
+             <button
+              onClick={handleSend}
+              disabled={loading || !text.trim()}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: text.trim() ? T.accent : T.s3,
+                border: 'none',
+                cursor: text.trim() ? 'pointer' : 'default',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+                boxShadow: text.trim() ? T.shadow.glow : 'none',
+              }}
+              onMouseEnter={e => { if (text.trim()) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              {loading ? (
+                <div style={{ width: 14, height: 14, border: `2px solid rgba(255,255,255,0.3)`, borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Textarea */}
-        <textarea ref={textRef} value={text} onChange={e => setText(e.target.value)} onKeyDown={handleKeyDown}
-          placeholder="Ask anything about your data..."
-          rows={1}
-          style={{
-            flex: 1, background: 'transparent', border: 'none', outline: 'none',
-            color: T.text, fontFamily: T.fontBody, fontSize: '0.88rem',
-            resize: 'none', maxHeight: 80, minHeight: 20, lineHeight: 1.5,
-          }}
-        />
-
-        {/* Right */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-          <span style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono }}>{text.length} / 2048</span>
-          <button onClick={handleSend} disabled={loading || !text.trim()} style={{
-            width: 34, height: 34, borderRadius: 9,
-            background: text.trim() ? `linear-gradient(135deg, ${T.accent}, #00b8d4)` : T.s3,
-            border: 'none', cursor: text.trim() ? 'pointer' : 'default',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: text.trim() ? '0 0 20px rgba(0,229,255,0.3)' : 'none',
-            transition: 'all 0.2s', fontSize: '0.85rem',
-          }}>
-            <span style={{ color: text.trim() ? '#000' : T.text3, fontWeight: 700 }}>↗</span>
-          </button>
+        {/* Hints */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 16, opacity: 0.6 }}>
+           <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono }}>
+              <span style={{ background: T.s4, padding: '1px 4px', borderRadius: 3 }}>⌘ ↵</span> to send
+           </div>
+           <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono }}>
+              <span style={{ background: T.s4, padding: '1px 4px', borderRadius: 3 }}>/</span> for commands
+           </div>
         </div>
       </div>
 
-      {/* Hint */}
-      <div style={{ fontSize: '0.65rem', color: T.text3, marginTop: 7, textAlign: 'center', fontFamily: T.fontMono }}>
-        <span style={{ background: T.s3, border: `1px solid ${T.border}`, borderRadius: 3, padding: '1px 5px', fontSize: '0.6rem' }}>⌘ Enter</span> to send
-        &nbsp;·&nbsp;
-        <span style={{ background: T.s3, border: `1px solid ${T.border}`, borderRadius: 3, padding: '1px 5px', fontSize: '0.6rem' }}>/</span> for commands
-      </div>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }

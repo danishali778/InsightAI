@@ -76,7 +76,7 @@ async def lifespan(app: FastAPI):
 
         logger.info("[startup] Restoring all jobs...")
         restore_all_jobs()
-        restore_all_widget_jobs()
+        await restore_all_widget_jobs()
         logger.info("[startup] Restoring all jobs DONE.")
 
         logger.info("[startup] Lifespan setup complete. App should start now.")

@@ -3,12 +3,12 @@ export const T = {
   // ============ COLORS ============
 
   // BACKGROUNDS (8 depth layers)
-  bg: '#fcfcfd',        // Main background (Cloud White)
+  bg: '#f4f7fb',        // Main background (Midnight Ice)
   s1: '#ffffff',        // Surface layer 1 (Solid White)
-  s2: '#f8fafc',        // Surface layer 2 (Slate-50)
-  s3: '#f1f5f9',        // Surface layer 3 (Slate-100)
-  s4: '#e2e8f0',        // Surface layer 4 (Slate-200)
-  s5: '#cbd5e1',        // Surface layer 5 (Slate-300)
+  s2: '#fbfcfd',        // Surface layer 2 (Sliver)
+  s3: '#f0f4f8',        // Surface layer 3 (Slate-100)
+  s4: '#e6ebf1',        // Surface layer 4 (Slate-200)
+  s5: '#dce3ec',        // Surface layer 5 (Slate-300)
 
   // ACCENT COLORS (Primary palette)
   accent: '#0ea5e9',    // Sky Blue
@@ -78,11 +78,19 @@ export const T = {
   shadow: {
     none: 'none',
     sm: '0 2px 8px rgba(0,0,0,0.03)',
-    md: '0 4px 16px rgba(0,0,0,0.06)',
-    lg: '0 8px 24px rgba(0,0,0,0.08)',
-    xl: '0 12px 32px rgba(0,0,0,0.1)',
+    md: '0 4px 16px rgba(0,0,0,0.05)',
+    lg: '0 12px 32px rgba(0,0,0,0.08)',
+    xl: '0 20px 48px rgba(0,0,0,0.12)',
     glow: '0 0 20px rgba(14, 165, 233, 0.1)',
     glowIntense: '0 0 40px rgba(14, 165, 233, 0.15)',
+  },
+
+  // ============ GLASSMORPHISM ============
+  glass: {
+    bg: 'rgba(255, 255, 255, 0.7)',
+    bgDark: 'rgba(15, 23, 42, 0.8)',
+    border: 'rgba(255, 255, 255, 0.1)',
+    blur: 'blur(12px) saturate(180%)',
   },
 
   // ============ TRANSITIONS ============

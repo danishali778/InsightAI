@@ -178,6 +178,13 @@ def onboard_user(user_id: str) -> bool:
         
         return True
     except Exception as e:
+        # In local development, the Mock User (all zeros) will fail FK constraints.
+        # We catch this to prevent blocking the entire UI with a 500.
+        is_mock = user_id == "00000000-0000-0000-0000-000000000000"
+        if is_mock:
+            print(f"[Onboarding Store] Gracefully skipping DB persistence for Mock User: {user_id}")
+            return True
+            
         print(f"[Onboarding Store] Error onboarding user {user_id}: {e}")
         return False
 
