@@ -172,8 +172,6 @@ export function MessageBubble({
 
             <button
               onClick={handleDashboardClick}
-            <button
-              onClick={handleDashboardClick}
               disabled={isSmartSaving}
               style={{
                 padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`,
