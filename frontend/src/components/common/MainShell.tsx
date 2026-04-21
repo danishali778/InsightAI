@@ -17,6 +17,7 @@ interface MainShellProps {
   onDashboardHover?: (hovering: boolean) => void;
   hideSidebar?: boolean;
   activeId?: string;
+  hideHeader?: boolean;
 }
 
 export function MainShell({ 
@@ -27,7 +28,8 @@ export function MainShell({
   children,
   onDashboardHover,
   hideSidebar = false,
-  activeId
+  activeId,
+  hideHeader = false
 }: MainShellProps) {
   return (
     <div style={{ 
@@ -54,13 +56,15 @@ export function MainShell({
         }}
       >
         {/* Universal Header */}
-        <AppHeader 
-          title={title} 
-          subtitle={subtitle} 
-          badge={badge}
-        >
-          {headerActions}
-        </AppHeader>
+        {!hideHeader && (
+          <AppHeader 
+            title={title} 
+            subtitle={subtitle} 
+            badge={badge}
+          >
+            {headerActions}
+          </AppHeader>
+        )}
 
         {/* Page Content */}
         <main style={{ 

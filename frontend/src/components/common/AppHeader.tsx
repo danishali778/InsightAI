@@ -28,8 +28,8 @@ export function AppHeader({ title, subtitle, badge, children }: AppHeaderProps) 
       zIndex: 50,
     }}>
       {/* Left: Branding/Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0, overflow: 'hidden', paddingRight: 40, maxWidth: '60%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           <h1 style={{
             fontFamily: T.fontHead,
             fontWeight: 800,
@@ -78,8 +78,7 @@ export function AppHeader({ title, subtitle, badge, children }: AppHeaderProps) 
         )}
       </div>
 
-      {/* Right: Page-specific actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, marginLeft: 'auto' }}>
         {children}
 
         {/* Universal User Menu Placeholder */}

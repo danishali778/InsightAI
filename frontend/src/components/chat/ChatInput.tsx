@@ -22,82 +22,81 @@ export function ChatInput({ connections, activeConnectionId, onConnectionChange,
 
   return (
     <div style={{ 
-      borderTop: `1px solid ${T.border}`,
-      background: 'rgba(255, 255, 255, 0.85)',
-      backdropFilter: 'blur(20px)',
-      padding: '8px 24px 10px',
+      background: '#f1f0e8',
+      padding: '24px 24px 24px', // Standardized symmetrical padding
       flexShrink: 0,
       zIndex: 10,
+      borderTop: '1px solid #e5e5e5' // Unified border token
     }}>
       <div style={{
-        maxWidth: 1000,
+        maxWidth: 1200, // Matched with ChatPage messages
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        gap: 12,
       }}>
         <div style={{
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           gap: 12,
-          background: T.s1,
-          border: `1px solid ${isFocused ? T.accent : T.border}`,
-          borderRadius: 14,
+          background: '#f7f7f3',
+          border: `1px solid #e5e5e5`, // Unified border token
+          borderRadius: 16,
           padding: '10px 14px',
-          boxShadow: isFocused ? T.shadow.glow : '0 2px 8px rgba(0,0,0,0.02)',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: isFocused ? '0 8px 30px rgba(0,0,0,0.04)' : '0 2px 8px rgba(0,0,0,0.01)',
+          transition: 'all 0.2s ease', // Premium duration
         }}>
-          {/* DB Selector (Professional Pill Style) */}
-          <div style={{ position: 'relative', marginTop: 2 }}>
+          {/* Professional Connection Badge (Integrated) */}
+          <div style={{ position: 'relative' }}>
             <button
               onClick={() => setShowDropdown(!showDropdown)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
-                background: 'transparent',
-                border: `1px solid ${T.border}`,
-                borderRadius: 8,
-                padding: '5px 10px',
+                gap: 8,
+                background: '#f0f4ff',
+                border: '1px solid #dce4f9',
+                borderRadius: 20,
+                padding: '6px 14px',
                 cursor: 'pointer',
-                color: T.text2,
+                color: '#5c7ed3',
                 fontSize: '0.72rem',
-                fontFamily: T.fontMono,
-                transition: 'all 0.15s',
-                whiteSpace: 'nowrap',
+                fontWeight: 600,
+                fontFamily: T.fontBody,
+                transition: 'all 0.2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.background = T.s3; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'transparent'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#e8efff'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#f0f4ff'; }}
             >
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeConn ? T.green : T.red, boxShadow: activeConn ? `0 0 4px ${T.green}40` : 'none' }} />
-              {activeConn?.database || 'Select DB'}
-              <span style={{ fontSize: '0.6rem', color: T.text3 }}>▾</span>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+              {activeConn?.database || 'ecommerce_analytics'}
+              <span style={{ fontSize: '0.6rem', color: '#5c7ed3', opacity: 0.7 }}>▾</span>
             </button>
 
             {showDropdown && (
               <div style={{
-                position: 'absolute', bottom: 'calc(100% + 8px)', left: 0,
-                background: T.s1,
-                border: `1px solid ${T.border2}`,
-                borderRadius: 10,
-                padding: 4,
-                minWidth: 180,
+                position: 'absolute', bottom: 'calc(100% + 12px)', left: 0,
+                background: '#fff',
+                border: `1px solid ${T.border}`,
+                borderRadius: 14,
+                padding: 6,
+                minWidth: 200,
                 boxShadow: T.shadow.lg,
                 zIndex: 100,
               }}>
                 {connections.map(c => (
                   <div key={c.id} onClick={e => { e.stopPropagation(); onConnectionChange(c.id); setShowDropdown(false); }}
                     style={{
-                      padding: '8px 12px', borderRadius: 6, cursor: 'pointer',
-                      fontSize: '0.78rem', color: c.id === activeConnectionId ? T.text : T.text2,
+                      padding: '10px 14px', borderRadius: 8, cursor: 'pointer',
+                      fontSize: '0.82rem', color: c.id === activeConnectionId ? T.accent : T.text,
                       background: c.id === activeConnectionId ? T.s2 : 'transparent',
-                      display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.15s',
+                      display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = T.s2}
                     onMouseLeave={e => e.currentTarget.style.background = c.id === activeConnectionId ? T.s2 : 'transparent'}
                   >
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.status === 'connected' ? T.green : T.red }} />
-                    <span style={{ fontFamily: T.fontMono }}>{c.database}</span>
+                    <span style={{ fontWeight: 500 }}>{c.database}</span>
                   </div>
                 ))}
               </div>
@@ -111,7 +110,7 @@ export function ChatInput({ connections, activeConnectionId, onConnectionChange,
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="Ask your data anything..."
+            placeholder="Search or ask anything..."
             rows={2}
             style={{
               flex: 1,
@@ -120,59 +119,46 @@ export function ChatInput({ connections, activeConnectionId, onConnectionChange,
               outline: 'none',
               color: T.text,
               fontFamily: T.fontBody,
-              fontSize: '0.92rem',
+              fontSize: '1rem',
               resize: 'none',
-              height: 48,
+              minHeight: 44, // Support ~2 lines naturally
+              maxHeight: 120, // Allow expansion until scroll
               overflowY: 'auto',
               padding: '2px 0',
-              lineHeight: 1.5,
-              scrollbarWidth: 'thin',
-              scrollbarColor: `${T.border2} transparent`,
+              lineHeight: 1.4,
             }}
           />
 
           {/* Action Row Inside */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-             <span style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, opacity: 0.8 }}>{text.length} / 2048</span>
-             <button
-              onClick={handleSend}
-              disabled={loading || !text.trim()}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: text.trim() ? T.accent : T.s3,
-                border: 'none',
-                cursor: text.trim() ? 'pointer' : 'default',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s',
-                boxShadow: text.trim() ? T.shadow.glow : 'none',
-              }}
-              onMouseEnter={e => { if (text.trim()) e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              {loading ? (
-                <div style={{ width: 14, height: 14, border: `2px solid rgba(255,255,255,0.3)`, borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={handleSend}
+            disabled={loading || !text.trim()}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 8,
+              background: '#fff',
+              border: `1px solid #e5e5e5`,
+              cursor: text.trim() ? 'pointer' : 'default',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            }}
+            onMouseEnter={e => { if (text.trim()) { e.currentTarget.style.background = '#fafafa'; e.currentTarget.style.borderColor = '#ccc'; } }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e5e5e5'; }}
+          >
+            {loading ? (
+              <div style={{ width: 16, height: 16, border: `2px solid rgba(0,0,0,0.1)`, borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 17l10-10M17 17V7H7" />
+              </svg>
+            )}
+          </button>
         </div>
 
-        {/* Hints */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 16, opacity: 0.6 }}>
-           <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono }}>
-              <span style={{ background: T.s4, padding: '1px 4px', borderRadius: 3 }}>⌘ ↵</span> to send
-           </div>
-           <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono }}>
-              <span style={{ background: T.s4, padding: '1px 4px', borderRadius: 3 }}>/</span> for commands
-           </div>
-        </div>
       </div>
 
       <style>{`
