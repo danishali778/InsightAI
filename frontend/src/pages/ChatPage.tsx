@@ -19,6 +19,7 @@ export function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [schemaOpen, setSchemaOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const skipNextFetch = useRef(false);
 
