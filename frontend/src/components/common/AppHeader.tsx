@@ -15,15 +15,15 @@ interface AppHeaderProps {
 export function AppHeader({ title, subtitle, badge, children }: AppHeaderProps) {
   return (
     <header style={{
-      height: 54,
+      height: 48, // Low Profile Height
       flexShrink: 0,
-      background: T.glass.bg,
-      backdropFilter: T.glass.blur,
-      boxShadow: '0 4px 30px rgba(0, 0, 0, 0.03)',
-      borderBottom: `1px solid ${T.border}`,
+      background: 'rgba(255, 255, 255, 0.7)',
+      backdropFilter: 'blur(12px) saturate(1.8)',
+      boxShadow: 'none', // Removed shadow for flat editorial feel
+      borderBottom: `1px solid #e5e5e5`, // Standardized border
       display: 'flex',
       alignItems: 'center',
-      padding: '0 24px',
+      padding: '0 20px', // Standardized 20px rhythm
       gap: 16,
       zIndex: 50,
     }}>
@@ -32,10 +32,10 @@ export function AppHeader({ title, subtitle, badge, children }: AppHeaderProps) 
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           <h1 style={{
             fontFamily: T.fontHead,
-            fontWeight: 800,
-            fontSize: '0.95rem',
-            color: T.text,
-            letterSpacing: '-0.02em',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            color: '#000',
+            letterSpacing: '-0.01em',
             margin: 0,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -80,24 +80,6 @@ export function AppHeader({ title, subtitle, badge, children }: AppHeaderProps) 
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, marginLeft: 'auto' }}>
         {children}
-
-        {/* Universal User Menu Placeholder */}
-        <div style={{
-          width: 30,
-          height: 30,
-          borderRadius: 8,
-          background: `linear-gradient(135deg, ${T.purple}, ${T.accent})`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.7rem',
-          fontWeight: 700,
-          color: '#fff',
-          cursor: 'pointer',
-          marginLeft: 8,
-        }}>
-          AK
-        </div>
       </div>
     </header>
   );

@@ -44,7 +44,7 @@ export function MainShell({
     }}>
       <DashboardBackground />
       {/* Main Sidebar */}
-      {!hideSidebar && <AppSidebar activeId={activeId} onHover={onDashboardHover} />}
+      {!hideSidebar && <AppSidebar activeId={activeId} onDashboardHover={onDashboardHover} />}
 
       {/* Page Container */}
       <main
