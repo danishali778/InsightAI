@@ -75,8 +75,8 @@ async def lifespan(app: FastAPI):
         logger.info("[startup] Initializing schedulers DONE.")
 
         logger.info("[startup] Restoring all jobs...")
-        await restore_all_jobs()
-        await restore_all_widget_jobs()
+        restore_all_jobs()
+        restore_all_widget_jobs()
         logger.info("[startup] Restoring all jobs DONE.")
 
         logger.info("[startup] Lifespan setup complete. App should start now.")
@@ -125,7 +125,6 @@ logger.info("[startup] CORS allowed origins: %s", origins)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_headers=["*"],
     allow_headers=["*"],
     allow_methods=["*"],
     allow_credentials=True,

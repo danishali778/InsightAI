@@ -62,3 +62,32 @@ def supabase_retry(func: Callable[..., T]) -> Callable[..., T]:
                     )
         raise last_exception  # type: ignore[misc]
     return wrapper
+
+
+def async_supabase_retry(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    Decorator that retries an asynchronous Supabase operation on transient connection errors.
+    """
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        last_exception = None
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                return await func(*args, **kwargs)
+            except RETRYABLE_EXCEPTIONS as e:
+                last_exception = e
+                if attempt < MAX_RETRIES:
+                    delay = BASE_DELAY * (2 ** (attempt - 1))
+                    logger.warning(
+                        "[async_supabase_retry] %s() attempt %d/%d failed: %s — retrying in %.1fs",
+                        func.__name__, attempt, MAX_RETRIES, str(e), delay
+                    )
+                    import asyncio
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(
+                        "[async_supabase_retry] %s() failed after %d attempts: %s",
+                        func.__name__, MAX_RETRIES, str(e)
+                    )
+        raise last_exception
+    return wrapper

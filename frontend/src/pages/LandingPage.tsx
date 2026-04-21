@@ -37,7 +37,7 @@ export function LandingPage() {
             <Integrations />
 
             {/* CTA Section */}
-            <section style={{ background: '#f8fafc', textAlign: 'center', padding: '120px 60px', position: 'relative', overflow: 'hidden', borderTop: '1px solid var(--border)' }}>
+            <section style={{ background: '#f8fafc', textAlign: 'center', padding: '120px 20px', position: 'relative', overflow: 'hidden', borderTop: '1px solid var(--border)' }}>
                 <div className="reveal" style={{ position: 'relative', zIndex: 2, maxWidth: 660, margin: '0 auto' }}>
                     <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600, letterSpacing: 2.5, textTransform: 'uppercase', display: 'block', marginBottom: 16 }}>Ready to evolve?</span>
                     <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', letterSpacing: -1.8, marginBottom: 20, fontStyle: 'normal', color: 'var(--text)' }}>
