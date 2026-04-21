@@ -19,17 +19,13 @@ export function AuthPage() {
       if (user || isDevMode) {
         if (!isDevMode) {
           try {
-            // "Database Truth Check" - ensure the user exists before moving forward
-            // By calling onboardUser first, we fix the race condition for new users
             await onboardUser();
-            
             const { request } = await import('../services/http');
             await request('/settings/me'); 
-            navigate('/dashboard');
           } catch (err) {
-            console.warn("Auth verification failed:", err);
-            // The 401 handling in http.ts handles the logout/redirect
+            console.warn("Auth verification/onboarding failed, but proceeding to dashboard:", err);
           }
+          navigate('/dashboard');
         } else {
           navigate('/dashboard');
         }

@@ -5,10 +5,9 @@ import { ResultsTable } from './ResultsTable';
 import { BaseChartContainer } from '../charts/BaseChartContainer';
 import { AddToDashboardModal } from './AddToDashboardModal';
 import { SaveQueryModal } from './SaveQueryModal';
-import { useToast } from '../common/ToastProvider';
-import { useDashboardCatalog } from '../../hooks/useDashboardCatalog';
-import { addDashboardWidget } from '../../services/api';
+import { useSmartSave } from '../../hooks/useSmartSave';
 import { inferViz, autoTitle, layoutDims } from '../../utils/dashboardUtils';
+import { Pin, Save, Plus, RotateCcw, ThumbsUp, ThumbsDown } from 'lucide-react';
 import type { ChatMessageView } from '../../types/chat';
 
 export function MessageBubble({ 
@@ -25,70 +24,33 @@ export function MessageBubble({
   const [modalOpen, setModalOpen] = useState(false);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [saveLabel, setSaveLabel] = useState<string | null>(null);
-  const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [isSavingSql, setIsSavingSql] = useState(false);
   const [isPinning, setIsPinning] = useState(false);
   
-  const { addToast } = useToast();
-  const { dashboards } = useDashboardCatalog({ autoLoad: true });
+  const { smartAddToDashboard, smartSaveToLibrary, isSaving: isSmartSaving } = useSmartSave();
 
   const handleSaved = (created: boolean) => {
     setSaveLabel(created ? '✅ Saved!' : '📌 Already saved');
     setTimeout(() => setSaveLabel(null), 3000);
   };
 
-  const handleDashboardClick = async () => {
-    const lastDashId = localStorage.getItem('lastUsedDashboardId');
-    const targetDash = dashboards.find(d => d.id === lastDashId) || dashboards[0];
+  const handleDashboardClick = () => {
+    if (!connectionId) return;
+    smartAddToDashboard(message, connectionId, () => setModalOpen(true));
+  };
 
-    if (!targetDash) {
-      // No dashboards exist yet - open modal to create one
-      setModalOpen(true);
-      return;
-    }
-
-    // Quick add to last used or first dashboard
-    setIsQuickAdding(true);
-    try {
-      const vizType = inferViz(message);
-      const size = vizType === 'table' || (vizType === 'bar' && (message.rows?.length || 0) > 6) ? 'full' : 'half';
-      const dims = layoutDims(size);
-
-      await addDashboardWidget({
-        dashboard_id: targetDash.id,
-        title: autoTitle(message),
-        viz_type: vizType,
-        size,
-        connection_id: connectionId,
-        sql: message.sql,
-        columns: message.columns || [],
-        rows: (message.rows || []) as Array<Record<string, unknown>>,
-        chart_config: message.chart_recommendation ? {
-          x_column: message.chart_recommendation.x_column,
-          y_columns: message.chart_recommendation.y_columns,
-          color_column: message.chart_recommendation.color_column,
-          is_grouped: message.chart_recommendation.is_grouped,
-          title: message.chart_recommendation.title,
-          x_label: message.chart_recommendation.x_label,
-          y_label: message.chart_recommendation.y_label,
-        } : undefined,
-        cadence: 'Manual only',
-        w: dims.w, h: dims.h, minW: dims.minW, minH: dims.minH,
-        bar_orientation: 'horizontal',
-      });
-
-      localStorage.setItem('lastUsedDashboardId', targetDash.id);
-      
-      addToast(`Added to ${targetDash.name}`, 'success', {
-        label: 'Settings',
-        onClick: () => setModalOpen(true)
-      });
-    } catch {
-      addToast('Failed to add to dashboard', 'error');
-      setModalOpen(true); // Fallback to modal on error
-    } finally {
-      setIsQuickAdding(false);
-    }
+  const handleLibraryClick = () => {
+    if (!message.sql || !connectionId) return;
+    smartSaveToLibrary(
+      message.sql,
+      connectionId,
+      message.chart_recommendation?.title || 'Saved from Chat',
+      () => setSaveModalOpen(true),
+      () => {
+        setSaveLabel('✅ Saved!');
+        setTimeout(() => setSaveLabel(null), 3000);
+      }
+    );
   };
 
   if (message.role === 'user') {
@@ -114,9 +76,12 @@ export function MessageBubble({
   return (
     <div id={message.id ? `msg-${message.id}` : undefined} style={{ padding: '6px 24px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginTop: 8 }}>
       <div style={{
-        maxWidth: 820, width: '100%', background: T.s1, border: `1px solid ${T.border}`,
-        borderRadius: '4px 16px 16px 16px', overflow: 'hidden',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+        maxWidth: 820, width: '100%', 
+        background: 'rgba(255, 255, 255, 0.75)', 
+        backdropFilter: T.glass.blur,
+        border: `1px solid ${T.border}`,
+        borderRadius: '4px 20px 20px 20px', overflow: 'hidden',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.04)',
       }}>
         {/* Summary */}
         <div style={{ padding: '16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start', borderBottom: `1px solid ${T.border}` }}>
@@ -198,35 +163,45 @@ export function MessageBubble({
         {!message.error && (
           <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <button
-              onClick={() => { if (message.sql) setSaveModalOpen(true); }}
-              disabled={!!saveLabel || !message.sql}
+              onClick={handleLibraryClick}
+              disabled={!!saveLabel || !message.sql || isSmartSaving}
               style={{
                 padding: '5px 12px', borderRadius: 6, border: `1px solid ${T.border}`,
-                background: 'transparent',
+                background: isSmartSaving ? T.s2 : 'transparent',
                 color: saveLabel ? T.green : T.text3,
-                fontSize: '0.72rem', cursor: (!!saveLabel || !message.sql) ? 'default' : 'pointer', fontFamily: T.fontBody,
+                fontSize: '0.72rem', cursor: (!!saveLabel || !message.sql || isSmartSaving) ? 'default' : 'pointer', fontFamily: T.fontBody,
                 display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s',
               }}
-              onMouseEnter={e => { if (!saveLabel && message.sql) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
-              onMouseLeave={e => { if (!saveLabel && message.sql) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = saveLabel ? T.green : T.text3; } }}
+              onMouseEnter={e => { if (!saveLabel && message.sql && !isSmartSaving) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
+              onMouseLeave={e => { if (!saveLabel && message.sql && !isSmartSaving) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = saveLabel ? T.green : T.text3; } }}
             >
-              {saveLabel || '📌 Save Query'}
+              {isSmartSaving ? '⏳...' : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {saveLabel ? '✅' : <Save size={14} />}
+                  {saveLabel || 'Save Query'}
+                </div>
+              )}
             </button>
             <button
               onClick={handleDashboardClick}
-              disabled={isQuickAdding}
+              disabled={isSmartSaving}
               style={{
                 padding: '5px 12px', borderRadius: 6, border: `1px solid ${T.border}`,
-                background: 'transparent',
+                background: isSmartSaving ? T.s2 : 'transparent',
                 color: T.text3,
-                fontSize: '0.72rem', cursor: isQuickAdding ? 'default' : 'pointer', fontFamily: T.fontBody,
+                fontSize: '0.72rem', cursor: isSmartSaving ? 'default' : 'pointer', fontFamily: T.fontBody,
                 display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s',
-                opacity: isQuickAdding ? 0.7 : 1,
+                opacity: isSmartSaving ? 0.7 : 1,
               }}
-              onMouseEnter={e => { if (!isQuickAdding) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
-              onMouseLeave={e => { if (!isQuickAdding) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; } }}
+              onMouseEnter={e => { if (!isSmartSaving) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
+              onMouseLeave={e => { if (!isSmartSaving) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; } }}
             >
-              {isQuickAdding ? '⏳ Adding...' : '➕ Dashboard'}
+              {isSmartSaving ? '⏳...' : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Plus size={14} />
+                  Dashboard
+                </div>
+              )}
             </button>
             {onTogglePin && message.id && (
               <button
@@ -252,7 +227,12 @@ export function MessageBubble({
                 onMouseEnter={e => { if (!isPinning && !message.is_pinned) { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; } }}
                 onMouseLeave={e => { if (!isPinning && !message.is_pinned) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; } }}
               >
-                {isPinning ? '...' : (message.is_pinned ? '📍 Pinned' : '📌 Pin Chat')}
+                {isPinning ? '...' : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Pin size={14} style={{ transform: message.is_pinned ? 'rotate(45deg)' : 'none', transition: 'transform 0.3s' }} />
+                    {message.is_pinned ? 'Pinned' : 'Pin Chat'}
+                  </div>
+                )}
               </button>
             )}
             <button
@@ -266,10 +246,14 @@ export function MessageBubble({
               onMouseEnter={e => { e.currentTarget.style.background = T.accent; e.currentTarget.style.color = '#fff'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.accent; }}
             >
-              🔄 Regenerate
+              <RotateCcw size={14} />
+              Regenerate
             </button>
             <span style={{ flex: 1 }} />
-            <span style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono }}>👍 &nbsp; 👎</span>
+            <div style={{ display: 'flex', gap: 12, color: T.text3, opacity: 0.6 }}>
+              <ThumbsUp size={14} style={{ cursor: 'pointer' }} aria-label="Like" />
+              <ThumbsDown size={14} style={{ cursor: 'pointer' }} aria-label="Dislike" />
+            </div>
           </div>
         )}
         

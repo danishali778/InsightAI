@@ -4,7 +4,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import type { ChatSidebarProps } from '../../types/chat';
 import { DeleteSessionModal } from './DeleteSessionModal';
 
-export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession, onRenameSession, onOpenConnect, connections }: ChatSidebarProps) {
+export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession, onRenameSession, connections }: ChatSidebarProps) {
   const { settings } = useSettingsStore();
   const displayName = settings?.full_name || 'User';
   const avatarInitials = displayName.substring(0, 2).toUpperCase();
@@ -178,7 +178,6 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
         sessionTitle={sessions.find(s => s.id === deleteId)?.title || undefined}
       />
 
-      {/* Connections */}
       <div style={{ padding: '10px 14px', borderTop: `1px solid ${T.border}` }}>
         <div style={{ fontSize: '0.65rem', fontWeight: 600, letterSpacing: 1.5, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, marginBottom: 8 }}>Connections</div>
         {connections.map(c => (
@@ -191,15 +190,6 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
             <span style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono }}>{dbTypeLabel(c.db_type)}</span>
           </div>
         ))}
-        <button onClick={onOpenConnect} style={{
-          width: '100%', padding: '7px 10px', borderRadius: 8,
-          border: `1px dashed ${T.border2}`, background: 'transparent',
-          color: T.text3, fontSize: '0.75rem', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s', marginTop: 6, fontFamily: T.fontBody,
-        }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; e.currentTarget.style.color = T.accent; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.color = T.text3; }}
-        >+ Add connection</button>
       </div>
 
       {/* User */}

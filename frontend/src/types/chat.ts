@@ -25,7 +25,6 @@ export interface ChatSidebarProps {
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
   onRenameSession: (id: string, title: string) => void;
-  onOpenConnect: () => void;
   connections: DatabaseConnection[];
 }
 

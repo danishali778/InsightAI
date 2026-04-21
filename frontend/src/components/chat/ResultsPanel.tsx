@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ResultsTable } from './ResultsTable';
 import { BaseChartContainer } from '../charts/BaseChartContainer';
+import { T } from '../dashboard/tokens';
+import { Layout, Table2, X } from 'lucide-react';
 import type { ChatResultsPanelProps } from '../../types/chat';
 
 export function ResultsPanel({
@@ -58,32 +59,35 @@ export function ResultsPanel({
     return (
         <div style={{
             height: panelHeight,
-            borderTop: '2px solid #e8e4dc',
-            background: '#fff',
+            borderTop: `1px solid ${T.border}`,
+            background: T.s1,
             display: 'flex',
             flexDirection: 'column',
             flexShrink: 0,
-            fontFamily: "'DM Sans', sans-serif",
-            boxShadow: '0 -4px 20px rgba(0,0,0,0.04)',
+            fontFamily: T.fontBody,
+            boxShadow: '0 -8px 32px rgba(0,0,0,0.06)',
+            zIndex: 100,
         }}>
             {/* Drag handle */}
             <div
                 onMouseDown={handleMouseDown}
                 style={{
-                    height: 6,
-                    background: '#faf8f5',
+                    height: 8,
+                    background: T.bg,
                     cursor: 'row-resize',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
+                    borderBottom: `1px solid ${T.border}`,
                 }}
             >
                 <div style={{
-                    width: 40,
-                    height: 3,
+                    width: 48,
+                    height: 4,
                     borderRadius: 2,
-                    background: '#d0cdc6',
+                    background: T.border2,
+                    opacity: 0.6,
                     transition: 'background 0.15s',
                 }} />
             </div>
@@ -93,37 +97,38 @@ export function ResultsPanel({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '8px 20px',
-                borderBottom: '1px solid #f0ede7',
-                background: '#faf8f5',
+                padding: '10px 24px',
+                borderBottom: `1px solid ${T.border}`,
+                background: T.s1,
                 flexShrink: 0,
             }}>
                 {/* Left: tabs */}
-                <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <button
                         onClick={() => setActiveTab('table')}
                         style={{
-                            padding: '6px 16px',
-                            borderRadius: '8px 8px 0 0',
+                            padding: '8px 16px',
+                            borderRadius: 12,
                             fontSize: '0.8rem',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             cursor: 'pointer',
                             border: 'none',
-                            transition: 'all 0.15s',
-                            background: activeTab === 'table' ? '#fff' : 'transparent',
-                            color: activeTab === 'table' ? '#6c5ce7' : '#9b9da8',
-                            borderBottom: activeTab === 'table' ? '2px solid #6c5ce7' : '2px solid transparent',
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            background: activeTab === 'table' ? T.accentDim : 'transparent',
+                            color: activeTab === 'table' ? T.accent : T.text3,
+                            display: 'flex', alignItems: 'center', gap: 8,
                         }}
                     >
-                        📋 Table
+                        <Table2 size={14} />
+                        Table
                         <span style={{
-                            marginLeft: 6,
-                            padding: '1px 7px',
-                            borderRadius: 10,
-                            fontSize: '0.68rem',
-                            background: activeTab === 'table' ? '#f5f0ff' : '#f0ede7',
-                            color: activeTab === 'table' ? '#6c5ce7' : '#9b9da8',
+                            padding: '2px 8px',
+                            borderRadius: 8,
+                            fontSize: '0.7rem',
+                            background: activeTab === 'table' ? 'rgba(14, 165, 233, 0.1)' : T.bg,
+                            color: activeTab === 'table' ? T.accent : T.text3,
                             fontWeight: 700,
+                            fontFamily: T.fontMono,
                         }}>
                             {rowCount}
                         </span>
@@ -133,19 +138,20 @@ export function ResultsPanel({
                         <button
                             onClick={() => setActiveTab('chart')}
                             style={{
-                                padding: '6px 16px',
-                                borderRadius: '8px 8px 0 0',
+                                padding: '8px 16px',
+                                borderRadius: 12,
                                 fontSize: '0.8rem',
-                                fontWeight: 600,
+                                fontWeight: 700,
                                 cursor: 'pointer',
                                 border: 'none',
-                                transition: 'all 0.15s',
-                                background: activeTab === 'chart' ? '#fff' : 'transparent',
-                                color: activeTab === 'chart' ? '#6c5ce7' : '#9b9da8',
-                                borderBottom: activeTab === 'chart' ? '2px solid #6c5ce7' : '2px solid transparent',
+                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                background: activeTab === 'chart' ? T.accentDim : 'transparent',
+                                color: activeTab === 'chart' ? T.accent : T.text3,
+                                display: 'flex', alignItems: 'center', gap: 8,
                             }}
                         >
-                            📊 Chart
+                            <Layout size={14} />
+                            Chart
                         </button>
                     )}
                 </div>
@@ -154,9 +160,12 @@ export function ResultsPanel({
                 <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                     {executionTimeMs !== undefined && executionTimeMs > 0 && (
                         <span style={{
-                            fontSize: '0.72rem',
-                            color: '#b0b2bc',
-                            fontFamily: "'DM Mono', monospace",
+                            fontSize: '0.7rem',
+                            color: T.text3,
+                            fontFamily: T.fontMono,
+                            background: T.bg,
+                            padding: '4px 8px',
+                            borderRadius: 6,
                         }}>
                             ⚡ {executionTimeMs}ms
                         </span>
@@ -164,25 +173,23 @@ export function ResultsPanel({
                     <button
                         onClick={onClose}
                         style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 8,
-                            border: '1px solid #e8e4dc',
-                            background: '#fff',
-                            color: '#9b9da8',
-                            fontSize: '1rem',
+                            width: 32,
+                            height: 32,
+                            borderRadius: 10,
+                            border: `1px solid ${T.border}`,
+                            background: T.s1,
+                            color: T.text3,
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            transition: 'all 0.15s',
-                            lineHeight: 1,
+                            transition: 'all 0.2s',
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.borderColor = '#fecaca'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#9b9da8'; e.currentTarget.style.borderColor = '#e8e4dc'; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = `${T.red}10`; e.currentTarget.style.color = T.red; e.currentTarget.style.borderColor = `${T.red}40`; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = T.s1; e.currentTarget.style.color = T.text3; e.currentTarget.style.borderColor = T.border; }}
                         title="Close panel"
                     >
-                        ✕
+                        <X size={16} />
                     </button>
                 </div>
             </div>

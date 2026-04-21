@@ -17,9 +17,9 @@ export function AppHeader({ title, subtitle, badge, children }: AppHeaderProps) 
     <header style={{
       height: 54,
       flexShrink: 0,
-      background: 'rgba(255, 255, 255, 0.82)',
-      backdropFilter: 'blur(20px) saturate(1.8)',
-      boxShadow: '0 1px 0 0 rgba(0, 0, 0, 0.05)',
+      background: T.glass.bg,
+      backdropFilter: T.glass.blur,
+      boxShadow: '0 4px 30px rgba(0, 0, 0, 0.03)',
       borderBottom: `1px solid ${T.border}`,
       display: 'flex',
       alignItems: 'center',

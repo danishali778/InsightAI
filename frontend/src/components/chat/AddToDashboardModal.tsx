@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { T } from '../dashboard/tokens';
 import { addDashboardWidget } from '../../services/api';
 import { DashboardCreateForm } from '../dashboard/DashboardCreateForm';
 import { useDashboardCatalog } from '../../hooks/useDashboardCatalog';
 import { inferViz, autoTitle, layoutDims } from '../../utils/dashboardUtils';
+import { ChevronDown, Layout, Plus, X } from 'lucide-react';
 import type { AddToDashboardModalProps } from '../../types/chat';
 import type { WidgetSize } from '../../types/dashboard';
 
@@ -17,6 +18,8 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const rows = message.rows || [];
   const columns = message.columns || [];
@@ -44,9 +47,16 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
   }, [dashboards, selectedDashId, isOpen]);
 
   // Show create form when no dashboards
+  // Click outside dropdown
   useEffect(() => {
-    if (isOpen && !loading && dashboards.length === 0) setShowNewForm(true);
-  }, [isOpen, loading, dashboards.length]);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -112,13 +122,36 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
         fontFamily: T.fontBody,
       }}
     >
-      <div style={{
-        width: 440, maxWidth: '95vw',
-        background: 'linear-gradient(180deg, rgba(15,25,41,0.98), rgba(8,12,22,0.98))',
-        border: `1px solid ${T.border2}`, borderRadius: 16,
-        boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
-        overflow: 'hidden',
-      }}>
+      <div 
+        className="antigravity-modal-entry"
+        style={{
+          width: 440, maxWidth: '95vw',
+          background: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(24px) saturate(160%)',
+          border: `1px solid rgba(255, 255, 255, 0.4)`,
+          borderRadius: 24, overflow: 'hidden',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.5)',
+          position: 'relative',
+        }}
+      >
+        <style>{`
+          @keyframes antigravity-float-in {
+            0% { transform: translateY(20px) scale(0.98); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+          }
+          .antigravity-modal-entry {
+            animation: antigravity-float-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+          .premium-input {
+            width: 100%; background: rgba(255, 255, 255, 0.4); border: 1px solid ${T.border};
+            border-radius: 12px; padding: 10px 14px; color: ${T.text};
+            font-family: ${T.fontBody}; fontSize: 0.88rem; outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          .premium-input:focus {
+            background: #fff; border-color: ${T.accent}; box-shadow: 0 0 0 4px ${T.accent}15;
+          }
+        `}</style>
         {/* ── Header ── */}
         <div style={{
           padding: '16px 20px 14px', borderBottom: `1px solid ${T.border}`,
@@ -140,82 +173,99 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
             </div>
           </div>
           <button onClick={onClose} style={{
-            width: 28, height: 28, borderRadius: 8,
-            border: `1px solid ${T.border}`, background: 'transparent',
-            color: T.text3, cursor: 'pointer', fontSize: '0.8rem',
-          }}>✕</button>
+            width: 32, height: 32, borderRadius: 10, background: 'rgba(0,0,0,0.03)',
+            border: `1px solid ${T.border}`, cursor: 'pointer', color: T.text3,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
+          }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'}>
+            <X size={14} />
+          </button>
         </div>
 
         {/* ── Body ── */}
         <div style={{ padding: '16px 20px', display: 'grid', gap: 14 }}>
           {/* Title — editable inline */}
           <div>
-            <label style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: T.text3, fontFamily: T.fontMono, marginBottom: 6, display: 'block' }}>
+            <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: T.text3, fontFamily: T.fontMono, marginBottom: 8, display: 'block', opacity: 0.8 }}>
               Widget Title
             </label>
             <input
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="Auto-generated title"
-              style={{
-                width: '100%', background: T.s1, border: `1px solid ${T.border}`,
-                borderRadius: 10, padding: '10px 12px', color: T.text,
-                fontFamily: T.fontBody, fontSize: '0.84rem', outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={e => e.currentTarget.style.borderColor = 'rgba(0,229,255,0.35)'}
-              onBlur={e => e.currentTarget.style.borderColor = T.border}
+              className="premium-input"
             />
           </div>
 
           {/* Dashboard picker */}
-          <div>
-            <label style={{ fontSize: '0.6rem', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: T.text3, fontFamily: T.fontMono, marginBottom: 6, display: 'block' }}>
-              Destination
+          <div ref={dropdownRef} style={{ position: 'relative' }}>
+            <label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: T.text3, fontFamily: T.fontMono, marginBottom: 8, display: 'block', opacity: 0.8 }}>
+              Destination Dashboard
             </label>
 
             {loading ? (
-              <div style={{ fontSize: '0.78rem', color: T.text3, padding: '8px 0' }}>Loading…</div>
+              <div style={{ fontSize: '0.78rem', color: T.text3, padding: '10px 0' }}>⏳ Loading dashboards...</div>
             ) : !showNewForm ? (
-              <div style={{ display: 'grid', gap: 6 }}>
-                {/* Dropdown-style selector */}
-                <div style={{ position: 'relative' }}>
-                  <select
-                    value={selectedDashId || ''}
-                    onChange={e => setSelectedDashId(e.target.value)}
-                    style={{
-                      width: '100%', background: T.s1, border: `1px solid ${T.border}`,
-                      borderRadius: 10, padding: '10px 12px', color: T.text,
-                      fontFamily: T.fontBody, fontSize: '0.82rem', outline: 'none',
-                      cursor: 'pointer', appearance: 'none',
-                    }}
-                  >
-                    {dashboards.map(d => (
-                      <option key={d.id} value={d.id} style={{ background: '#0a0f1a', color: T.text }}>
-                        {d.icon || '📋'} {d.name} ({d.widget_count} widgets)
-                      </option>
-                    ))}
-                  </select>
-                  <span style={{
-                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                    fontSize: '0.6rem', color: T.text3, pointerEvents: 'none',
-                  }}>▼</span>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {/* Custom Dropdown */}
+                <div 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  style={{
+                    width: '100%', background: 'rgba(255, 255, 255, 0.4)', border: `1px solid ${isDropdownOpen ? T.accent : T.border}`,
+                    borderRadius: 12, padding: '10px 14px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    transition: 'all 0.2s',
+                    boxShadow: isDropdownOpen ? `0 0 0 4px ${T.accent}15` : 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.9rem', color: T.text2 }}>
+                    <Layout size={16} style={{ color: T.accent }} />
+                    {selectedDash ? selectedDash.name : 'Select Dashboard...'}
+                  </div>
+                  <ChevronDown size={16} style={{ color: T.text3, transform: isDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                 </div>
 
-                <button
-                  onClick={() => setShowNewForm(true)}
-                  style={{
-                    padding: '8px 12px', borderRadius: 10,
-                    border: `1px dashed ${T.border2}`, background: 'transparent',
-                    color: T.text3, cursor: 'pointer', fontSize: '0.74rem',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; e.currentTarget.style.color = T.accent; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.color = T.text3; }}
-                >
-                  <span style={{ fontSize: '0.9rem' }}>+</span> New dashboard
-                </button>
+                {isDropdownOpen && (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 8,
+                    background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(16px)',
+                    border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden',
+                    boxShadow: T.shadow.lg, zIndex: 10, padding: 6,
+                  }}>
+                    {dashboards.map(d => (
+                      <div
+                        key={d.id}
+                        onClick={() => { setSelectedDashId(d.id); setIsDropdownOpen(false); }}
+                        style={{
+                          padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                          fontSize: '0.88rem', color: T.text2,
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          background: selectedDashId === d.id ? T.accentDim : 'transparent',
+                          transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = T.s2}
+                        onMouseLeave={e => e.currentTarget.style.background = selectedDashId === d.id ? T.accentDim : 'transparent'}
+                      >
+                        <Layout size={14} style={{ opacity: 0.6 }} />
+                        {d.name} ({d.widget_count})
+                      </div>
+                    ))}
+                    <div style={{ height: 1, background: T.border, margin: '4px 0' }} />
+                    <div
+                      onClick={() => { setShowNewForm(true); setIsDropdownOpen(false); }}
+                      style={{
+                        padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                        fontSize: '0.88rem', color: T.accent,
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = `${T.accent}08`}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <Plus size={14} />
+                      New dashboard
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <DashboardCreateForm
@@ -279,8 +329,8 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
 
         {/* ── Footer ── */}
         <div style={{
-          padding: '12px 20px', borderTop: `1px solid ${T.border}`,
-          background: 'rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: 10,
+          padding: '16px 24px', borderTop: `1px solid rgba(0,0,0,0.04)`,
+          background: 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', gap: 12,
         }}>
           <div style={{
             flex: 1, fontSize: '0.68rem', fontFamily: T.fontMono,
@@ -291,26 +341,35 @@ export function AddToDashboardModal({ isOpen, onClose, message }: AddToDashboard
              selectedDash ? `→ ${selectedDash.name}` : 'Select a dashboard'}
           </div>
           <button onClick={onClose} style={{
-            padding: '8px 14px', borderRadius: 10,
-            border: `1px solid ${T.border}`, background: 'transparent',
-            color: T.text2, cursor: 'pointer', fontSize: '0.78rem',
-          }}>Cancel</button>
+            padding: '10px 20px', borderRadius: 14, fontSize: '0.82rem',
+            fontFamily: T.fontBody, cursor: 'pointer', fontWeight: 500,
+            border: `1px solid ${T.border}`, background: 'transparent', color: T.text3,
+            transition: 'all 0.2s',
+          }} onMouseEnter={e => { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text2; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; }}>
+            Cancel
+          </button>
           <button
             onClick={handleAdd}
             disabled={saving || status === 'saved' || !selectedDashId}
             style={{
-              padding: '8px 20px', borderRadius: 10, border: 'none',
-              background: status === 'saved'
-                ? T.greenDim
-                : 'linear-gradient(135deg, rgba(0,229,255,0.95), rgba(0,160,180,0.95))',
-              color: status === 'saved' ? T.green : '#00131a',
-              cursor: saving || status === 'saved' || !selectedDashId ? 'not-allowed' : 'pointer',
-              opacity: saving || !selectedDashId ? 0.55 : 1,
-              fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.84rem',
+              padding: '10px 24px', borderRadius: 14, border: 'none',
+              background: status === 'saved' ? T.green : T.accent,
+              color: '#fff',
+              cursor: saving || status === 'saved' || !selectedDashId ? 'default' : 'pointer',
+              opacity: saving || !selectedDashId ? 0.6 : 1,
+              fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.82rem',
               transition: 'all 0.2s',
+              boxShadow: status === 'saved' ? 'none' : `0 8px 20px ${T.accent}30`,
             }}
+            onMouseEnter={e => { if (!saving && status !== 'saved') e.currentTarget.style.transform = 'translateY(-1px)'; }} 
+            onMouseLeave={e => { if (!saving && status !== 'saved') e.currentTarget.style.transform = 'translateY(0)'; }}
           >
-            {status === 'saved' ? '✓ Added' : saving ? 'Adding…' : 'Add'}
+            {status === 'saved' ? '✓ Added' : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Plus size={14} />
+                {saving ? 'Adding…' : 'Add to Dashboard'}
+              </div>
+            )}
           </button>
         </div>
       </div>
