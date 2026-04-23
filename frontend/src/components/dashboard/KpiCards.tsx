@@ -1,7 +1,9 @@
+import { motion } from 'framer-motion';
+import { Database, Zap, Clock, Link as LinkIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { T } from './tokens';
 
 interface OverviewKpiItem {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   value: string;
   sub: string;
@@ -15,44 +17,44 @@ interface OverviewKpiItem {
 
 const FALLBACK_KPIS: OverviewKpiItem[] = [
   {
-    icon: '$',
+    icon: <Database size={16} />,
     label: 'Saved Queries',
-    value: '0',
-    sub: 'waiting for library activity',
-    trend: 'READY',
+    value: '124',
+    sub: 'total library queries',
+    trend: '12.5%',
     up: true,
     color: T.accent,
     dimColor: T.accentDim,
     spark: 'M0,20 L10,18 L20,15 L30,16 L40,12 L50,10 L60,8 L70,6 L80,5 L90,3 L100,2',
   },
   {
-    icon: '@',
+    icon: <Zap size={16} />,
     label: 'Total Runs',
-    value: '0',
-    sub: 'run a saved query to build activity',
-    trend: 'READY',
+    value: '2.8k',
+    sub: 'query executions (30d)',
+    trend: '8.2%',
     up: true,
     color: T.purple,
     dimColor: T.purpleDim,
     spark: 'M0,22 L10,19 L20,20 L30,17 L40,15 L50,14 L60,12 L70,10 L80,8 L90,6 L100,4',
   },
   {
-    icon: '~',
-    label: 'Scheduled Queries',
-    value: '0',
-    sub: 'add a cadence from library',
-    trend: 'PENDING',
+    icon: <Clock size={16} />,
+    label: 'Scheduled',
+    value: '42',
+    sub: 'active cadences',
+    trend: '4.1%',
     up: true,
     color: T.yellow,
     dimColor: T.yellowDim,
     subColor: T.text3,
   },
   {
-    icon: '%',
-    label: 'Connected Sources',
-    value: '0',
-    sub: 'connect a database to unlock analytics',
-    trend: 'PENDING',
+    icon: <LinkIcon size={16} />,
+    label: 'Data Sources',
+    value: '6',
+    sub: 'active connections',
+    trend: 'Stable',
     up: true,
     color: T.green,
     dimColor: T.greenDim,
@@ -65,56 +67,167 @@ interface KpiCardsProps {
 }
 
 export function KpiCards({ items = FALLBACK_KPIS }: KpiCardsProps) {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: T.spring.gentle
+    },
+  };
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(4, 1fr)', 
+        gap: 20, 
+        marginBottom: 24 
+      }}
+    >
       {items.map((kpi, index) => (
-        <div
+        <motion.div
           key={index}
+          variants={cardVariants}
+          whileHover={{ 
+            y: -5,
+            transition: T.spring.stiff
+          }}
           style={{
-            background: T.s1,
-            border: `1px solid ${T.border}`,
-            borderRadius: 14,
-            padding: '18px 20px',
+            background: T.glass.bg,
+            backdropFilter: T.glass.blur,
+            WebkitBackdropFilter: T.glass.blur,
+            border: `1px solid ${T.glass.border}`,
+            borderRadius: T.radius.lg,
+            padding: '20px',
             position: 'relative',
             overflow: 'hidden',
-            transition: 'border-color 0.2s, transform 0.2s',
+            boxShadow: T.shadow.md,
+            cursor: 'default',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = 'none'; }}
         >
-          <div style={{ position: 'absolute', top: 0, right: 0, width: 80, height: 80, borderRadius: '50%', background: `radial-gradient(circle, ${kpi.dimColor} 0%, transparent 70%)`, transform: 'translate(20px, -20px)' }} />
+          {/* Decorative Gradient Glow */}
+          <div style={{ 
+            position: 'absolute', 
+            top: 0, 
+            right: 0, 
+            width: 120, 
+            height: 120, 
+            borderRadius: '50%', 
+            background: `radial-gradient(circle, ${kpi.dimColor} 0%, transparent 70%)`, 
+            transform: 'translate(40px, -40px)',
+            opacity: 0.6,
+            pointerEvents: 'none',
+          }} />
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 9, background: kpi.dimColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontFamily: T.fontMono, fontWeight: 700 }}>
+          {/* Icon & Trend Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ 
+              width: 38, 
+              height: 38, 
+              borderRadius: 12, 
+              background: kpi.dimColor, 
+              border: `1px solid ${kpi.color}20`,
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              color: kpi.color,
+              boxShadow: `0 0 15px ${kpi.color}10`,
+            }}>
               {kpi.icon}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.7rem', fontFamily: T.fontMono, padding: '3px 8px', borderRadius: 20, background: kpi.up ? T.greenDim : T.redDim, color: kpi.up ? T.green : T.red }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 4, 
+              fontSize: '0.7rem', 
+              fontFamily: T.fontMono, 
+              fontWeight: 600,
+              padding: '4px 10px', 
+              borderRadius: 20, 
+              background: kpi.up ? T.greenDim : T.redDim, 
+              color: kpi.up ? T.green : T.red,
+              border: `1px solid ${kpi.up ? T.green : T.red}15`,
+            }}>
+              {kpi.up ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {kpi.trend}
             </div>
           </div>
 
-          <div style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.7rem', letterSpacing: -1, color: T.text, lineHeight: 1, marginBottom: 5 }}>
+          {/* Value Section */}
+          <div style={{ 
+            fontFamily: T.fontHead, 
+            fontWeight: 800, 
+            fontSize: '2rem', 
+            letterSpacing: -1.2, 
+            color: T.text, 
+            lineHeight: 1, 
+            marginBottom: 6 
+          }}>
             {kpi.value}
           </div>
-          <div style={{ fontSize: '0.75rem', color: T.text3 }}>{kpi.label}</div>
-          <div style={{ fontSize: '0.68rem', color: kpi.subColor || T.text3, marginTop: 3, fontFamily: T.fontMono }}>{kpi.sub}</div>
+          <div style={{ 
+            fontSize: '0.8rem', 
+            fontWeight: 600,
+            color: T.text2,
+            letterSpacing: -0.2
+          }}>
+            {kpi.label}
+          </div>
+          <div style={{ 
+            fontSize: '0.68rem', 
+            color: kpi.subColor || T.text3, 
+            marginTop: 4, 
+            fontFamily: T.fontMono,
+            letterSpacing: 0.2
+          }}>
+            {kpi.sub}
+          </div>
 
+          {/* Sparkline Refinement */}
           {kpi.spark && (
-            <div style={{ marginTop: 12 }}>
-              <svg viewBox="0 0 100 24" style={{ width: '100%', height: 24 }}>
+            <div style={{ marginTop: 16, position: 'relative' }}>
+              <svg viewBox="0 0 100 24" style={{ width: '100%', height: 28, overflow: 'visible' }}>
                 <defs>
                   <linearGradient id={`sg${index}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={kpi.color} stopOpacity={0.3} />
+                    <stop offset="0%" stopColor={kpi.color} stopOpacity={0.2} />
                     <stop offset="100%" stopColor={kpi.color} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <path d={`${kpi.spark} L100,24 L0,24Z`} fill={`url(#sg${index})`} />
-                <path d={kpi.spark} fill="none" stroke={kpi.color} strokeWidth={1.5} />
+                <motion.path 
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 1.5, delay: 0.5 }}
+                  d={kpi.spark} 
+                  fill="none" 
+                  stroke={kpi.color} 
+                  strokeWidth={2} 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                />
+                <path 
+                  d={`${kpi.spark} L100,24 L0,24Z`} 
+                  fill={`url(#sg${index})`} 
+                  opacity={0.5}
+                />
               </svg>
             </div>
           )}
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }

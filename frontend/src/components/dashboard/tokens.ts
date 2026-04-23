@@ -83,6 +83,8 @@ export const T = {
     xl: '0 20px 48px rgba(0,0,0,0.12)',
     glow: '0 0 20px rgba(14, 165, 233, 0.1)',
     glowIntense: '0 0 40px rgba(14, 165, 233, 0.15)',
+    accent: '0 0 20px rgba(14, 165, 233, 0.15)',
+    accentIntense: '0 0 40px rgba(14, 165, 233, 0.25)',
   },
 
   // ============ GLASSMORPHISM ============
@@ -97,6 +99,13 @@ export const T = {
   transition: '180ms cubic-bezier(0.4, 0, 0.2, 1)',
   transitionShort: '100ms cubic-bezier(0.4, 0, 0.2, 1)',
   transitionLong: '300ms cubic-bezier(0.4, 0, 0.2, 1)',
+
+  // ============ ANIMATION SPRINGS (Framer Motion) ============
+  spring: {
+    gentle: { type: 'spring' as const, stiffness: 100, damping: 20 },
+    bouncy: { type: 'spring' as const, stiffness: 300, damping: 15 },
+    stiff: { type: 'spring' as const, stiffness: 500, damping: 30 },
+  },
 
   // ============ COMPONENT-SPECIFIC TOKENS ============
 
