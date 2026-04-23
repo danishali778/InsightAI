@@ -187,19 +187,81 @@ function MarkdownLite({ text }: { text: string }) {
 
 /* ── Table Viz ────────────────────────────────────────────────── */
 
+function TableRow({ row, columns, compact, index }: { row: Record<string, unknown>; columns: string[]; compact: boolean; index: number }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.tr
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03, duration: 0.4, ease: "easeOut" }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ 
+        transition: 'background 0.2s ease, box-shadow 0.2s ease',
+        background: isHovered ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
+        boxShadow: isHovered ? 'inset 0 0 0 1px rgba(0, 229, 255, 0.1)' : 'none',
+      }}
+    >
+      {columns.map((col) => (
+        <td key={col} style={{
+          padding: isHovered ? '12px 12px' : '9px 12px', 
+          borderBottom: `1px solid ${T.border}`,
+          color: isHovered ? T.text : T.text2, 
+          fontFamily: T.fontMono,
+          fontSize: '0.78rem',
+          maxWidth: compact ? 180 : 240,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          verticalAlign: 'top',
+        }}>
+          <motion.div
+            layout
+            style={{
+              overflow: 'hidden',
+              textOverflow: isHovered ? 'clip' : 'ellipsis',
+              whiteSpace: isHovered ? 'normal' : 'nowrap',
+              wordBreak: 'break-word',
+              lineHeight: 1.5,
+            }}
+          >
+            {row[col] === null || row[col] === undefined || row[col] === ''
+              ? <span style={{ color: T.text3, fontStyle: 'italic', opacity: 0.6 }}>-- no value --</span>
+              : String(row[col])}
+          </motion.div>
+        </td>
+      ))}
+    </motion.tr>
+  );
+}
+
 function TableViz({ columns, rows, compact }: { columns: string[]; rows: Array<Record<string, unknown>>; compact: boolean }) {
   const visible = rows.slice(0, compact ? 6 : 10);
+  
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+    <div className="hide-scrollbar" style={{ 
+      overflowX: 'auto', 
+      borderRadius: '0 0 12px 12px',
+    }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
             {columns.map((col) => (
               <th key={col} style={{
-                background: '#f8fafc', color: T.text2, fontFamily: T.fontMono,
-                fontSize: '0.64rem', textTransform: 'uppercase', textAlign: 'left',
-                padding: '10px 12px', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap',
-                letterSpacing: 0.5,
+                background: 'rgba(248, 250, 252, 0.4)',
+                backdropFilter: 'blur(8px)',
+                color: T.text2, 
+                fontFamily: T.fontMono,
+                fontSize: '0.64rem', 
+                textTransform: 'uppercase', 
+                textAlign: 'left',
+                padding: '12px 12px', 
+                borderBottom: `1px solid ${T.border}`, 
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.05em',
+                fontWeight: 700,
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
               }}>
                 {formatColHeader(col)}
               </th>
@@ -208,36 +270,33 @@ function TableViz({ columns, rows, compact }: { columns: string[]; rows: Array<R
         </thead>
         <tbody>
           {visible.map((row, index) => (
-            <tr
-              key={index}
-              style={{ transition: 'background 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,229,255,0.02)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              {columns.map((col) => (
-                <td key={col} style={{
-                  padding: '9px 12px', borderBottom: `1px solid ${T.border}`,
-                  color: T.text2, fontFamily: T.fontMono,
-                  maxWidth: compact ? 180 : 240,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {row[col] === null || row[col] === undefined || row[col] === ''
-                    ? <span style={{ color: T.text3, fontStyle: 'italic', opacity: 0.6 }}>-- no value --</span>
-                    : String(row[col])}
-                </td>
-              ))}
-            </tr>
+            <TableRow 
+              key={index} 
+              row={row} 
+              columns={columns} 
+              compact={compact} 
+              index={index} 
+            />
           ))}
         </tbody>
       </table>
       {rows.length > visible.length && (
-        <div style={{
-          padding: '8px 12px', fontSize: '0.68rem',
-          color: T.text3, fontFamily: T.fontMono, textAlign: 'center',
-          borderTop: `1px solid ${T.border}`,
-        }}>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            padding: '12px', 
+            fontSize: '0.68rem',
+            color: T.text3, 
+            fontFamily: T.fontMono, 
+            textAlign: 'center',
+            borderTop: `1px solid ${T.border}`,
+            background: 'rgba(255, 255, 255, 0.02)',
+            letterSpacing: '0.02em',
+          }}
+        >
           +{rows.length - visible.length} more rows
-        </div>
+        </motion.div>
       )}
     </div>
   );
