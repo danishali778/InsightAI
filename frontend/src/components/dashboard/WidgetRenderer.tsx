@@ -1,5 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ArrowDownToLine, 
+  Maximize2, 
+  RotateCw, 
+  TrendingUp, 
+  TrendingDown,
+  MoreHorizontal,
+  ChevronDown,
+  Table as TableIcon,
+  ChevronRight
+} from 'lucide-react';
 import { refreshDashboardWidget, getWidgetInsight } from '../../services/api';
 import { T } from './tokens';
 import type { DashboardWidgetItem } from '../../types/dashboard';
@@ -188,55 +199,187 @@ function MarkdownLite({ text }: { text: string }) {
 /* ── Table Viz ────────────────────────────────────────────────── */
 
 function TableViz({ columns, rows, compact }: { columns: string[]; rows: Array<Record<string, unknown>>; compact: boolean }) {
-  const visible = rows.slice(0, compact ? 6 : 10);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Detection logic for special columns
+  const isRankCol = (col: string, index: number) => index === 0 && (col.toLowerCase().includes('rank') || col === '#' || col.toLowerCase() === 'id');
+  const isTrendCol = (val: any) => typeof val === 'string' && (val.includes('%') || val.startsWith('+') || val.startsWith('-'));
+  const isShareCol = (col: string) => col.toLowerCase().includes('share') || col.toLowerCase().includes('ratio');
+
+  const renderCellContent = (col: string, val: any, index: number) => {
+    if (val === null || val === undefined || val === '') {
+      return <span style={{ color: T.text3, fontStyle: 'italic', opacity: 0.6 }}>--</span>;
+    }
+
+    const strVal = String(val);
+
+    // 1. Rank Badge
+    if (isRankCol(col, index)) {
+      const rank = parseInt(strVal);
+      if (!isNaN(rank)) {
+        const isTop3 = rank <= 3;
+        return (
+          <div style={{ 
+            width: 24, height: 24, borderRadius: '50%', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: isTop3 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${isTop3 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(255,255,255,0.1)'}`,
+            color: isTop3 ? '#f59e0b' : T.text3,
+            fontSize: '0.7rem', fontWeight: 700,
+            fontFamily: T.fontMono
+          }}>
+            {rank}
+          </div>
+        );
+      }
+    }
+
+    // 2. Trend Badge
+    if (isTrendCol(strVal)) {
+      const isUp = strVal.includes('+') || (!strVal.includes('-') && parseFloat(strVal) > 0);
+      const isDown = strVal.includes('-');
+      const color = isUp ? '#22d3a5' : isDown ? '#f87171' : T.text3;
+      
+      return (
+        <div style={{ 
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          padding: '2px 8px', borderRadius: 6,
+          background: `${color}15`, border: `1px solid ${color}30`,
+          color: color, fontSize: '0.68rem', fontWeight: 600
+        }}>
+          {isUp && <TrendingUp size={10} />}
+          {isDown && <TrendingDown size={10} />}
+          {strVal}
+        </div>
+      );
+    }
+
+    // 3. Share Bar
+    if (isShareCol(col)) {
+      const numericVal = parseFloat(strVal.replace('%', ''));
+      if (!isNaN(numericVal)) {
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+            <div style={{ 
+              flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', 
+              borderRadius: 2, overflow: 'hidden', maxWidth: 80 
+            }}>
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(numericVal, 100)}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                style={{ 
+                  height: '100%', 
+                  background: `linear-gradient(90deg, #00e5ff, #7c3aff)`,
+                  boxShadow: '0 0 8px rgba(0,229,255,0.3)'
+                }} 
+              />
+            </div>
+            <span style={{ fontSize: '0.7rem', color: T.text2, fontFamily: T.fontMono }}>{strVal}</span>
+          </div>
+        );
+      }
+    }
+
+    return strVal;
+  };
+
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
-        <thead>
+    <div 
+      ref={scrollContainerRef}
+      className="hide-scrollbar"
+      style={{ 
+        overflowY: 'auto', 
+        maxHeight: compact ? 280 : 500,
+        position: 'relative',
+        borderRadius: '0 0 12px 12px'
+      }}
+    >
+      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+        <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
           <tr>
-            {columns.map((col) => (
+            {columns.map((col, idx) => (
               <th key={col} style={{
-                background: '#f8fafc', color: T.text2, fontFamily: T.fontMono,
-                fontSize: '0.64rem', textTransform: 'uppercase', textAlign: 'left',
-                padding: '10px 12px', borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap',
-                letterSpacing: 0.5,
+                background: 'rgba(255, 255, 255, 0.7)',
+                backdropFilter: 'blur(8px)',
+                color: T.text2, fontFamily: T.fontMono,
+                fontSize: '0.62rem', textTransform: 'uppercase', textAlign: 'left',
+                padding: '14px 16px', borderBottom: `1px solid ${T.border}`,
+                whiteSpace: 'nowrap', letterSpacing: 1,
+                borderRight: idx === columns.length - 1 ? 'none' : `1px solid rgba(0,0,0,0.03)`
               }}>
-                {formatColHeader(col)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {formatColHeader(col)}
+                  {col.toLowerCase().includes('revenue') && <ChevronDown size={10} style={{ opacity: 0.5 }} />}
+                </div>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {visible.map((row, index) => (
-            <tr
-              key={index}
-              style={{ transition: 'background 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,229,255,0.02)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          {rows.map((row, rowIndex) => (
+            <motion.tr
+              key={rowIndex}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: rowIndex * 0.03 }}
+              style={{ 
+                background: rowIndex % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                e.currentTarget.style.boxShadow = 'inset 0 0 20px rgba(0,229,255,0.02)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = rowIndex % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
-              {columns.map((col) => (
-                <td key={col} style={{
-                  padding: '9px 12px', borderBottom: `1px solid ${T.border}`,
-                  color: T.text2, fontFamily: T.fontMono,
-                  maxWidth: compact ? 180 : 240,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {row[col] === null || row[col] === undefined || row[col] === ''
-                    ? <span style={{ color: T.text3, fontStyle: 'italic', opacity: 0.6 }}>-- no value --</span>
-                    : String(row[col])}
-                </td>
-              ))}
-            </tr>
+              {columns.map((col, colIndex) => {
+                const cellValue = row[col];
+                return (
+                  <td key={colIndex} style={{
+                    padding: '12px 16px', borderBottom: `1px solid rgba(255,255,255,0.03)`,
+                    color: colIndex === 1 ? T.text : T.text2, 
+                    fontWeight: colIndex === 1 ? 600 : 400,
+                    fontFamily: colIndex === 1 ? T.fontSans : T.fontMono,
+                    fontSize: '0.78rem',
+                    maxWidth: 300,
+                  }}>
+                    <motion.div 
+                      layout
+                      style={{ 
+                        overflow: 'hidden', textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap',
+                        transition: 'white-space 0.2s ease'
+                      }}
+                      onMouseEnter={e => {
+                        const target = e.currentTarget as HTMLDivElement;
+                        if (target.scrollWidth > target.clientWidth) {
+                          target.style.whiteSpace = 'normal';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLDivElement).style.whiteSpace = 'nowrap';
+                      }}
+                    >
+                      {renderCellContent(col, cellValue, colIndex)}
+                    </motion.div>
+                  </td>
+                );
+              })}
+            </motion.tr>
           ))}
         </tbody>
       </table>
-      {rows.length > visible.length && (
-        <div style={{
-          padding: '8px 12px', fontSize: '0.68rem',
-          color: T.text3, fontFamily: T.fontMono, textAlign: 'center',
-          borderTop: `1px solid ${T.border}`,
+      
+      {rows.length === 0 && (
+        <div style={{ 
+          padding: '40px 0', textAlign: 'center', color: T.text3,
+          fontFamily: T.fontMono, fontSize: '0.75rem' 
         }}>
-          +{rows.length - visible.length} more rows
+          No data available for this view
         </div>
       )}
     </div>
@@ -598,7 +741,7 @@ export function WidgetRenderer({
           className="dash-action-btn"
           onClick={onToggleSize}
           style={{ width: 26, height: 26 }}
-           title={(() => {
+          title={(() => {
             const isPie = widget.viz_type === 'pie' || widget.viz_type === 'donut' || chartType === 'pie' || chartType === 'donut';
             if (isPie) {
               return widget.size === 'half' ? 'Collapse to 35% width' : 'Expand to 50% width';
@@ -606,13 +749,19 @@ export function WidgetRenderer({
             return widget.size === 'half' ? 'Expand to 65% width' : widget.size === 'three-quarter' ? 'Expand to full width' : 'Collapse to 50% width';
           })()}
         >
-          <IconResize />
+          <Maximize2 size={12} />
         </button>
 
         {/* Badge */}
         <span className="viz-badge" style={{
           background: badge.bg, color: badge.color,
           border: `1px solid ${badge.borderColor}`,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+          fontWeight: 800,
+          fontSize: '0.6rem',
+          padding: '2px 8px',
+          borderRadius: 4
         }}>
           {badge.label}
         </span>
@@ -630,7 +779,7 @@ export function WidgetRenderer({
             border: (insight || loadingInsight) ? '1px solid rgba(0,229,255,0.2)' : '1px solid transparent',
           }}
         >
-          {loadingInsight ? '...' : '✨'}
+          {loadingInsight ? <RotateCw size={12} className="refresh-spin" /> : '✨'}
         </button>
 
         {/* Refresh */}
@@ -646,7 +795,7 @@ export function WidgetRenderer({
               cursor: refreshing ? 'default' : 'pointer',
             }}
           >
-            <IconRefresh spinning={refreshing} />
+            <RotateCw size={12} className={refreshing ? 'refresh-spin' : ''} />
           </button>
         )}
 
@@ -657,7 +806,7 @@ export function WidgetRenderer({
           title="Export as Image (PNG)"
           style={{ width: 26, height: 26 }}
         >
-          <IconDownload />
+          <ArrowDownToLine size={13} />
         </button>
 
         <button
@@ -667,13 +816,23 @@ export function WidgetRenderer({
           style={{ width: 26, height: 26 }}
         >
           <div style={{ position: 'relative' }}>
-            <IconDownload />
+            <ArrowDownToLine size={13} />
             <span style={{ 
               position: 'absolute', bottom: -2, right: -2, 
-              fontSize: '0.45rem', fontWeight: 900, color: T.accent,
-              background: T.s1, borderRadius: 2, padding: '0 1px'
+              fontSize: '0.42rem', fontWeight: 900, color: T.accent,
+              background: T.s1, borderRadius: 2, padding: '0 1px',
+              border: `1px solid ${T.border}`
             }}>CSV</span>
           </div>
+        </button>
+
+        <button
+          className="dash-action-btn"
+          onClick={() => {}} // Handle more actions
+          title="More Actions"
+          style={{ width: 26, height: 26 }}
+        >
+          <MoreHorizontal size={14} />
         </button>
 
         {/* Delete */}
