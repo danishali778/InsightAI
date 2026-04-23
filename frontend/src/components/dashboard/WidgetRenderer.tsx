@@ -1,3 +1,5 @@
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowDownToLine, 
   Maximize2, 
@@ -9,6 +11,7 @@ import {
   Table as TableIcon,
   ChevronRight
 } from 'lucide-react';
+import { refreshDashboardWidget, getWidgetInsight } from '../../services/api';
 import { T } from './tokens';
 import type { DashboardWidgetItem } from '../../types/dashboard';
 import { resolveWidgetSize } from '../../types/dashboard';
