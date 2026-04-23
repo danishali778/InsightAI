@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { refreshDashboardWidget, getWidgetInsight } from '../../services/api';
 import { T } from './tokens';
 import type { DashboardWidgetItem } from '../../types/dashboard';
@@ -282,6 +283,7 @@ function KpiCard({ widget, onDelete }: {
   widget: DashboardWidgetItem;
   onDelete: (id: string) => void;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
   const metricCol = (widget.chart_config?.y_columns || []).find(Boolean)
     || widget.columns.find((c) => widget.rows.some((r) => typeof r[c] === 'number'));
   const labelCol = widget.chart_config?.x_column || widget.columns.find((c) => c !== metricCol);
@@ -291,12 +293,26 @@ function KpiCard({ widget, onDelete }: {
   const change = inferChangePercent(widget.rows, metricCol);
 
   return (
-    <div className="widget-card widget-drag-handle" style={{
-      background: T.s1,
-      border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden', minHeight: 190,
-      cursor: 'grab',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-    }}>
+    <motion.div 
+      layout
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="widget-card widget-drag-handle" 
+      style={{
+        background: T.s1,
+        border: `1px solid ${isHovered ? 'rgba(0,229,255,0.4)' : T.border}`, 
+        borderRadius: 16, 
+        overflow: 'hidden', 
+        minHeight: 190,
+        height: '100%',
+        cursor: 'grab',
+        boxShadow: isHovered ? '0 12px 24px rgba(0,0,0,0.1)' : '0 4px 12px rgba(0,0,0,0.03)',
+        zIndex: isHovered ? 10 : 1,
+        transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
       <div style={{
         padding: '14px 16px 8px', display: 'flex',
         alignItems: 'flex-start', gap: 10,
@@ -306,22 +322,36 @@ function KpiCard({ widget, onDelete }: {
           background: 'linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,58,255,0.08))',
           border: '1px solid rgba(0,229,255,0.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: T.accent, fontSize: '0.75rem', fontWeight: 700,
+          color: T.accent, fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
         }}>
           $
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.9rem',
-            color: T.text, whiteSpace: 'nowrap', overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <motion.div 
+            layout
+            style={{
+              fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.9rem',
+              color: T.text, 
+              whiteSpace: isHovered ? 'normal' : 'nowrap', 
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              lineHeight: 1.2,
+            }}
+          >
             {widget.title}
-          </div>
-          <div style={{
-            fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono,
-            marginTop: 1,
-          }}>{label || 'live metric'}</div>
+          </motion.div>
+          <motion.div 
+            layout
+            style={{
+              fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono,
+              marginTop: 1,
+              whiteSpace: isHovered ? 'normal' : 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {label || 'live metric'}
+          </motion.div>
         </div>
         {change !== null && (
           <span style={{
@@ -331,6 +361,7 @@ function KpiCard({ widget, onDelete }: {
             borderRadius: 999, padding: '3px 9px',
             display: 'flex', alignItems: 'center', gap: 3,
             border: `1px solid ${change >= 0 ? 'rgba(34,211,165,0.2)' : 'rgba(248,113,113,0.2)'}`,
+            flexShrink: 0,
           }}>
             {change >= 0 ? <IconArrowUp /> : <IconArrowDown />}
             {Math.abs(change).toFixed(1)}%
@@ -338,14 +369,14 @@ function KpiCard({ widget, onDelete }: {
         )}
         <button
           className="dash-action-btn dash-action-btn--danger"
-          onClick={() => onDelete(widget.id)}
-          style={{ width: 24, height: 24 }}
+          onClick={(e) => { e.stopPropagation(); onDelete(widget.id); }}
+          style={{ width: 24, height: 24, flexShrink: 0 }}
           title="Remove widget"
         >
           <IconClose />
         </button>
       </div>
-      <div style={{ padding: '0 16px 8px' }}>
+      <motion.div layout style={{ padding: '0 16px 8px', flex: 1 }}>
         <div style={{
           fontFamily: T.fontHead, fontWeight: 800, fontSize: '2.2rem',
           color: T.text, letterSpacing: -1, lineHeight: 1.1,
@@ -353,11 +384,11 @@ function KpiCard({ widget, onDelete }: {
           {formatMetric(metric)}
         </div>
         <div style={{ fontSize: '0.72rem', color: T.text3, marginTop: 2 }}>{metricCol || 'value'}</div>
-      </div>
-      <div style={{ padding: '0 12px 12px' }}>
+      </motion.div>
+      <motion.div layout style={{ padding: '0 12px 12px' }}>
         <Sparkline rows={widget.rows} yColumn={metricCol} color={T.accent} />
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
