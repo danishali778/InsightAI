@@ -300,13 +300,13 @@ function TableViz({ columns, rows, compact }: { columns: string[]; rows: Array<R
           <tr>
             {columns.map((col, idx) => (
               <th key={col} style={{
-                background: 'rgba(15, 23, 42, 0.8)',
-                backdropFilter: 'blur(12px)',
-                color: T.text3, fontFamily: T.fontMono,
+                background: 'rgba(255, 255, 255, 0.7)',
+                backdropFilter: 'blur(8px)',
+                color: T.text2, fontFamily: T.fontMono,
                 fontSize: '0.62rem', textTransform: 'uppercase', textAlign: 'left',
-                padding: '12px 16px', borderBottom: `1px solid ${T.border}`,
+                padding: '14px 16px', borderBottom: `1px solid ${T.border}`,
                 whiteSpace: 'nowrap', letterSpacing: 1,
-                borderRight: idx === columns.length - 1 ? 'none' : `1px solid rgba(255,255,255,0.03)`
+                borderRight: idx === columns.length - 1 ? 'none' : `1px solid rgba(0,0,0,0.03)`
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {formatColHeader(col)}
