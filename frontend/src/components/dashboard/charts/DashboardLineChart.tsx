@@ -11,11 +11,38 @@ const COLORS = [
 ];
 
 const GS = T.border;
-const TEXT_STYLE = { fontSize: 11, fill: T.text3 };
+const TEXT_STYLE = { fontSize: 10, fill: T.text3, fontWeight: 500, fontFamily: T.fontMono };
 const TT_STYLE = {
-  borderRadius: 8, border: `1px solid ${T.border}`,
-  boxShadow: '0 4px 16px rgba(0,0,0,0.06)', fontSize: '0.78rem',
-  background: T.s1, color: T.text, padding: '10px 14px',
+  borderRadius: 12, border: `1px solid ${T.border}`,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.12)', fontSize: '0.75rem',
+  background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)',
+  color: T.text, padding: '12px 16px',
+};
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={TT_STYLE}>
+        <div style={{ fontWeight: 800, marginBottom: 8, color: T.text, fontSize: '0.8rem', fontFamily: T.fontHead, letterSpacing: 0.3 }}>
+          {label}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {payload.map((p: any, i: number) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: p.color }} />
+                <span style={{ color: T.text2, fontSize: '0.7rem' }}>{p.name}</span>
+              </div>
+              <span style={{ fontWeight: 700, color: T.text, fontFamily: T.fontMono, fontSize: '0.75rem' }}>
+                {formatYValue(p.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
 };
 
 function formatColLabel(col: string) {
@@ -133,8 +160,8 @@ export function DashboardLineChart({ widget, size: _size }: { widget: DashboardW
 
   const renderChart = () => (
     <LineChart data={data} margin={chartMargin}>
-      <CartesianGrid strokeDasharray="3 3" stroke={GS} />
-      <XAxis dataKey={xCol} tick={XTick} height={68} axisLine={{ stroke: GS }} interval={0} label={xAxisLabel} />
+      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GS} opacity={0.3} />
+      <XAxis dataKey={xCol} tick={XTick} height={68} axisLine={{ stroke: GS, strokeOpacity: 0.5 }} interval={0} label={xAxisLabel} />
       {needsDualAxis ? (
         <>
           <YAxis yAxisId="left" width={AXIS_W} tickCount={6}
@@ -149,14 +176,25 @@ export function DashboardLineChart({ widget, size: _size }: { widget: DashboardW
             tickFormatter={formatYValue} label={makeAxisLabel(rightAxisLabel, rightAxisColor, 'right')} />
         </>
       ) : (
-        <YAxis yAxisId="left" width={AXIS_W} tickCount={6} tick={TEXT_STYLE} axisLine={{ stroke: GS }} tickFormatter={formatYValue}
+        <YAxis yAxisId="left" width={AXIS_W} tickCount={6} tick={TEXT_STYLE} axisLine={{ stroke: GS, strokeOpacity: 0.5 }} tickFormatter={formatYValue}
           label={makeAxisLabel(singleAxisLabel, T.text3, 'left')} />
       )}
-      <Tooltip contentStyle={TT_STYLE} />
+      <Tooltip content={<CustomTooltip />} />
       {yCols.map((c, i) => (
-        <Line key={c} yAxisId={getAxisId(c)} type="monotone" dataKey={c}
-          stroke={COLORS[i % COLORS.length]} strokeWidth={2.5}
-          dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+        <Line 
+          key={c} 
+          yAxisId={getAxisId(c)} 
+          type="monotone" 
+          dataKey={c}
+          stroke={COLORS[i % COLORS.length]} 
+          strokeWidth={3}
+          dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} 
+          activeDot={{ r: 6, strokeWidth: 0 }}
+          connectNulls 
+          isAnimationActive={true}
+          animationDuration={1500}
+          animationEasing="ease-in-out"
+        />
       ))}
     </LineChart>
   );

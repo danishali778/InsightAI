@@ -9,13 +9,33 @@ const COLORS = [
 ];
 
 const TT_STYLE = {
-  borderRadius: 8,
-  border: `1px solid ${T.border}`,
-  boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-  fontSize: '0.78rem',
-  background: T.s1,
-  color: T.text,
-  padding: '10px 14px',
+  borderRadius: 12, border: `1px solid ${T.border}`,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.12)', fontSize: '0.75rem',
+  background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)',
+  color: T.text, padding: '12px 16px',
+};
+
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const p = payload[0];
+    return (
+      <div style={TT_STYLE}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.payload.fill }} />
+          <span style={{ fontWeight: 800, color: T.text, fontSize: '0.8rem', fontFamily: T.fontHead }}>
+            {p.name}
+          </span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 20 }}>
+          <span style={{ color: T.text2, fontSize: '0.7rem' }}>Value</span>
+          <span style={{ fontWeight: 700, color: T.text, fontFamily: T.fontMono, fontSize: '0.75rem' }}>
+            {formatVal(p.value)}
+          </span>
+        </div>
+      </div>
+    );
+  }
+  return null;
 };
 
 function formatVal(v: number) {
@@ -57,7 +77,7 @@ export function DashboardPieChart({ widget, size: _size }: { widget: DashboardWi
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '16px 16px 8px', gap: 12, height: 270, boxSizing: 'border-box' }}>
       {/* Left: pie / donut chart + total */}
-      <div style={{ flex: '0 0 52%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ flex: '0 0 52%', minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
         <ResponsiveContainer width="100%" height={chartHeight}>
           <PieChart>
             <Pie
@@ -66,25 +86,29 @@ export function DashboardPieChart({ widget, size: _size }: { widget: DashboardWi
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius={innerRadius}
-              outerRadius={outerRadius}
-              paddingAngle={isDonut ? 2 : 0}
+              innerRadius="62%"
+              outerRadius="88%"
+              paddingAngle={4}
+              cornerRadius={6}
               strokeWidth={0}
-              isAnimationActive={false}
+              isAnimationActive={true}
+              animationDuration={1200}
             >
               {data.map((_, i) => (
                 <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip
-              contentStyle={TT_STYLE}
-              itemStyle={{ fontSize: '0.72rem', fontFamily: T.fontMono }}
-              formatter={(v: unknown) => [formatVal(Number(v) || 0), yCols[0]]}
-            />
+            <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
-        <div style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono, marginTop: -6, paddingBottom: 6, letterSpacing: 0.5 }}>
-          TOTAL · <span style={{ color: T.text2, fontWeight: 600 }}>{formatVal(total)}</span>
+        <div style={{ 
+          position: 'absolute', top: '50%', left: '50%', 
+          transform: 'translate(-55%, -80%)', // Centered in the donut
+          textAlign: 'center', pointerEvents: 'none',
+          display: 'flex', flexDirection: 'column', alignItems: 'center'
+        }}>
+          <div style={{ fontSize: '0.55rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: 1 }}>Total</div>
+          <div style={{ fontSize: '1.1rem', color: T.text, fontWeight: 800, fontFamily: T.fontHead }}>{formatVal(total)}</div>
         </div>
       </div>
 
