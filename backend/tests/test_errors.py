@@ -1,4 +1,4 @@
-"""Unit tests for backend/common/errors.py
+"""Unit tests for backend/app/core/errors.py
 
 Verifies that the unhandled exception handler:
   - Returns a correlation_id in the response body
@@ -8,7 +8,7 @@ Verifies that the unhandled exception handler:
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from common.errors import register_exception_handlers
+from app.core.errors import register_exception_handlers
 
 
 @pytest.fixture

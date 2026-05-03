@@ -56,6 +56,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+backend/startup_debug.log*
 backend/*.txt
 status.txt
 
@@ -88,6 +89,7 @@ backend/pip_list.txt
 backend/test_*.py
 test_*.py
 CHAT_TEST_GUIDE.md
+BACKEND_STRUCTURE_PROPOSAL.md
 *.seed.sql
 *.bak
 *.tmp

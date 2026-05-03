@@ -1,10 +1,10 @@
-"""Unit tests for backend/query_executor/safety.py
+"""Unit tests for backend/app/query_engine/safety.py
 
 Tests validate_query() and sanitize_row_limit() with a wide range of
 normal, edge-case, and adversarial inputs.
 """
 import pytest
-from query_executor.safety import (
+from app.query_engine.safety import (
     validate_query,
     sanitize_row_limit,
     get_readonly_wrapped_query,
