@@ -1,13 +1,65 @@
 import { useState } from 'react';
 import { T } from '../dashboard/tokens';
-import { connectDatabase } from '../../services/api';
+import { connectDatabase, testConnection } from '../../services/api';
 
 export function NewConnectionModal({ isOpen, onClose, onSaved }: { isOpen: boolean, onClose: () => void, onSaved?: () => void }) {
   const [step, setStep] = useState(1);
   const [selectedConnector, setSelectedConnector] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', host: 'localhost', port: '', database: '', username: '', password: '', ssl_mode: 'disable', readonly: true });
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; tables?: number | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // SSH state
+  const [sshEnabled, setSshEnabled] = useState(false);
+  const [sshAuth, setSshAuth] = useState<'password' | 'key'>('password');
+  const [sshData, setSshData] = useState({ ssh_host: '', ssh_port: '22', ssh_username: '', ssh_password: '', ssh_private_key: '' });
+
+  const connectorMap: Record<string, string> = { pg: 'postgresql', my: 'mysql', sqlite: 'sqlite', sql: 'mssql', snow: 'snowflake', bq: 'bigquery', rs: 'redshift', dbx: 'databricks', xls: 'excel', gs: 'gsheets', csv: 'csv', duck: 'duckdb' };
+
+  const buildPayload = () => ({
+    db_type: connectorMap[selectedConnector || ''] || selectedConnector || '',
+    host: formData.host || 'localhost',
+    port: parseInt(formData.port) || 5432,
+    database: formData.database,
+    username: formData.username,
+    password: formData.password,
+    name: formData.name || undefined,
+    ssl_mode: formData.ssl_mode,
+    readonly: formData.readonly,
+    use_ssh: sshEnabled,
+    ...(sshEnabled ? {
+      ssh_host: sshData.ssh_host,
+      ssh_port: parseInt(sshData.ssh_port) || 22,
+      ssh_username: sshData.ssh_username,
+      ssh_password: sshAuth === 'password' ? sshData.ssh_password : undefined,
+      ssh_private_key: sshAuth === 'key' ? sshData.ssh_private_key : undefined,
+    } : {}),
+  });
+
+  const handleTest = async () => {
+    setTesting(true); setTestResult(null);
+    try {
+      const res = await testConnection(buildPayload() as any);
+      setTestResult({ success: res.success, message: res.message, tables: res.tables_found });
+    } catch (e: any) {
+      setTestResult({ success: false, message: e.message || 'Test failed' });
+    } finally { setTesting(false); }
+  };
+
+  const handleSave = async () => {
+    setSaving(true); setError(null);
+    try {
+      await connectDatabase(buildPayload() as any);
+      onSaved?.();
+      setStep(1); setSelectedConnector(null);
+      setFormData({ name: '', host: 'localhost', port: '', database: '', username: '', password: '', ssl_mode: 'disable', readonly: true });
+      setSshEnabled(false); setSshData({ ssh_host: '', ssh_port: '22', ssh_username: '', ssh_password: '', ssh_private_key: '' });
+      setTestResult(null);
+    } catch (e: any) {
+      setError(e.message || 'Failed to connect');
+    } finally { setSaving(false); }
+  };
 
   if (!isOpen) return null;
 
@@ -103,11 +155,80 @@ export function NewConnectionModal({ isOpen, onClose, onSaved }: { isOpen: boole
                 </div>
               </div>
 
+              {/* SSH Tunnel Section */}
+              <div style={{ height: 1, background: T.border, margin: '18px 0' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: sshEnabled ? 14 : 0 }}>
+                <div>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 600, letterSpacing: '1.2px', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase' as const }}>SSH Tunnel</div>
+                  <div style={{ fontSize: '0.72rem', color: T.text3, marginTop: 2 }}>Route through a bastion / jump host</div>
+                </div>
+                <button type="button" onClick={() => setSshEnabled(p => !p)} style={{ width: 38, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', background: sshEnabled ? T.accent : T.s4, position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                  <div style={{ position: 'absolute', top: 2, left: sshEnabled ? 20 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                </button>
+              </div>
+              {sshEnabled && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <ModalInput label="SSH Host" placeholder="bastion.example.com" value={sshData.ssh_host} onChange={v => setSshData(p => ({...p, ssh_host: v}))} />
+                    <ModalInput label="SSH Port" placeholder="22" value={sshData.ssh_port} onChange={v => setSshData(p => ({...p, ssh_port: v}))} />
+                  </div>
+                  <ModalInput label="SSH Username" placeholder="ubuntu" value={sshData.ssh_username} onChange={v => setSshData(p => ({...p, ssh_username: v}))} />
+                  <div style={{ display: 'flex', gap: 8, margin: '12px 0 10px' }}>
+                    {(['password', 'key'] as const).map(opt => (
+                      <button key={opt} type="button" onClick={() => setSshAuth(opt)} style={{ padding: '5px 14px', borderRadius: 7, border: `1px solid ${sshAuth === opt ? 'rgba(0,229,255,0.4)' : T.border}`, background: sshAuth === opt ? T.accentDim : T.s3, color: sshAuth === opt ? T.accent : T.text3, fontFamily: T.fontMono, fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', textTransform: 'uppercase' as const }}>
+                        {opt === 'password' ? 'Password' : 'Private Key'}
+                      </button>
+                    ))}
+                  </div>
+                  {sshAuth === 'password'
+                    ? <ModalInput label="SSH Password" placeholder="••••••••" value={sshData.ssh_password} onChange={v => setSshData(p => ({...p, ssh_password: v}))} password />
+                    : <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label style={{ fontSize: '0.72rem', color: T.text2, fontWeight: 600, fontFamily: T.fontMono }}>Private Key (PEM)</label>
+                        <textarea value={sshData.ssh_private_key} onChange={e => setSshData(p => ({...p, ssh_private_key: e.target.value}))} placeholder="-----BEGIN RSA PRIVATE KEY-----" rows={4} style={{ background: T.s3, border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 13px', color: T.text, fontFamily: T.fontMono, fontSize: '0.76rem', outline: 'none', width: '100%', resize: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box' as const }}
+                          onFocus={e => e.target.style.borderColor = 'rgba(0,229,255,0.3)'}
+                          onBlur={e => e.target.style.borderColor = T.border}
+                        />
+                      </div>
+                  }
+                </div>
+              )}
+
               {error && <div style={{ marginTop: 12, padding: '9px 14px', borderRadius: 8, background: T.redDim, color: T.red, fontSize: '0.78rem', border: `1px solid rgba(248,113,113,0.2)` }}>{error}</div>}
             </div>
           )}
           {step === 3 && (
-             <div style={{ color: T.text2, textAlign: 'center', padding: '40px 0' }}>Test & Save coming soon...</div>
+            <div>
+              {/* Summary */}
+              <div style={{ background: T.s3, border: `1px solid ${T.border}`, borderRadius: 10, padding: '14px 18px', marginBottom: 20, fontSize: '0.83rem', color: T.text2 }}>
+                <span style={{ color: T.text, fontWeight: 600 }}>{formData.name || formData.database}</span> &nbsp;·&nbsp; {connectorMap[selectedConnector || ''] || selectedConnector} &nbsp;·&nbsp; {formData.host}:{formData.port || 5432}
+                {sshEnabled && <span style={{ marginLeft: 10, color: T.accent, fontSize: '0.75rem', fontFamily: T.fontMono }}>SSH via {sshData.ssh_host}</span>}
+              </div>
+
+              {/* Test Connection */}
+              <button onClick={handleTest} disabled={testing} style={{ width: '100%', padding: '12px', borderRadius: 10, border: `1px solid ${T.border}`, background: T.s3, color: T.text, fontFamily: T.fontBody, fontSize: '0.85rem', fontWeight: 600, cursor: testing ? 'not-allowed' : 'pointer', marginBottom: 12, transition: 'all 0.15s' }}
+                onMouseEnter={e => { if (!testing) e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; }}
+              >
+                {testing ? '⏳ Testing...' : '🔌 Test Connection'}
+              </button>
+
+              {/* Test Result Banner */}
+              {testResult && (
+                <div style={{ padding: '11px 16px', borderRadius: 9, marginBottom: 16, fontSize: '0.82rem', fontWeight: 500, background: testResult.success ? 'rgba(34,197,94,0.08)' : 'rgba(248,113,113,0.08)', border: `1px solid ${testResult.success ? 'rgba(34,197,94,0.25)' : 'rgba(248,113,113,0.25)'}`, color: testResult.success ? T.green : T.red }}>
+                  {testResult.success ? '✓' : '✕'} {testResult.message}
+                  {testResult.success && testResult.tables != null && <span style={{ marginLeft: 8, opacity: 0.7 }}>· {testResult.tables} tables found</span>}
+                </div>
+              )}
+
+              {/* Save */}
+              <button onClick={handleSave} disabled={saving} style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: saving ? T.s4 : T.accent, color: '#000', fontFamily: T.fontBody, fontSize: '0.85rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: saving ? 'none' : '0 4px 16px rgba(0,229,255,0.25)', transition: 'all 0.15s' }}
+                onMouseEnter={e => { if (!saving) e.currentTarget.style.opacity = '0.9'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+              >
+                {saving ? 'Connecting...' : '→ Save & Connect'}
+              </button>
+              {error && <div style={{ marginTop: 10, padding: '9px 14px', borderRadius: 8, background: 'rgba(248,113,113,0.08)', color: T.red, fontSize: '0.78rem', border: `1px solid rgba(248,113,113,0.2)` }}>{error}</div>}
+            </div>
           )}
 
         </div>
@@ -120,33 +241,8 @@ export function NewConnectionModal({ isOpen, onClose, onSaved }: { isOpen: boole
              <button onClick={() => setStep(step - 1)} style={{ padding: '10px 18px', borderRadius: 9, border: `1px solid ${T.border}`, background: 'transparent', color: T.text2, fontFamily: T.fontBody, fontSize: '0.83rem', cursor: 'pointer', transition: 'all 0.15s' }}>← Back</button>
           )}
 
-          <button onClick={async () => {
-            if (step < 2) { setStep(step + 1); return; }
-            // Step 2: submit
-            const connectorMap: Record<string, string> = { pg: 'postgresql', my: 'mysql', sqlite: 'sqlite', sql: 'mssql', snow: 'snowflake', bq: 'bigquery', rs: 'redshift', dbx: 'databricks', xls: 'excel', gs: 'gsheets', csv: 'csv', duck: 'duckdb' };
-            setSaving(true); setError(null);
-            try {
-              await connectDatabase({
-                db_type: connectorMap[selectedConnector || ''] || selectedConnector || '',
-                host: formData.host || 'localhost',
-                port: parseInt(formData.port) || 5432,
-                database: formData.database,
-                username: formData.username,
-                password: formData.password,
-                name: formData.name || undefined,
-                ssl_mode: formData.ssl_mode,
-                readonly: formData.readonly,
-              } as any);
-              onSaved?.();
-              // Reset form
-              setStep(1); setSelectedConnector(null); setFormData({ name: '', host: 'localhost', port: '', database: '', username: '', password: '', ssl_mode: 'disable', readonly: true });
-            } catch (err: any) {
-              setError(err.message || 'Failed to connect');
-            } finally {
-              setSaving(false);
-            }
-          }} disabled={!selectedConnector || saving} style={{ padding: '10px 20px', borderRadius: 9, border: `1px solid rgba(0,229,255,0.25)`, background: T.accentDim, color: T.accent, fontFamily: T.fontBody, fontSize: '0.83rem', fontWeight: 600, cursor: selectedConnector && !saving ? 'pointer' : 'not-allowed', opacity: selectedConnector && !saving ? 1 : 0.5 }}>
-            {saving ? 'Connecting...' : step === 2 ? 'Save Connection' : 'Continue →'}
+          <button onClick={() => { if (step < 3) { setStep(step + 1); setTestResult(null); } }} disabled={!selectedConnector || step === 3} style={{ padding: '10px 20px', borderRadius: 9, border: `1px solid rgba(0,229,255,0.25)`, background: step < 3 && selectedConnector ? T.accentDim : 'transparent', color: step < 3 && selectedConnector ? T.accent : T.text3, fontFamily: T.fontBody, fontSize: '0.83rem', fontWeight: 600, cursor: step < 3 && selectedConnector ? 'pointer' : 'not-allowed', opacity: selectedConnector && step < 3 ? 1 : 0.4, display: step === 3 ? 'none' : 'block' }}>
+            Continue →
           </button>
         </div>
 
