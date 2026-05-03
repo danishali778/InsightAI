@@ -3,13 +3,10 @@ Seed script: Creates dummy tables and data in the ecommerce_analytics database.
 Run: python seed_database.py
 """
 
-import os
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
+from app.core.config import settings
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = settings.database_url
 
 if not DATABASE_URL:
     print("❌ DATABASE_URL not found in .env")

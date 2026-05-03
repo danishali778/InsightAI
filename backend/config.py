@@ -1,11 +1,15 @@
-import os
-from dotenv import load_dotenv
+"""Compatibility wrapper for legacy imports.
 
-load_dotenv()
+New code should import from app.core.config.
+"""
 
-# App settings
-APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
-APP_PORT = int(os.getenv("APP_PORT", "8000"))
+from app.core.config import ALLOWED_ORIGINS, APP_HOST, APP_PORT, Settings, get_settings, settings
 
-# CORS
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+__all__ = [
+    "Settings",
+    "settings",
+    "get_settings",
+    "APP_HOST",
+    "APP_PORT",
+    "ALLOWED_ORIGINS",
+]
