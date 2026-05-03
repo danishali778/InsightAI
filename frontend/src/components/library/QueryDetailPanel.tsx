@@ -76,7 +76,7 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
       }
       onRefresh?.();
     } catch (err: unknown) {
-      const errorResult = { success: false, error: err instanceof Error ? err.message : String(err) };
+      const errorResult = { success: false as const, error: err instanceof Error ? err.message : String(err) };
       setRunResult(errorResult);
       setActiveTab('info');
     } finally {

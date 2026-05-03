@@ -50,6 +50,13 @@ export interface ConnectDatabaseRequest {
   password: string;
   ssl_mode?: string;
   readonly?: boolean;
+  // SSH Tunnel
+  use_ssh?: boolean;
+  ssh_host?: string;
+  ssh_port?: number;
+  ssh_username?: string;
+  ssh_password?: string;
+  ssh_private_key?: string;
 }
 
 export interface ConnectDatabaseResponse extends DatabaseConnection {
@@ -63,6 +70,14 @@ export interface TestConnectionRequest {
   database: string;
   username: string;
   password: string;
+  ssl_mode?: string;
+  // SSH Tunnel
+  use_ssh?: boolean;
+  ssh_host?: string;
+  ssh_port?: number;
+  ssh_username?: string;
+  ssh_password?: string;
+  ssh_private_key?: string;
 }
 
 export interface TestConnectionResponse {
@@ -111,10 +126,15 @@ export interface ChatMessageRecord {
   sql?: string | null;
   columns?: string[] | null;
   results?: { 
+    columns?: string[];
     rows?: Array<Record<string, unknown>>;
-    row_count?: number;
-    execution_time_ms?: number;
+    row_count?: number | null;
+    execution_time_ms?: number | null;
   } | null;
+  rows?: Array<Record<string, unknown>> | null;
+  row_count?: number | null;
+  execution_time_ms?: number | null;
+  column_metadata?: Record<string, string> | null;
   chart_recommendation?: ChartRecommendation | null;
   error?: string | null;
   is_pinned?: boolean;
@@ -159,6 +179,8 @@ export interface ChatResponse {
   column_metadata?: Record<string, string>;
   xLabel?: string;
   yLabel?: string;
+  is_pinned?: boolean;
+  prev_query_id?: string | null;
 }
 
 export interface ChatUiMessage {
@@ -317,9 +339,12 @@ export interface CreateDashboardRequest {
 
 export interface DashboardSummary {
   id: string;
+  owner_id?: string;
   name: string;
   icon: string;
   filters: Record<string, any>;
+  is_public?: boolean;
+  share_token?: string | null;
   created_at: string;
   widget_count: number;
 }
@@ -328,6 +353,7 @@ export interface UpdateDashboardRequest {
   name?: string;
   icon?: string;
   filters?: Record<string, any>;
+  is_public?: boolean;
 }
 
 export interface DashboardChartConfig {

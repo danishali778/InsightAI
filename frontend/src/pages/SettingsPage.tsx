@@ -477,7 +477,8 @@ function ApiKeysSection() {
 
 // ── Billing (Mocked) ──────────────────────────────────────
 
-import { getBillingInfo, UserSubscription } from '../services/api';
+import { getBillingInfo } from '../services/api';
+import type { UserSubscription } from '../services/api';
 
 function BillingSection() {
   const navigate = useNavigate();

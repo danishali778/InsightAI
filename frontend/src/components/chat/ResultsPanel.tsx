@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ResultsTable } from './ResultsTable';
 import { BaseChartContainer } from '../charts/BaseChartContainer';
 import { T } from '../dashboard/tokens';

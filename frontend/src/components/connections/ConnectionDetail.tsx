@@ -3,30 +3,20 @@ import { T } from '../dashboard/tokens';
 import { StatusIndicator } from '../common/StatusIndicator';
 import { testConnection, updateConnectionSettings } from '../../services/api';
 import type { ConnectionDetailProps, ConnectionDetailTab, ConnectionListItem } from '../../types/connections';
+import type { QueryRecord, SchemaColumn, SchemaResponse, SchemaTable as ApiSchemaTable } from '../../types/api';
 import { ErdDiagram } from './ErdDiagram';
 
 // ---------------------------------------------------------------------------
 // Local type definitions for schema and query data
 // ---------------------------------------------------------------------------
-interface ColumnSchema {
+interface UiColumnSchema {
   name: string;
   type?: string;
-  primary_key?: boolean;
-  is_foreign_key?: boolean;
+  isPk?: boolean;
+  isFk?: boolean;
 }
 
-interface TableSchema {
-  name: string;
-  row_count?: number;
-  columns?: ColumnSchema[];
-}
-
-interface QueryRecord {
-  success: boolean;
-  sql: string;
-  execution_time_ms?: number;
-  timestamp: string;
-}
+type TableSchema = ApiSchemaTable;
 
 export function ConnectionDetail({ connection, schema, queryHistory, onDelete, onRefreshSchema }: ConnectionDetailProps) {
   const [activeTab, setActiveTab] = useState<ConnectionDetailTab>('overview');
@@ -93,7 +83,7 @@ export function ConnectionDetail({ connection, schema, queryHistory, onDelete, o
         
         {activeTab === 'overview' && <OverviewTab connection={connection} schema={schema} queryHistory={queryHistory} onTabSwitch={setActiveTab} />}
         {activeTab === 'credentials' && <CredentialsTab connection={connection} />}
-        {activeTab === 'schema' && <SchemaTab schema={schema} onRefresh={onRefreshSchema} />}
+        {activeTab === 'schema' && <SchemaTab schema={schema ?? undefined} onRefresh={onRefreshSchema} />}
         {activeTab === 'security' && <SecurityTab />}
         {activeTab === 'activity' && <ActivityTab queryHistory={queryHistory} />}
 
@@ -152,7 +142,7 @@ function Tab({ active, label, onClick }: { active: boolean, label: string, onCli
 // Tabs Content
 // ------------------------
 
-function OverviewTab({ connection, schema, queryHistory, onTabSwitch }: { connection: ConnectionListItem, schema?: ConnectionDetailProps['schema'], queryHistory?: ConnectionDetailProps['queryHistory'], onTabSwitch: (tab: ConnectionDetailTab) => void }) {
+function OverviewTab({ connection, schema, queryHistory, onTabSwitch }: { connection: ConnectionListItem, schema?: SchemaResponse | null, queryHistory?: QueryRecord[], onTabSwitch: (tab: ConnectionDetailTab) => void }) {
   const tables = schema?.tables || [];
   const tableCount = tables.length;
   const recentQueries = (queryHistory || []).slice(0, 3);
@@ -171,7 +161,12 @@ function OverviewTab({ connection, schema, queryHistory, onTabSwitch }: { connec
             {tables.slice(0, 4).map((t: TableSchema, i: number) => (
               <SchemaTable key={i} name={t.name} rows={t.row_count != null ? `${t.row_count.toLocaleString()} rows` : 'N/A'}
                 defaultExpanded={i === 0}
-                cols={t.columns?.map((c: ColumnSchema) => ({ name: c.name, type: c.type?.split('(')[0]?.toUpperCase() || 'UNK', isPk: c.primary_key, isFk: c.is_foreign_key })) || []} />
+                cols={t.columns?.map((c: SchemaColumn) => ({
+                  name: c.name,
+                  type: c.type?.split('(')[0]?.toUpperCase() || 'UNK',
+                  isPk: c.primary_key,
+                  isFk: t.foreign_keys.some((fk) => fk.column === c.name),
+                })) || []} />
             ))}
             {tables.length === 0 && <div style={{ color: T.text3, fontSize: '0.78rem', padding: 8 }}>No tables found</div>}
           </div>
@@ -336,7 +331,7 @@ function CredentialsTab({ connection }: { connection: ConnectionListItem }) {
   );
 }
 
-function SchemaTab({ schema, onRefresh }: { schema?: { tables?: TableSchema[] }, onRefresh?: () => void }) {
+function SchemaTab({ schema, onRefresh }: { schema?: SchemaResponse, onRefresh?: () => void }) {
   const tables = schema?.tables || [];
   const [viewMode, setViewMode] = useState<'table' | 'erd'>('table');
 
@@ -458,7 +453,7 @@ function SectionCard({ title, badge, onAction, actionText, children }: { title: 
   );
 }
 
-function SchemaTable({ name, rows, defaultExpanded, cols }: { name: string, rows: string, defaultExpanded?: boolean, cols: ColumnSchema[] }) {
+function SchemaTable({ name, rows, defaultExpanded, cols }: { name: string, rows: string, defaultExpanded?: boolean, cols: UiColumnSchema[] }) {
   const [isOpen, setIsOpen] = useState(defaultExpanded || false);
   return (
     <div style={{ marginBottom: 4 }}>
@@ -516,22 +511,6 @@ function FormGroup({ label, req, value, full, select }: { label: string, req?: b
       ) : (
         <input defaultValue={value} type={full && label === 'Password' ? 'password' : 'text'} style={{ background: T.s2, border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 13px', color: T.text, fontFamily: T.fontBody, fontSize: '0.83rem', outline: 'none', width: '100%' }} />
       )}
-    </div>
-  )
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function ToggleRow({ label, sub, on }: { label: string, sub: string, on?: boolean }) {
-  const [isOn, setIsOn] = useState(on || false);
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: T.s2, border: `1px solid ${T.border}`, borderRadius: 9 }}>
-      <div>
-        <div style={{ fontSize: '0.8rem', color: T.text2 }}>{label}</div>
-        <div style={{ fontSize: '0.68rem', color: T.text3, marginTop: 1 }}>{sub}</div>
-      </div>
-      <div onClick={() => setIsOn(!isOn)} style={{ width: 36, height: 20, borderRadius: 20, cursor: 'pointer', position: 'relative', background: isOn ? T.accent : T.s4, flexShrink: 0, transition: 'background 0.2s' }}>
-        <div style={{ position: 'absolute', width: 14, height: 14, borderRadius: '50%', background: '#fff', top: 3, left: isOn ? 19 : 3, transition: 'left 0.2s' }} />
-      </div>
     </div>
   )
 }

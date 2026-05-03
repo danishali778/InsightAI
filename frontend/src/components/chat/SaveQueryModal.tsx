@@ -223,7 +223,7 @@ export function SaveQueryModal({ isOpen, onClose, sql, defaultTitle, connectionI
                   { id: 'Uncategorized', label: 'Uncategorized' },
                   ...folders.filter(f => f.name !== 'Uncategorized' && f.name !== 'Public Library').map(f => ({ id: f.name, label: f.name })),
                   { id: '__new__', label: 'Create new folder...', isAction: true }
-                ].map((opt, i) => (
+                ].map((opt) => (
                   <div
                     key={opt.id}
                     onClick={() => handleFolderChange(opt.id)}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   ArrowDownToLine, 
   Maximize2, 
@@ -8,8 +8,6 @@ import {
   TrendingDown,
   MoreHorizontal,
   ChevronDown,
-  Table as TableIcon,
-  ChevronRight
 } from 'lucide-react';
 import { refreshDashboardWidget, getWidgetInsight } from '../../services/api';
 import { T } from './tokens';
@@ -39,36 +37,6 @@ function IconClose() {
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-
-function IconRefresh({ spinning }: { spinning?: boolean }) {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={spinning ? 'refresh-spin' : ''}>
-      <polyline points="23 4 23 10 17 10" />
-      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-    </svg>
-  );
-}
-
-function IconDownload() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  );
-}
-
-function IconResize() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 3 21 3 21 9" />
-      <polyline points="9 21 3 21 3 15" />
-      <line x1="21" y1="3" x2="14" y2="10" />
-      <line x1="3" y1="21" x2="10" y2="14" />
     </svg>
   );
 }
@@ -343,7 +311,7 @@ function TableViz({ columns, rows, compact }: { columns: string[]; rows: Array<R
                     padding: '12px 16px', borderBottom: `1px solid rgba(255,255,255,0.03)`,
                     color: colIndex === 1 ? T.text : T.text2, 
                     fontWeight: colIndex === 1 ? 600 : 400,
-                    fontFamily: colIndex === 1 ? T.fontSans : T.fontMono,
+                    fontFamily: colIndex === 1 ? T.fontBody : T.fontMono,
                     fontSize: '0.78rem',
                     maxWidth: 300,
                   }}>

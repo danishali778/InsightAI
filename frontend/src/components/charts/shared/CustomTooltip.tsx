@@ -1,5 +1,5 @@
-import React from 'react';
 import { formatColLabel } from '../utils/dataProcessors';
+import { T } from '../../dashboard/tokens';
 
 function formatLabel(raw: string): string {
   if (typeof raw !== 'string') return String(raw);
@@ -25,8 +25,6 @@ export interface CustomTooltipProps {
   tooltipColumns?: string[];
 }
 
-import { T } from '../../dashboard/tokens';
-
 export function CustomTooltip({ active, payload, label, normalizedColMaxes, categoryCol, tooltipColumns }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   const tt = {
@@ -47,7 +45,7 @@ export function CustomTooltip({ active, payload, label, normalizedColMaxes, cate
   return (
     <div style={tt}>
       <div style={{ fontWeight: 600, marginBottom: 6, color: T.text2 }}>{formatLabel(String(label ?? ''))}</div>
-      {categoryCol && rowData[categoryCol] && (
+      {categoryCol && rowData[categoryCol] != null && (
         <div style={{ color: primaryColor, marginBottom: 4, fontWeight: 500 }}>
           {categoryCol} : {String(rowData[categoryCol])}
         </div>

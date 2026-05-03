@@ -71,8 +71,8 @@ export function DashboardPieChart({ widget, size: _size }: { widget: DashboardWi
   const total = data.reduce((sum, d) => sum + d.value, 0) || 1;
 
   const chartHeight = 220;
-  const outerRadius = "80%";
-  const innerRadius = isDonut ? "50%" : 0;
+  const outerRadius = "88%";
+  const innerRadius = isDonut ? "62%" : 0;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', padding: '16px 16px 8px', gap: 12, height: 270, boxSizing: 'border-box' }}>
@@ -86,8 +86,8 @@ export function DashboardPieChart({ widget, size: _size }: { widget: DashboardWi
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius="62%"
-              outerRadius="88%"
+              innerRadius={innerRadius}
+              outerRadius={outerRadius}
               paddingAngle={4}
               cornerRadius={6}
               strokeWidth={0}
