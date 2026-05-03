@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import { T } from '../dashboard/tokens';
-import { useSettingsStore } from '../../store/settingsStore';
 import type { ChatSidebarProps } from '../../types/chat';
 import { DeleteSessionModal } from './DeleteSessionModal';
 
 export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession, onRenameSession, connections, activeConnectionId }: ChatSidebarProps) {
-  const { settings } = useSettingsStore();
-  const displayName = settings?.full_name || 'User';
-  const avatarInitials = displayName.substring(0, 2).toUpperCase();
-
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');

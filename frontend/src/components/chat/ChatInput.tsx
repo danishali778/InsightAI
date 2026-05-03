@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { T } from '../dashboard/tokens';
 import type { ChatInputProps } from '../../types/chat';
 

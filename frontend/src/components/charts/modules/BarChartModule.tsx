@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Info } from 'lucide-react';
 import type { ChartModuleProps } from '../types';
@@ -325,4 +325,3 @@ export function BarChartModule({
     </>
   );
 }
-

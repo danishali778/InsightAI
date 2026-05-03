@@ -6,8 +6,7 @@ import { BaseChartContainer } from '../charts/BaseChartContainer';
 import { AddToDashboardModal } from './AddToDashboardModal';
 import { SaveQueryModal } from './SaveQueryModal';
 import { useSmartSave } from '../../hooks/useSmartSave';
-import { inferViz, autoTitle, layoutDims } from '../../utils/dashboardUtils';
-import { Pin, Save, Plus, RotateCcw, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Pin, Plus, RotateCcw, ThumbsUp, ThumbsDown } from 'lucide-react';
 import type { ChatMessageView } from '../../types/chat';
 
 export function MessageBubble({ 

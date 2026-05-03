@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { getSettings, updateSettings, UserSettings } from '../services/api';
+import { getSettings, updateSettings } from '../services/api';
+import type { UserSettings } from '../services/api';
 
 interface SettingsState {
   settings: UserSettings | null;

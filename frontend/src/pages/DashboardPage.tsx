@@ -218,8 +218,8 @@ function DashboardRail({
                   <DashboardCreateForm
                     value={newDashName}
                     onChange={onNewDashNameChange}
-                    onCreate={handleCreateDash}
-                    onCancel={() => setShowCreateForm(false)}
+                    onCreate={onCreate}
+                    onCancel={onCancelCreate}
                     creating={creating}
                     compact
                     ctaLabel="Add"
@@ -877,26 +877,6 @@ export function DashboardPage() {
     await exportToPNG('dashboard-grid', `${activeDash.name.replace(/\s+/g, '_')}_Dashboard`);
   };
 
-  const handleShareClick = async () => {
-    if (!activeDash) return;
-    try {
-      let token = activeDash.share_token;
-      if (!activeDash.is_public || !token) {
-        const updated = await updateDashboard(activeDash.id, { is_public: true });
-        token = updated.share_token;
-        await reloadDashboards();
-      }
-      if (token) {
-        const url = `${window.location.origin}/s/${token}`;
-        await navigator.clipboard.writeText(url);
-        alert(`Public link area enabled and copied to clipboard!\n${url}`);
-      }
-    } catch (err) {
-      console.error('Failed to create share link:', err);
-      alert('Failed to create share link.');
-    }
-  };
-
   return (
     <MainShell
       title={activeDash?.name || 'Dashboards'}
@@ -909,7 +889,6 @@ export function DashboardPage() {
       headerActions={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button style={headerIconBtnStyle} title="Search"><HeaderIcons.Search /></button>
-          <button onClick={handleShareClick} style={headerActionBtnStyle} title="Share"><HeaderIcons.Share /> Share URL</button>
           <button onClick={handleExportPNG} style={headerActionBtnStyle} title="Export Report"><HeaderIcons.Download /> Export PNG</button>
           <button 
             onClick={() => setShowCreateForm(true)}

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { MainShell } from '../components/common/MainShell';
-import { HeaderIcons } from '../components/common/AppHeader';
 import { Sidebar as ChatSidebar } from '../components/chat/Sidebar';
 import { ChatInput } from '../components/chat/ChatInput';
 import { MessageBubble } from '../components/chat/MessageBubble';
@@ -42,8 +41,8 @@ export function ChatPage() {
         sql: message.sql || undefined,
         columns: message.columns || message.results?.columns || undefined,
         rows: message.rows || message.results?.rows || undefined,
-        row_count: message.row_count ?? message.results?.row_count,
-        execution_time_ms: message.execution_time_ms ?? message.results?.execution_time_ms,
+        row_count: message.row_count ?? message.results?.row_count ?? undefined,
+        execution_time_ms: message.execution_time_ms ?? message.results?.execution_time_ms ?? undefined,
         chart_recommendation: message.chart_recommendation || undefined,
         column_metadata: message.column_metadata || undefined,
         error: message.error || undefined,
