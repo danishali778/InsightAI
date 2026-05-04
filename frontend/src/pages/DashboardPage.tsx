@@ -123,94 +123,98 @@ function DashboardRail({
   return (
     <div style={{ width: 0, flexShrink: 0, position: 'relative', zIndex: 40 }}>
       {/* Absolute positioning container for overlay collapse effect */}
-      <div 
+      <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
           position: 'absolute',
           top: 0, left: 0, bottom: 0,
-          width: isExpanded ? 240 : 16,
-          background: isExpanded ? 'rgba(8,14,26,0.98)' : 'transparent',
-          backdropFilter: isExpanded ? 'blur(16px)' : 'none',
-          boxShadow: isExpanded ? '4px 0 24px rgba(0,0,0,0.6)' : 'none',
+          width: isExpanded ? 240 : 20,
+          background: isExpanded ? T.s1 : 'transparent',
+          backdropFilter: isExpanded ? 'blur(20px)' : 'none',
+          boxShadow: isExpanded ? `12px 0 40px ${T.bg}dd` : 'none',
           borderRight: isExpanded ? `1px solid ${T.border}` : 'transparent',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
           whiteSpace: 'nowrap',
+          zIndex: 100
         }}
       >
-        <div style={{ 
+        {/* Subtle texture overlay for sidebar */}
+        {isExpanded && (
+          <div style={{ 
+            position: 'absolute', inset: 0, 
+            backgroundImage: `radial-gradient(${T.border} 0.5px, transparent 0.5px)`, 
+            backgroundSize: '24px 24px', opacity: 0.15, pointerEvents: 'none' 
+          }} />
+        )}
+        <div style={{
           width: 240, height: '100%', display: 'flex', flexDirection: 'column',
-          opacity: isExpanded ? 1 : 0, 
+          opacity: isExpanded ? 1 : 0,
           pointerEvents: isExpanded ? 'auto' : 'none',
           transition: 'opacity 0.25s ease',
         }}>
           {/* Rail header */}
           <div style={{
-            padding: '16px 16px 12px',
+            padding: '24px 20px',
             borderBottom: `1px solid ${T.border}`,
+            background: `linear-gradient(180deg, ${T.s2}44, transparent)`,
+            position: 'relative'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
               <div style={{
-                width: 24, height: 24, borderRadius: 7, flexShrink: 0,
-                background: 'linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,255,0.15))',
-                border: '1px solid rgba(0,229,255,0.2)',
+                width: 32, height: 32, borderRadius: 0, flexShrink: 0,
+                background: T.s2,
+                border: `1px solid ${T.border}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: T.accent,
               }}>
                 <IconGrid />
               </div>
               <div style={{
-                fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.82rem',
-                color: T.text, letterSpacing: -0.3, transition: 'opacity 0.2s',
+                fontFamily: T.fontHead, fontWeight: 900, fontSize: '0.85rem',
+                color: T.text, letterSpacing: '1px', textTransform: 'uppercase', transition: 'opacity 0.3s',
                 opacity: isExpanded ? 1 : 0,
-              }}>My Dashboards</div>
+              }}>DASHBOARDS</div>
             </div>
             <div style={{
-              fontSize: '0.64rem', color: T.text3, fontFamily: T.fontMono,
-              paddingLeft: 36, transition: 'opacity 0.2s',
+              fontSize: '0.58rem', color: T.text3, fontFamily: T.fontMono, fontWeight: 800,
+              paddingLeft: 46, transition: 'opacity 0.3s', letterSpacing: '2px',
               opacity: isExpanded ? 1 : 0,
-            }}>{dashboards.length} dashboard{dashboards.length !== 1 ? 's' : ''}</div>
+            }}>{dashboards.length} // ACTIVE_NODES</div>
           </div>
 
           {/* Dashboard list */}
           <div className="dash-scroll" style={{ flex: 1, overflowY: 'auto', padding: '8px 4px 8px 8px' }}>
             {/* New Dashboard at top */}
-            <div style={{ paddingRight: 6, marginBottom: 8 }}>
+            <div style={{ padding: '8px 12px', marginBottom: 12 }}>
               {!showCreateForm ? (
                 <button
                   onClick={onShowCreateForm}
                   className="new-dash-cta"
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '8px 17px', borderRadius: 10,
-                    border: '1px solid rgba(0,229,255,0.25)',
-                    background: 'linear-gradient(135deg, rgba(0,229,255,0.08), rgba(124,58,255,0.05))',
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '12px 20px', borderRadius: 0,
+                    border: `1px solid ${T.border}`,
+                    background: T.s2,
                     cursor: 'pointer', width: '100%',
-                    color: T.accent,
-                    fontFamily: T.fontBody, fontSize: '0.76rem',
-                    fontWeight: 600, overflow: 'hidden',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.12), rgba(124,58,255,0.08))';
-                    e.currentTarget.style.borderColor = 'rgba(0,229,255,0.4)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.08), rgba(124,58,255,0.05))';
-                    e.currentTarget.style.borderColor = 'rgba(0,229,255,0.25)';
+                    color: T.text,
+                    fontFamily: T.fontMono, fontSize: '0.72rem',
+                    fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
                 >
                   <div style={{
-                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                    background: 'rgba(0,229,255,0.15)',
-                    border: '1px solid rgba(0,229,255,0.3)',
+                    width: 22, height: 22, borderRadius: 0, flexShrink: 0,
+                    background: 'transparent',
+                    border: `1px solid ${T.accent}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: T.accent
                   }}>
                     <IconPlus />
                   </div>
-                  <span style={{ transition: 'opacity 0.2s', opacity: isExpanded ? 1 : 0 }}>
-                    New Dashboard
+                  <span style={{ transition: 'opacity 0.3s', opacity: isExpanded ? 1 : 0 }}>
+                    NEW_DASHBOARD
                   </span>
                 </button>
               ) : (
@@ -245,65 +249,75 @@ function DashboardRail({
                   }}
                 >
                   <div style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '9px 10px 9px 14px',
-                    borderRadius: 9,
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '12px 16px',
+                    borderRadius: 0,
                     cursor: isEditing ? 'default' : 'pointer',
-                    color: isActive ? T.text : T.text2,
+                    color: isActive ? T.accent : T.text2,
+                    borderLeft: `4px solid ${isActive ? T.accent : 'transparent'}`,
+                    background: isActive ? T.s2 : 'transparent',
+                    transition: 'all 0.2s ease',
+                  }}
+                  className="dash-rail-item-content"
+                >
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 0, flexShrink: 0,
+                    background: isActive ? T.s3 : 'transparent',
+                    border: `1px solid ${isActive ? T.accent : T.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: isActive ? T.accent : T.text3,
+                    fontSize: '0.85rem', transition: 'all 0.3s ease',
                   }}>
-                    <div style={{
-                      width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                      background: isActive
-                        ? 'linear-gradient(135deg, rgba(0,229,255,0.12), rgba(124,58,255,0.12))'
-                        : T.s2,
-                      border: `1px solid ${isActive ? 'rgba(0,229,255,0.2)' : T.border}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: isActive ? T.accent : T.text3,
-                      fontSize: '0.75rem', transition: 'all 0.2s ease',
-                    }}>
-                      {dashboard.icon || <IconDashboard />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, transition: 'opacity 0.2s', opacity: isExpanded ? 1 : 0 }}>
-                      {isEditing ? (
-                        <input
-                          autoFocus
-                          value={editValue}
-                          onChange={e => setEditValue(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') commitEdit(dashboard.id);
-                            else if (e.key === 'Escape') setEditingId(null);
-                          }}
-                          onBlur={() => commitEdit(dashboard.id)}
-                          onClick={e => e.stopPropagation()}
-                          style={{
-                            width: '100%', background: T.s2,
-                            border: '1px solid rgba(0,229,255,0.3)',
-                            borderRadius: 6, padding: '3px 8px',
-                            color: T.text, fontFamily: T.fontBody,
-                            fontSize: '0.76rem', outline: 'none',
-                          }}
-                        />
-                      ) : (
-                        <>
-                          <div style={{
-                            fontSize: '0.76rem', fontWeight: 600,
-                            overflow: 'hidden', textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap', lineHeight: 1.3,
-                          }}>{dashboard.name}</div>
-                          <div style={{
-                            fontSize: '0.6rem', color: T.text3,
-                            fontFamily: T.fontMono, marginTop: 1,
-                          }}>{dashboard.widget_count} widget{dashboard.widget_count !== 1 ? 's' : ''}</div>
-                        </>
-                      )}
-                    </div>
-                    {isActive && !isEditing && isExpanded && (
+                    {dashboard.icon || <IconDashboard />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, transition: 'opacity 0.3s', opacity: isExpanded ? 1 : 0 }}>
+                    {isEditing ? (
+                      <input
+                        autoFocus
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') commitEdit(dashboard.id);
+                          else if (e.key === 'Escape') setEditingId(null);
+                        }}
+                        onBlur={() => commitEdit(dashboard.id)}
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          width: '100%', background: T.s2,
+                          border: `1px solid ${T.accent}`,
+                          borderRadius: 0, padding: '4px 8px',
+                          color: T.text, fontFamily: T.fontMono,
+                          fontSize: '0.72rem', outline: 'none',
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <div style={{
+                          fontSize: '0.72rem', fontWeight: 900, fontFamily: T.fontMono,
+                          overflow: 'hidden', textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap', lineHeight: 1.3, letterSpacing: '0.5px',
+                          textTransform: 'uppercase'
+                        }}>{dashboard.name}</div>
+                        <div style={{
+                          fontSize: '0.58rem', color: T.text3,
+                          fontFamily: T.fontMono, marginTop: 2, fontWeight: 700,
+                          letterSpacing: '1px'
+                        }}>{dashboard.widget_count} // NODES</div>
+                      </>
+                    )}
+                  </div>
+                  {isActive && !isEditing && isExpanded && (
                       <div style={{ display: 'flex', gap: 3 }}>
                         <button
                           className="dash-action-btn"
                           title="Rename"
                           onClick={(e) => startEdit(e, dashboard)}
-                          style={{ width: 22, height: 22 }}
+                          style={{ 
+                            width: 24, height: 24, borderRadius: 0, 
+                            border: `1px solid ${T.border}`, background: T.s3,
+                            color: T.text, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', transition: 'all 0.2s'
+                          }}
                         >
                           <IconEdit />
                         </button>
@@ -311,7 +325,12 @@ function DashboardRail({
                           className="dash-action-btn dash-action-btn--danger"
                           title="Delete"
                           onClick={(e) => { e.stopPropagation(); onDelete(dashboard); }}
-                          style={{ width: 22, height: 22 }}
+                          style={{ 
+                            width: 24, height: 24, borderRadius: 0, 
+                            border: `1px solid ${T.border}`, background: T.s3,
+                            color: T.red, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', transition: 'all 0.2s'
+                          }}
                         >
                           <IconTrash />
                         </button>
@@ -323,20 +342,22 @@ function DashboardRail({
             })}
           </div>
 
-          {/* Rail footer stats */}
           <div style={{
-            padding: '10px 25px', borderTop: `1px solid ${T.border}`,
+            padding: '12px 20px', borderTop: `1px solid ${T.border}`,
             display: 'flex', alignItems: 'center', gap: 10,
+            background: T.s2 + '44'
           }}>
             <div style={{
-              width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+              width: 8, height: 8, borderRadius: 0, flexShrink: 0,
               background: T.green,
-              boxShadow: '0 0 6px rgba(34,211,165,0.5)',
+              boxShadow: `0 0 10px ${T.green}44`,
+              transform: 'rotate(45deg)'
             }} />
             <span style={{
-              fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono,
-              transition: 'opacity 0.2s', opacity: isExpanded ? 1 : 0,
-            }}>All systems online</span>
+              fontSize: '0.58rem', color: T.text3, fontFamily: T.fontMono,
+              transition: 'opacity 0.3s', opacity: isExpanded ? 0.8 : 0,
+              fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px'
+            }}>SYSTEM_NOMINAL // 778</span>
           </div>
         </div>
       </div>
@@ -354,107 +375,61 @@ function EmptyState() {
       height: '100%', minHeight: 400,
       position: 'relative',
     }}>
-      {/* Background glow */}
-      <div className="empty-glow" style={{
-        position: 'absolute', width: 320, height: 320,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,229,255,0.06) 0%, rgba(124,58,255,0.04) 40%, transparent 70%)',
-        pointerEvents: 'none',
-      }} />
-
-      {/* Floating dashboard illustration */}
-      <div className="empty-illustration" style={{ marginBottom: 28, position: 'relative' }}>
-        <svg width="120" height="100" viewBox="0 0 120 100" fill="none">
-          {/* Main frame */}
-          <rect x="10" y="8" width="100" height="72" rx="8" stroke="rgba(0,229,255,0.3)" strokeWidth="1.5" fill="rgba(0,229,255,0.03)" />
-          {/* Top bar */}
-          <rect x="10" y="8" width="100" height="14" rx="8" fill="rgba(11,17,32,0.6)" stroke="rgba(0,229,255,0.2)" strokeWidth="1" />
-          <circle cx="20" cy="15" r="2" fill="rgba(248,113,113,0.6)" />
-          <circle cx="27" cy="15" r="2" fill="rgba(245,158,11,0.6)" />
-          <circle cx="34" cy="15" r="2" fill="rgba(34,211,165,0.6)" />
-          {/* KPI cards */}
-          <rect x="16" y="28" width="22" height="14" rx="3" fill="rgba(0,229,255,0.1)" stroke="rgba(0,229,255,0.2)" strokeWidth="0.8" />
-          <rect x="42" y="28" width="22" height="14" rx="3" fill="rgba(124,58,255,0.1)" stroke="rgba(124,58,255,0.2)" strokeWidth="0.8" />
-          <rect x="68" y="28" width="22" height="14" rx="3" fill="rgba(34,211,165,0.1)" stroke="rgba(34,211,165,0.2)" strokeWidth="0.8" />
-          {/* Chart area */}
-          <rect x="16" y="48" width="44" height="26" rx="4" fill="rgba(0,229,255,0.05)" stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" />
-          {/* Chart bars */}
-          <rect x="22" y="60" width="5" height="10" rx="1" fill="rgba(0,229,255,0.3)" />
-          <rect x="30" y="56" width="5" height="14" rx="1" fill="rgba(0,229,255,0.4)" />
-          <rect x="38" y="52" width="5" height="18" rx="1" fill="rgba(0,229,255,0.5)" />
-          <rect x="46" y="48" width="5" height="22" rx="1" fill="rgba(0,229,255,0.35)" />
-          {/* Donut */}
-          <circle cx="80" cy="61" r="12" fill="none" stroke="rgba(124,58,255,0.3)" strokeWidth="4" />
-          <circle cx="80" cy="61" r="12" fill="none" stroke="rgba(0,229,255,0.5)" strokeWidth="4" strokeDasharray="30 45" strokeLinecap="round" transform="rotate(-90 80 61)" />
-        </svg>
+      <div style={{
+        width: 140, height: 140, borderRadius: 0,
+        background: T.s1,
+        border: `1px solid ${T.border}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginBottom: 40,
+        boxShadow: `20px 20px 60px ${T.bg}dd`,
+        position: 'relative'
+      }}>
+        <div style={{ position: 'absolute', top: 8, left: 8, fontSize: '0.5rem', fontFamily: T.fontMono, color: T.text3 }}>000 // NULL</div>
+        <IconGrid />
       </div>
 
       <div style={{
-        fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.4rem',
-        color: T.text, marginBottom: 10, letterSpacing: -0.5,
+        fontFamily: T.fontHead, fontWeight: 950, fontSize: '2.4rem',
+        color: T.text, marginBottom: 16, letterSpacing: '-2px',
+        textTransform: 'uppercase', lineHeight: 1
       }}>
-        Create your first dashboard
+        BEGIN INVESTIGATION
       </div>
       <div style={{
-        fontSize: '0.88rem', color: T.text3, maxWidth: 380,
-        lineHeight: 1.7, textAlign: 'center', marginBottom: 24,
+        fontSize: '0.75rem', color: T.text3, maxWidth: 400,
+        lineHeight: 1.8, textAlign: 'center', marginBottom: 40,
+        fontFamily: T.fontMono, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px'
       }}>
-        Build custom dashboards from your query results. Add charts, KPIs, and tables to track what matters.
+        INITIALIZE CUSTOM DASHBOARDS FROM QUERY_RESULTS. RUN A COMMAND IN CHAT TO POPULATE THIS NODE.
       </div>
 
-      {/* CTA */}
-      <div style={{ display: 'flex', gap: 12 }}>
-        <button style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '10px 22px', borderRadius: 10,
-          background: 'linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,255,0.1))',
-          border: '1px solid rgba(0,229,255,0.3)',
-          color: T.accent, cursor: 'pointer',
-          fontFamily: T.fontBody, fontSize: '0.85rem', fontWeight: 600,
-          boxShadow: '0 0 20px rgba(0,229,255,0.15)',
-          transition: 'all 0.2s ease',
-        }}
-          onMouseEnter={e => {
-            e.currentTarget.style.boxShadow = '0 0 32px rgba(0,229,255,0.25)';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.boxShadow = '0 0 20px rgba(0,229,255,0.15)';
-            e.currentTarget.style.transform = 'none';
+      <div style={{ display: 'flex', gap: 20 }}>
+        <button 
+          onClick={() => {}} 
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '16px 32px', borderRadius: 0,
+            background: T.text,
+            border: 'none',
+            color: T.bg, cursor: 'pointer',
+            fontFamily: T.fontMono, fontSize: '0.72rem', fontWeight: 950,
+            textTransform: 'uppercase', letterSpacing: '2px',
+            transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
           }}
         >
-          <IconPlus /> New Dashboard
-        </button>
-        <button style={{
-          padding: '10px 22px', borderRadius: 10,
-          background: 'transparent',
-          border: `1px solid ${T.border2}`,
-          color: T.text2, cursor: 'pointer',
-          fontFamily: T.fontBody, fontSize: '0.85rem',
-          transition: 'all 0.2s ease',
-        }}
-          onMouseEnter={e => {
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-            e.currentTarget.style.color = T.text;
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.borderColor = T.border2;
-            e.currentTarget.style.color = T.text2;
-          }}
-        >
-          Go to Chat
+          <HeaderIcons.Plus size={14} /> CREATE_DASHBOARD
         </button>
       </div>
 
-      {/* Hint */}
+      {/* Editorial Hint */}
       <div style={{
-        marginTop: 32, display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 166px', borderRadius: 8,
-        background: 'rgba(0,229,255,0.04)',
-        border: '1px solid rgba(0,229,255,0.08)',
+        marginTop: 48, display: 'flex', alignItems: 'center', gap: 8,
+        padding: '12px 20px', borderRadius: 0,
+        background: T.s2,
+        border: '1px solid rgba(0,0,0,0.05)',
       }}>
-        <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>
-          💡 Run a query in Chat → click <strong style={{ color: T.accent }}>+ Dashboard</strong> to add widgets
+        <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          💡 Run a query in Chat → click <strong style={{ color: T.text }}>+ Dashboard</strong> to add widgets
         </span>
       </div>
     </div>
@@ -527,7 +502,7 @@ function DashboardCanvas({
     return {
       lg: widgets.map((w): GridLayoutItem => {
         const isKPI = w.viz_type === 'kpi';
-        
+
         let safeW = w.w;
         let safeH = w.h;
 
@@ -563,86 +538,121 @@ function DashboardCanvas({
 
   return (
     <>
-      <div className="dash-section" style={{
-        display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14,
+      <div className="dash-hero-editorial" style={{
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: 40, 
+        padding: '60px 0 40px 0',
+        position: 'relative',
+        borderBottom: `1px solid rgba(0, 0, 0, 0.05)`,
+        marginBottom: 40
       }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-          background: 'linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,58,255,0.1))',
-          border: '1px solid rgba(0,229,255,0.15)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '1.2rem',
-        }}>
-          {activeDash.icon || '📊'}
-        </div>
-        <div>
+        <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
           <div style={{
-            fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.25rem',
-            color: T.text, letterSpacing: -0.5,
-          }}>{activeDash.name}</div>
-          <div style={{
-            fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono,
-            display: 'flex', alignItems: 'center', gap: 8, marginTop: 2,
+            width: 80, height: 80, borderRadius: 16, flexShrink: 0,
+            background: '#fff',
+            border: '1px solid rgba(0,0,0,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '2rem',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
           }}>
-            <span>{stats.total_widgets} widget{stats.total_widgets !== 1 ? 's' : ''}</span>
-            <span style={{
-              width: 3, height: 3, borderRadius: '50%',
-              background: T.text3, display: 'inline-block',
-            }} />
-            <span>Created {new Date(activeDash.created_at).toLocaleDateString()}</span>
-            <span style={{
-              width: 3, height: 3, borderRadius: '50%',
-              background: T.text3, display: 'inline-block',
-            }} />
-            <button 
-              onClick={() => setRefreshInterval(refreshInterval ? null : 60000)}
-              style={{
-                background: 'transparent', border: 'none', 
-                color: refreshInterval ? T.accent : T.text3,
-                fontSize: '0.68rem', fontFamily: T.fontMono, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 4
-              }}
-            >
-              <div style={{ 
-                width: 6, height: 6, borderRadius: '50%', 
-                background: refreshInterval ? T.accent : T.text3,
-                boxShadow: refreshInterval ? `0 0 8px ${T.accent}` : 'none'
-              }} />
-              {refreshInterval ? 'LIVE REFRESH (60s)' : 'LIVE REFRESH OFF'}
-            </button>
+            {activeDash.icon || '📊'}
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{
+              fontSize: '0.62rem', 
+              color: T.text3, 
+              fontFamily: T.fontMono, 
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              marginBottom: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}>
+              <span style={{ color: T.text }}>#</span>
+              Live Dashboard
+            </div>
+            
+            <div style={{
+              fontFamily: T.fontHead, 
+              fontStyle: 'italic',
+              fontWeight: 900, 
+              fontSize: '4.5rem',
+              color: T.text, 
+              letterSpacing: '-0.02em', 
+              lineHeight: 0.9,
+              marginBottom: 20,
+            }}>{activeDash.name}</div>
+            
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 20,
+            }}>
+              <div style={{
+                fontSize: '0.7rem', color: T.text2, fontFamily: T.fontMono,
+                letterSpacing: '0.05em', fontWeight: 600
+              }}>
+                <span style={{ color: T.text, fontWeight: 800 }}>{stats.total_widgets}</span> WIDGETS
+              </div>
+
+              <div style={{
+                fontSize: '0.7rem', color: T.text3, fontFamily: T.fontMono,
+                opacity: 0.7
+              }}>
+                CREATED {new Date(activeDash.created_at).toLocaleDateString().toUpperCase()}
+              </div>
+
+              <button 
+                onClick={() => setRefreshInterval(refreshInterval ? null : 60000)}
+                style={{
+                  background: 'transparent', border: 'none', 
+                  color: refreshInterval ? T.accent : T.text3,
+                  fontSize: '0.68rem', fontFamily: T.fontMono, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: 0, fontWeight: 700, letterSpacing: '0.05em'
+                }}
+              >
+                <div style={{ 
+                  width: 6, height: 6, borderRadius: '50%', 
+                  background: refreshInterval ? T.accent : T.text3,
+                  boxShadow: refreshInterval ? `0 0 10px ${T.accent}40` : 'none',
+                }} />
+                LIVE REFRESH: {refreshInterval ? 'ON' : 'OFF'}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {stats.total_widgets > 0 && (
-        <div className="dash-section dash-section-d1" style={{
-          display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap',
+        {/* Breakdown Pills on the Right */}
+        <div style={{
+          display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'flex-end',
+          maxWidth: 400, paddingTop: 60
         }}>
           {Object.entries(stats.viz_breakdown || {}).map(([key, value]) => (
             <div key={key} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: T.s1, border: `1px solid ${T.border}`,
-              borderRadius: 8, padding: '5px 12px',
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: '#fff', 
+              border: `1px solid rgba(0,0,0,0.08)`,
+              borderRadius: 30, padding: '6px 18px',
               fontSize: '0.7rem', fontFamily: T.fontMono,
-              transition: 'all 0.18s ease',
-            }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'rgba(0,229,255,0.2)';
-                e.currentTarget.style.background = 'rgba(0,229,255,0.04)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = T.border;
-                e.currentTarget.style.background = T.s1;
-              }}
-            >
-              <span style={{ color: T.accent, fontWeight: 700 }}>{String(value)}</span>
-              <span style={{ color: T.text3 }}>{key}</span>
+              transition: 'all 0.2s ease',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
+              cursor: 'default',
+            }}>
+              <div style={{ 
+                width: 5, height: 5, borderRadius: '50%', 
+                background: key.toLowerCase() === 'table' ? T.accent : T.purple
+              }} />
+              <span style={{ color: T.text, fontWeight: 800 }}>{String(value)}</span>
+              <span style={{ color: T.text3, letterSpacing: '0.05em', fontWeight: 600 }}>{key.toUpperCase()}</span>
             </div>
           ))}
         </div>
-      )}
+      </div>
 
-      <DashboardFilterBar 
+      <DashboardFilterBar
         filters={localFilters}
         onFiltersChange={setLocalFilters}
         onApply={handleApplyFilters}
@@ -673,46 +683,39 @@ function DashboardCanvas({
           </ResponsiveGridLayout>
 
           <div style={{
-            border: `1px dashed rgba(0,229,255,0.15)`,
+            border: `1px dashed rgba(0,0,0,0.08)`,
             borderRadius: 14, minHeight: 64,
             color: T.text3, display: 'flex',
             alignItems: 'center', justifyContent: 'center',
             fontSize: '0.78rem', marginTop: 16,
-            background: 'rgba(0,229,255,0.02)',
+            background: 'rgba(0,0,0,0.01)',
             transition: 'all 0.2s ease',
             cursor: 'pointer',
           }}
             onMouseEnter={e => {
-              e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)';
-              e.currentTarget.style.background = 'rgba(0,229,255,0.04)';
-              e.currentTarget.style.color = T.accent;
+              e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)';
+              e.currentTarget.style.background = 'rgba(0,0,0,0.02)';
+              e.currentTarget.style.color = T.text2;
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'rgba(0,229,255,0.15)';
-              e.currentTarget.style.background = 'rgba(0,229,255,0.02)';
+              e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
+              e.currentTarget.style.background = 'rgba(0,0,0,0.01)';
               e.currentTarget.style.color = T.text3;
             }}
           >
-            <IconPlus />&nbsp; Add more widgets from Chat using
-            <strong style={{ color: T.accent, marginLeft: 5 }}>+ Dashboard</strong>
+            <HeaderIcons.Plus />&nbsp; Add more widgets from Chat using
+            <strong style={{ color: T.text, marginLeft: 5 }}>+ Dashboard</strong>
           </div>
         </div>
       ) : (
         <div className="dash-section dash-section-d1" style={{
-          border: `1px dashed rgba(0,229,255,0.15)`,
+          border: `1px dashed rgba(0,0,0,0.08)`,
           borderRadius: 18, padding: '55px 40px',
           textAlign: 'center', position: 'relative',
-          background: 'rgba(0,229,255,0.015)',
+          background: 'rgba(0,0,0,0.005)',
         }}>
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 200, height: 200, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(0,229,255,0.05) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }} />
           <div style={{ fontSize: '2.5rem', marginBottom: 14, position: 'relative' }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(0,229,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <line x1="3" y1="9" x2="21" y2="9" />
               <line x1="9" y1="21" x2="9" y2="9" />
@@ -756,176 +759,154 @@ export function DashboardPage() {
     }
   };
 
-  const fetchWidgets = useCallback(async () => {
-    if (!activeDashId) {
-      setWidgets([]);
-      setStats({ total_widgets: 0, viz_breakdown: {} });
-      return;
-    }
-    const [widgetResult, statsResult] = await Promise.all([
-      listDashboardWidgets(activeDashId),
-      getDashboardStats(activeDashId),
-    ]);
-
-    const normalizedWidgets = widgetResult.map(w => {
-      let newW = w.w;
-      let newH = w.h;
-
-      const isKPI = w.viz_type === 'kpi';
-      const isStandardChart = !isKPI && w.viz_type !== 'table';
-
-      if (isKPI) {
-        newW = 5;
-        newH = 5;
-      } else if (w.w < 3) {
-        newW = 10;
-        newH = Math.max(w.h, 7);
-      } else if (isStandardChart && w.h !== 7) {
-        newH = 7;
-      }
-
-      if (newW !== w.w || newH !== w.h) {
-        return { ...w, w: newW, h: newH };
-      }
-      return w;
-    });
-
-    const kpis = normalizedWidgets.filter(w => w.viz_type === 'kpi').sort((a, b) => a.x - b.x);
-    const nonKpis = normalizedWidgets.filter(w => w.viz_type !== 'kpi');
-    
-    const kpiRowsUsed = kpis.length > 0 ? Math.ceil(kpis.length / 4) * 5 : 0;
-    
-    const herdedWidgets = [
-      ...kpis.map((w, i) => ({
-        ...w,
-        x: (i % 4) * 5,
-        y: Math.floor(i / 4) * 5
-      })),
-      ...nonKpis.map(w => ({
-        ...w,
-        y: Math.max(w.y, kpiRowsUsed)
-      }))
-    ];
-
-    setWidgets(herdedWidgets);
-    setStats(statsResult);
-
-    herdedWidgets.forEach(w => {
-      const original = widgetResult.find(ow => ow.id === w.id);
-      if (original && (original.w !== w.w || original.h !== w.h || original.x !== w.x || original.y !== w.y)) {
-        updateDashboardWidget(w.id, { x: w.x, y: w.y, w: w.w, h: w.h });
-      }
-    });
-  }, [activeDashId]);
-
   useEffect(() => {
     if (dashboards.length > 0 && !activeDashId) {
       setActiveDashId(dashboards[0].id);
     }
   }, [dashboards, activeDashId]);
 
-  useEffect(() => {
-    if (activeDashId && dashboards.every((dashboard) => dashboard.id !== activeDashId)) {
-      setActiveDashId(dashboards[0]?.id || null);
+  const loadActiveDashboard = useCallback(async () => {
+    if (!activeDashId) return;
+    try {
+      const data = await listDashboardWidgets(activeDashId);
+      setWidgets(data);
+      const s = await getDashboardStats(activeDashId);
+      setStats(s);
+    } catch (err) {
+      console.error('Failed to load dashboard:', err);
     }
-  }, [dashboards, activeDashId]);
+  }, [activeDashId]);
 
   useEffect(() => {
-    fetchWidgets();
-  }, [fetchWidgets]);
+    loadActiveDashboard();
+  }, [loadActiveDashboard]);
+
+  const handleCreateDashboard = async () => {
+    if (!newDashName.trim()) return;
+    try {
+      const newDash = await createNewDashboard(newDashName);
+      setNewDashName('');
+      setShowCreateForm(false);
+      setActiveDashId(newDash.id);
+    } catch (err) {
+      console.error('Failed to create dashboard:', err);
+    }
+  };
 
   const handleDeleteWidget = async (id: string) => {
-    await deleteDashboardWidget(id);
-    setWidgets((prev) => prev.filter((w) => w.id !== id));
-    fetchWidgets();
-    reloadDashboards();
-  };
-
-  const handleUpdateWidget = useCallback(async (id: string, patch: UpdateDashboardWidgetRequest) => {
-    setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
     try {
-      await updateDashboardWidget(id, patch);
-    } catch {
-      fetchWidgets();
+      await deleteDashboardWidget(id);
+      setWidgets(prev => prev.filter(w => w.id !== id));
+      loadActiveDashboard();
+    } catch (err) {
+      console.error('Failed to delete widget:', err);
     }
-  }, [fetchWidgets]);
-
-  const handleCreateDash = async () => {
-    if (!newDashName.trim()) return;
-    const created = await createNewDashboard({ name: newDashName.trim() });
-    setNewDashName('');
-    setShowCreateForm(false);
-    setActiveDashId(created.id);
   };
 
-  const handleDeleteDash = async (id: string) => {
-    await deleteDashboard(id);
-    await reloadDashboards();
-    setActiveDashId((prev) => (prev === id ? null : prev));
+  const handleUpdateWidget = async (id: string, patch: UpdateDashboardWidgetRequest) => {
+    try {
+      const updated = await updateDashboardWidget(id, patch);
+      setWidgets(prev => prev.map(w => w.id === id ? { ...w, ...updated } : w));
+    } catch (err) {
+      console.error('Failed to update widget:', err);
+    }
   };
 
-  const handleRenameDash = async (id: string, name: string) => {
-    await renameDashboard(id, name);
-    await reloadDashboards();
+  const handleRenameDashboard = async (id: string, name: string) => {
+    try {
+      await renameDashboard(id, name);
+      reloadDashboards();
+    } catch (err) {
+      console.error('Failed to rename dashboard:', err);
+    }
   };
 
-  const activeDash = dashboards.find((dashboard) => dashboard.id === activeDashId);
-
-  const handleExportPNG = async () => {
-    if (!activeDash) return;
-    const { exportToPNG } = await import('../utils/exportUtils');
-    await exportToPNG('dashboard-grid', `${activeDash.name.replace(/\s+/g, '_')}_Dashboard`);
+  const handleDeleteDashboard = async () => {
+    if (!dashboardToDelete) return;
+    try {
+      await deleteDashboard(dashboardToDelete.id);
+      setDashboardToDelete(null);
+      await reloadDashboards();
+      if (activeDashId === dashboardToDelete.id) {
+        setActiveDashId(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete dashboard:', err);
+    }
   };
+
+  const activeDash = dashboards.find(d => d.id === activeDashId);
 
   return (
     <MainShell
       title={activeDash?.name || 'Dashboards'}
-      subtitle={activeDash ? `${stats.total_widgets} widgets` : 'Data Insights'}
-      badge={dashboards.length > 0 ? {
-        text: `${dashboards.length} platforms`,
-        color: T.accent,
-        icon: <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent }} />
-      } : undefined}
+      subtitle=""
+      badge={undefined}
       headerActions={
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button style={headerIconBtnStyle} title="Search"><HeaderIcons.Search /></button>
-          <button onClick={handleExportPNG} style={headerActionBtnStyle} title="Export Report"><HeaderIcons.Download /> Export PNG</button>
-          <button 
-            onClick={() => setShowCreateForm(true)}
-            style={{
-              ...headerActionBtnStyle,
-              background: T.accent,
-              color: '#fff',
-              border: 'none',
-              fontWeight: 700
+        <>
+          <button style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 16px', borderRadius: 0,
+            background: 'transparent',
+            border: `1px solid ${T.border}`,
+            color: T.text2, fontSize: '0.68rem', fontFamily: T.fontMono, fontWeight: 800,
+            cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            textTransform: 'uppercase', letterSpacing: '1px'
+          }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = T.s2;
+              e.currentTarget.style.borderColor = T.text2;
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = T.border;
             }}
           >
-            <HeaderIcons.Plus /> New
+            <HeaderIcons.Download size={14} /> EXPORT_PNG
           </button>
-        </div>
+          
+          <button style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 24px', borderRadius: 0,
+            background: T.text,
+            border: 'none',
+            color: T.bg, fontSize: '0.68rem', fontFamily: T.fontMono, fontWeight: 950,
+            cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            textTransform: 'uppercase', letterSpacing: '2px'
+          }}
+            onClick={() => setShowCreateForm(true)}
+          >
+            <HeaderIcons.Plus size={14} /> NEW_DASHBOARD
+          </button>
+        </>
       }
-      onDashboardHover={handleSidebarHover}
     >
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', height: '100%', position: 'relative' }}>
         <DashboardRail
           dashboards={dashboards}
           activeDashId={activeDashId}
           onSelect={setActiveDashId}
           onDelete={setDashboardToDelete}
-          onRename={handleRenameDash}
+          onRename={handleRenameDashboard}
           showCreateForm={showCreateForm}
           onShowCreateForm={() => setShowCreateForm(true)}
           newDashName={newDashName}
           onNewDashNameChange={setNewDashName}
-          onCreate={handleCreateDash}
+          onCreate={handleCreateDashboard}
           onCancelCreate={() => setShowCreateForm(false)}
           creating={creating}
           externalHover={sidebarTriggeredHover}
         />
-        <div className="dash-scroll" style={{
-          flex: 1, overflowY: 'auto', overflowX: 'hidden',
-          padding: '24px 32px 48px', background: T.bg,
-        }}>
+
+        <div 
+          onMouseEnter={() => handleSidebarHover(true)}
+          onMouseLeave={() => handleSidebarHover(false)}
+          style={{
+            position: 'absolute', top: 0, left: 0, bottom: 0, width: 20, zIndex: 35,
+          }}
+        />
+
+        <div style={{ flex: 1, padding: '0 0 40px 0', overflowY: 'auto' }}>
           <DashboardCanvas
             activeDash={activeDash}
             stats={stats}
@@ -939,30 +920,9 @@ export function DashboardPage() {
       <DeleteDashboardModal
         isOpen={!!dashboardToDelete}
         onClose={() => setDashboardToDelete(null)}
-        onConfirm={() => {
-          if (dashboardToDelete) {
-            handleDeleteDash(dashboardToDelete.id);
-            setDashboardToDelete(null);
-          }
-        }}
+        onConfirm={handleDeleteDashboard}
         dashboardName={dashboardToDelete?.name || ''}
       />
     </MainShell>
   );
 }
-
-const headerActionBtnStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 6,
-  padding: '7px 14px', borderRadius: 8,
-  border: `1px solid ${T.border}`,
-  background: 'transparent',
-  color: T.text2, fontSize: '0.76rem',
-  cursor: 'pointer', fontFamily: T.fontBody,
-  transition: 'all 0.18s ease',
-};
-
-const headerIconBtnStyle: React.CSSProperties = {
-  width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-  borderRadius: 8, border: `1px solid ${T.border}`, background: 'transparent',
-  color: T.text3, cursor: 'pointer', transition: 'all 0.18s ease',
-};

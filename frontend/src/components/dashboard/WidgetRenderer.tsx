@@ -84,13 +84,13 @@ function formatMetric(value: unknown) {
 
 function widgetBadge(vizType: string) {
   const map: Record<string, { bg: string; color: string; label: string; borderColor: string }> = {
-    kpi:     { bg: '#f0fdf4',   color: '#16a34a',  label: 'KPI',     borderColor: '#bbf7d0' },
-    bar:     { bg: '#f0f9ff',   color: '#0284c7',  label: 'BAR',     borderColor: '#bae6fd' },
-    line:    { bg: '#f5f3ff',   color: '#7c3aed',  label: 'LINE',    borderColor: '#ddd6fe' },
-    area:    { bg: '#f5f3ff',   color: '#7c3aed',  label: 'AREA',    borderColor: '#ddd6fe' },
-    scatter: { bg: '#fffbeb',   color: '#d97706',  label: 'SCATTER', borderColor: '#fef3c7' },
-    donut:   { bg: '#f0f9ff',   color: '#0284c7',  label: 'DONUT',   borderColor: '#bae6fd' },
-    table:   { bg: '#f8fafc',   color: '#64748b',  label: 'TABLE',   borderColor: '#e2e8f0' },
+    kpi:     { bg: '#fdfcfb',   color: '#1a1a1a',  label: 'METRIC',  borderColor: 'rgba(0,0,0,0.1)' },
+    bar:     { bg: '#fdfcfb',   color: '#1a1a1a',  label: 'BAR',     borderColor: 'rgba(0,0,0,0.1)' },
+    line:    { bg: '#fdfcfb',   color: '#1a1a1a',  label: 'LINE',    borderColor: 'rgba(0,0,0,0.1)' },
+    area:    { bg: '#fdfcfb',   color: '#1a1a1a',  label: 'AREA',    borderColor: 'rgba(0,0,0,0.1)' },
+    scatter: { bg: '#fdfcfb',   color: '#1a1a1a',  label: 'SCATTER', borderColor: 'rgba(0,0,0,0.1)' },
+    donut:   { bg: '#fdfcfb',   color: '#1a1a1a',  label: 'DONUT',   borderColor: 'rgba(0,0,0,0.1)' },
+    table:   { bg: '#fdfcfb',   color: '#1a1a1a',  label: 'TABLE',   borderColor: 'rgba(0,0,0,0.1)' },
   };
   return map[vizType] || map.table;
 }
@@ -110,12 +110,13 @@ function LiveIndicator() {
   return (
     <span style={{ 
       display: 'inline-flex', alignItems: 'center', gap: 6, 
-      color: '#22d3a5', fontSize: '0.62rem', fontWeight: 600,
-      fontFamily: T.fontMono, marginLeft: 8
+      color: T.text3, fontSize: '0.62rem', fontWeight: 700,
+      fontFamily: T.fontMono, marginLeft: 8,
+      letterSpacing: '0.05em'
     }}>
       <span className="live-indicator-pulse" style={{
-        width: 6, height: 6, borderRadius: '50%', background: '#22d3a5',
-        boxShadow: '0 0 8px rgba(34,211,165,0.6)'
+        width: 5, height: 5, borderRadius: '50%', background: T.accent,
+        boxShadow: `0 0 8px ${T.accent}40`
       }} />
       LIVE
     </span>
@@ -238,8 +239,7 @@ function TableViz({ columns, rows, compact }: { columns: string[]; rows: Array<R
                 transition={{ duration: 1, ease: "easeOut" }}
                 style={{ 
                   height: '100%', 
-                  background: `linear-gradient(90deg, #00e5ff, #7c3aff)`,
-                  boxShadow: '0 0 8px rgba(0,229,255,0.3)'
+                  background: T.text,
                 }} 
               />
             </div>
@@ -410,94 +410,78 @@ function KpiCard({ widget, onDelete }: {
       onMouseLeave={() => setIsHovered(false)}
       className="widget-card widget-drag-handle" 
       style={{
-        background: T.s1,
-        border: `1px solid ${isHovered ? 'rgba(0,229,255,0.4)' : T.border}`, 
-        borderRadius: 16, 
+        background: '#fff',
+        border: `1px solid ${isHovered ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.08)'}`, 
+        borderRadius: 0, // Structured lines
         overflow: 'hidden', 
         minHeight: 190,
         height: '100%',
         cursor: 'grab',
-        boxShadow: isHovered ? '0 12px 24px rgba(0,0,0,0.1)' : '0 4px 12px rgba(0,0,0,0.03)',
+        boxShadow: isHovered ? '0 12px 30px rgba(0,0,0,0.03)' : 'none',
         zIndex: isHovered ? 10 : 1,
-        transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+        transition: 'all 0.2s ease',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        position: 'relative'
       }}
     >
       <div style={{
-        padding: '14px 16px 8px', display: 'flex',
+        padding: '24px 24px 12px', display: 'flex',
         alignItems: 'flex-start', gap: 10,
       }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: 10,
-          background: 'linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,58,255,0.08))',
-          border: '1px solid rgba(0,229,255,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: T.accent, fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
-        }}>
-          $
-        </div>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{
+            fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono,
+            letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8
+          }}>
+            Metric
+          </div>
           <motion.div 
             layout
             style={{
-              fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.9rem',
+              fontFamily: T.fontHead, fontWeight: 900, fontSize: '1.25rem',
               color: T.text, 
               whiteSpace: isHovered ? 'normal' : 'nowrap', 
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              lineHeight: 1.2,
+              lineHeight: 1.1,
+              fontStyle: 'italic'
             }}
           >
             {widget.title}
           </motion.div>
-          <motion.div 
-            layout
-            style={{
-              fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono,
-              marginTop: 1,
-              whiteSpace: isHovered ? 'normal' : 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {label || 'live metric'}
-          </motion.div>
         </div>
-        {change !== null && (
-          <span style={{
-            fontSize: '0.65rem', fontFamily: T.fontMono,
-            color: change >= 0 ? T.green : T.red,
-            background: change >= 0 ? T.greenDim : T.redDim,
-            borderRadius: 999, padding: '3px 9px',
-            display: 'flex', alignItems: 'center', gap: 3,
-            border: `1px solid ${change >= 0 ? 'rgba(34,211,165,0.2)' : 'rgba(248,113,113,0.2)'}`,
-            flexShrink: 0,
-          }}>
-            {change >= 0 ? <IconArrowUp /> : <IconArrowDown />}
-            {Math.abs(change).toFixed(1)}%
-          </span>
-        )}
         <button
-          className="dash-action-btn dash-action-btn--danger"
+          className="dash-action-btn"
           onClick={(e) => { e.stopPropagation(); onDelete(widget.id); }}
-          style={{ width: 24, height: 24, flexShrink: 0 }}
+          style={{ 
+            width: 32, height: 32, borderRadius: '50%',
+            background: 'transparent', border: '1px solid rgba(0,0,0,0.05)',
+            display: isHovered ? 'flex' : 'none',
+            alignItems: 'center', justifyContent: 'center'
+          }}
           title="Remove widget"
         >
           <IconClose />
         </button>
       </div>
-      <motion.div layout style={{ padding: '0 16px 8px', flex: 1 }}>
+      <motion.div layout style={{ padding: '0 24px 12px', flex: 1 }}>
         <div style={{
-          fontFamily: T.fontHead, fontWeight: 800, fontSize: '2.2rem',
-          color: T.text, letterSpacing: -1, lineHeight: 1.1,
+          fontFamily: T.fontHead, fontWeight: 900, fontSize: '3.2rem',
+          color: T.text, letterSpacing: '-0.02em', lineHeight: 0.9,
+          margin: '12px 0'
         }}>
           {formatMetric(metric)}
         </div>
-        <div style={{ fontSize: '0.72rem', color: T.text3, marginTop: 2 }}>{metricCol || 'value'}</div>
+        <div style={{ 
+          fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono,
+          letterSpacing: '0.05em', textTransform: 'uppercase'
+        }}>
+          {metricCol || 'value'}
+        </div>
       </motion.div>
-      <motion.div layout style={{ padding: '0 12px 12px' }}>
-        <Sparkline rows={widget.rows} yColumn={metricCol} color={T.accent} />
+      <motion.div layout style={{ padding: '0 0 0 0', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+        <Sparkline rows={widget.rows} yColumn={metricCol} color={T.text} />
       </motion.div>
     </motion.div>
   );
@@ -611,16 +595,18 @@ export function WidgetRenderer({
 
   return (
     <div className="widget-card" style={{
-      background: T.s1,
-      border: `1px solid ${T.border}`, borderRadius: 16, overflow: 'hidden',
+      background: '#fff',
+      border: `1px solid rgba(0,0,0,0.08)`, 
+      borderRadius: 0, 
+      overflow: 'hidden',
       display: 'flex', flexDirection: 'column', height: '100%',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+      boxShadow: 'none',
     }}>
       {/* Header */}
       <div className="widget-drag-handle" style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '13px 16px 11px',
-        borderBottom: `1px solid ${T.border}`,
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '16px 20px',
+        borderBottom: `1px solid rgba(0,0,0,0.05)`,
         cursor: 'grab',
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -636,11 +622,12 @@ export function WidgetRenderer({
               }}
               onBlur={commitTitle}
               style={{
-                width: '100%', background: T.s2,
-                border: '1px solid rgba(0,229,255,0.3)',
-                borderRadius: 7, padding: '4px 10px',
+                width: '100%', background: '#fff',
+                border: '1px solid rgba(0,0,0,0.1)',
+                borderRadius: 0, padding: '4px 10px',
                 color: T.text, fontFamily: T.fontHead,
-                fontWeight: 700, fontSize: '0.93rem', outline: 'none',
+                fontWeight: 700, fontSize: '1rem', outline: 'none',
+                fontStyle: 'italic'
               }}
             />
           ) : (
@@ -648,24 +635,26 @@ export function WidgetRenderer({
               title="Double-click to rename"
               onDoubleClick={() => { setEditingTitle(true); setTimeout(() => titleInputRef.current?.select(), 0); }}
               style={{
-                fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.93rem',
+                fontFamily: T.fontHead, fontWeight: 900, fontSize: '1.1rem',
                 color: T.text, whiteSpace: 'nowrap', overflow: 'hidden',
                 textOverflow: 'ellipsis', cursor: 'text',
+                fontStyle: 'italic'
               }}
             >
               {titleValue}
             </div>
           )}
           <div style={{
-            fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono,
-            marginTop: 3, display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: '0.6rem', color: T.text3, fontFamily: T.fontMono,
+            marginTop: 4, display: 'flex', alignItems: 'center', gap: 8,
+            letterSpacing: '0.05em', textTransform: 'uppercase'
           }}>
-            <span>{widget.rows.length} rows</span>
+            <span>{widget.rows.length} OBSERVATIONS</span>
             <span style={{
-              width: 2, height: 2, borderRadius: '50%',
-              background: T.text3, display: 'inline-block',
+              width: 3, height: 3, borderRadius: '50%',
+              background: 'rgba(0,0,0,0.1)', display: 'inline-block',
             }} />
-            <span>{widget.cadence}</span>
+            <span>{widget.cadence.toUpperCase()}</span>
             {widget.cadence !== 'Manual only' && <LiveIndicator />}
           </div>
         </div>
@@ -673,9 +662,9 @@ export function WidgetRenderer({
         {/* Chart type switcher */}
         {isChart && (
           <div style={{
-            display: 'flex', gap: 2,
-            background: T.s2, borderRadius: 8,
-            padding: 2, border: `1px solid ${T.border}`,
+            display: 'flex', gap: 1,
+            background: 'rgba(0,0,0,0.03)', borderRadius: 0,
+            padding: 1, border: `1px solid rgba(0,0,0,0.05)`,
           }}>
             {CHART_TYPES.map((t) => (
               <button
@@ -686,16 +675,17 @@ export function WidgetRenderer({
                 }}
                 title={t.label}
                 style={{
-                  padding: '4px 9px', borderRadius: 6,
+                  padding: '4px 12px', borderRadius: 0,
                   border: 'none',
                   background: chartType === t.key
-                    ? 'linear-gradient(135deg, rgba(0,229,255,0.12), rgba(124,58,255,0.08))'
+                    ? '#fff'
                     : 'transparent',
-                  color: chartType === t.key ? T.accent : T.text3,
-                  fontSize: '0.64rem', cursor: 'pointer',
-                  fontFamily: T.fontMono, fontWeight: 600,
-                  transition: 'all 0.18s ease',
-                  letterSpacing: 0.3,
+                  color: T.text,
+                  fontSize: '0.62rem', cursor: 'pointer',
+                  fontFamily: T.fontMono, fontWeight: 800,
+                  transition: 'all 0.2s ease',
+                  letterSpacing: '0.05em',
+                  boxShadow: chartType === t.key ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
                 }}
               >
                 {t.label}
@@ -847,7 +837,7 @@ export function WidgetRenderer({
       )}
 
       {/* Body */}
-      <div style={{ padding: isChart ? '0 0 12px' : '12px 16px 16px', position: 'relative' }}>
+      <div style={{ padding: isChart ? '0 0 12px' : '12px 16px 16px', position: 'relative', height: isChart ? 320 : 'auto' }}>
         {isChart && chartType === 'bar' && <DashboardBarChart widget={widget} size={size} />}
         {isChart && chartType === 'line' && <DashboardLineChart widget={widget} size={size} />}
         {isChart && chartType === 'area' && <DashboardAreaChart widget={widget} size={size} />}

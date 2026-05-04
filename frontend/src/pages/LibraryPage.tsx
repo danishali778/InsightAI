@@ -53,8 +53,8 @@ export function LibraryPage() {
       subtitle={activeTag ? `Filtered by ${activeTag}` : `${stats.total_queries} items in library`}
       badge={{
         text: 'Library',
-        color: T.purple,
-        icon: <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.purple }} />
+        color: T.text,
+        icon: <div style={{ width: 6, height: 6, borderRadius: 0, background: T.text }} />
       }}
       headerActions={
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -69,14 +69,27 @@ export function LibraryPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
-                width: 220, padding: '7px 12px 7px 32px', borderRadius: 8,
-                background: T.s2, border: `1px solid ${T.border}`,
+                width: 220, padding: '8px 12px 8px 32px', borderRadius: 0,
+                background: '#fff', border: `1px solid rgba(0,0,0,0.1)`,
                 fontSize: '0.78rem', outline: 'none', fontFamily: T.fontBody, color: T.text,
+                transition: 'all 0.2s ease',
               }}
+              onFocus={e => e.currentTarget.style.borderColor = T.text}
+              onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'}
             />
           </div>
-          <button style={headerIconBtnStyle} title="New Folder"><HeaderIcons.Plus /></button>
-          <button style={headerActionBtnStyle} title="Import"><HeaderIcons.Download /> Import</button>
+          <button 
+            style={{...headerIconBtnStyle, borderRadius: 0}} 
+            title="New Folder"
+          >
+            <HeaderIcons.Plus />
+          </button>
+          <button 
+            style={{...headerActionBtnStyle, borderRadius: 0, background: T.text, color: '#fff', border: 'none'}} 
+            title="Import"
+          >
+            <HeaderIcons.Download /> Import
+          </button>
         </div>
       }
     >
@@ -108,17 +121,18 @@ export function LibraryPage() {
 }
 
 const headerActionBtnStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 6,
-  padding: '7px 14px', borderRadius: 8,
-  border: `1px solid ${T.border}`,
+  display: 'flex', alignItems: 'center', gap: 8,
+  padding: '8px 16px', borderRadius: 0,
+  border: `1px solid rgba(0,0,0,0.1)`,
   background: 'transparent',
-  color: T.text2, fontSize: '0.76rem',
-  cursor: 'pointer', fontFamily: T.fontBody,
-  transition: 'all 0.18s ease',
+  color: T.text, fontSize: '0.72rem', fontWeight: 800,
+  cursor: 'pointer', fontFamily: T.fontMono,
+  textTransform: 'uppercase', letterSpacing: '0.05em',
+  transition: 'all 0.2s ease',
 };
 
 const headerIconBtnStyle: React.CSSProperties = {
-  width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-  borderRadius: 8, border: `1px solid ${T.border}`, background: 'transparent',
-  color: T.text3, cursor: 'pointer', transition: 'all 0.18s ease',
+  width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
+  borderRadius: 0, border: `1px solid rgba(0,0,0,0.1)`, background: '#fff',
+  color: T.text2, cursor: 'pointer', transition: 'all 0.2s ease',
 };

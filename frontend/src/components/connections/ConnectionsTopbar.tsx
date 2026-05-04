@@ -1,39 +1,45 @@
 import { T } from '../dashboard/tokens';
+import { Plus, BookOpen } from 'lucide-react';
 
 export function ConnectionsTopbar({ onNewConnection }: { onNewConnection: () => void }) {
   return (
     <div style={{
-      height: 52, flexShrink: 0, background: 'rgba(11,17,32,0.97)', borderBottom: `1px solid ${T.border}`,
-      display: 'flex', alignItems: 'center', gap: 12, padding: '0 28px', backdropFilter: 'blur(20px)',
+      height: 72, flexShrink: 0, background: T.s1, borderBottom: `1px solid ${T.border}`,
+      display: 'flex', alignItems: 'center', gap: 0, padding: '0 32px',
       fontFamily: T.fontBody
     }}>
-      <div style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: '1rem', color: T.text }}>Connections</div>
-      <div style={{ fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono }}>Manage your database & data source connections</div>
+      <div style={{ marginRight: 24, paddingRight: 24, borderRight: `1px solid ${T.border}`, height: 32, display: 'flex', alignItems: 'center' }}>
+        <div style={{ fontFamily: T.fontHead, fontWeight: 900, fontSize: '1.2rem', color: T.text, fontStyle: 'italic', letterSpacing: '-0.5px' }}>CONNECTION LEDGER</div>
+      </div>
       
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+      <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '1px' }}>
+        NODE CONTROL & DATA SOURCE ORCHESTRATION
+      </div>
+      
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginLeft: 'auto', border: `1px solid ${T.border}` }}>
         <button style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 7,
-          border: `1px solid ${T.border}`, background: 'transparent', color: T.text2, fontSize: '0.76rem',
-          cursor: 'pointer', transition: 'all 0.15s', fontFamily: T.fontBody
+          display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 0,
+          border: 'none', borderRight: `1px solid ${T.border}`, background: 'transparent', color: T.text2, fontSize: '0.68rem',
+          cursor: 'pointer', transition: 'all 0.15s', fontFamily: T.fontMono, fontWeight: 800
         }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.background = T.s2; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'transparent'; }}
+        onMouseEnter={e => { e.currentTarget.style.background = T.s2; e.currentTarget.style.color = T.text; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text2; }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-          Connection Docs
+          <BookOpen size={14} />
+          DOCUMENTATION
         </button>
 
         <button onClick={onNewConnection} style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 7,
-          border: `1px solid rgba(0,229,255,0.3)`, background: `linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,255,0.1))`, 
-          color: T.accent, fontSize: '0.76rem', fontWeight: 600,
-          cursor: 'pointer', transition: 'all 0.15s', fontFamily: T.fontBody
+          display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', borderRadius: 0,
+          border: 'none', background: T.accent, 
+          color: '#000', fontSize: '0.68rem', fontWeight: 900,
+          cursor: 'pointer', transition: 'all 0.15s', fontFamily: T.fontMono
         }}
-        onMouseEnter={e => e.currentTarget.style.background = `linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,58,255,0.18))` }
-        onMouseLeave={e => e.currentTarget.style.background = `linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,255,0.1))` }
+        onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Connection
+          <Plus size={14} strokeWidth={3} />
+          INITIALIZE NEW SOURCE
         </button>
       </div>
     </div>

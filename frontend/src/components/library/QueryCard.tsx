@@ -1,4 +1,19 @@
 import { useState } from 'react';
+import { 
+  DollarSign, 
+  User, 
+  TrendingDown, 
+  Users, 
+  ShoppingCart, 
+  Megaphone, 
+  Box, 
+  Clipboard, 
+  Globe, 
+  FileText, 
+  Calendar,
+  Terminal,
+  Activity
+} from 'lucide-react';
 import { T } from '../dashboard/tokens';
 import { highlightSqlInline } from '../../utils/sqlHighlight';
 import type { LibraryQuery } from '../../types/library';
@@ -24,29 +39,29 @@ function timeAgo(ts: string | null): string {
 }
 
 const TAG_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  revenue: { bg: 'rgba(14, 165, 233, 0.08)', color: T.accent, border: 'rgba(14, 165, 233, 0.2)' },
-  churn: { bg: 'rgba(248, 113, 113, 0.08)', color: T.red, border: 'rgba(248, 113, 113, 0.2)' },
-  users: { bg: 'rgba(34, 211, 165, 0.08)', color: T.green, border: 'rgba(34, 211, 165, 0.2)' },
-  daily: { bg: 'rgba(245, 158, 11, 0.08)', color: T.yellow, border: 'rgba(245, 158, 11, 0.2)' },
-  critical: { bg: 'rgba(248, 113, 113, 0.08)', color: T.red, border: 'rgba(248, 113, 113, 0.2)' },
-  customers: { bg: 'rgba(124, 58, 255, 0.08)', color: T.purple, border: 'rgba(124, 58, 255, 0.2)' },
-  funnel: { bg: 'rgba(245, 158, 11, 0.08)', color: T.yellow, border: 'rgba(245, 158, 11, 0.2)' },
-  marketing: { bg: 'rgba(14, 165, 233, 0.05)', color: T.text3, border: T.border },
+  revenue: { bg: 'rgba(0,0,0,0.02)', color: T.text, border: 'rgba(0,0,0,0.1)' },
+  churn: { bg: 'rgba(248, 113, 113, 0.05)', color: T.red, border: 'rgba(248, 113, 113, 0.15)' },
+  users: { bg: 'rgba(34, 211, 165, 0.05)', color: T.green, border: 'rgba(34, 211, 165, 0.15)' },
+  daily: { bg: 'rgba(245, 158, 11, 0.05)', color: T.yellow, border: 'rgba(245, 158, 11, 0.15)' },
+  critical: { bg: 'rgba(248, 113, 113, 0.05)', color: T.red, border: 'rgba(248, 113, 113, 0.15)' },
+  customers: { bg: 'rgba(124, 58, 255, 0.05)', color: T.purple, border: 'rgba(124, 58, 255, 0.15)' },
+  funnel: { bg: 'rgba(245, 158, 11, 0.05)', color: T.yellow, border: 'rgba(245, 158, 11, 0.15)' },
+  marketing: { bg: 'rgba(0,0,0,0.02)', color: T.text3, border: 'rgba(0,0,0,0.1)' },
 };
-const DEFAULT_TAG = { bg: 'rgba(0,0,0,0.03)', color: T.text3, border: T.border };
+const DEFAULT_TAG = { bg: 'rgba(0,0,0,0.02)', color: T.text3, border: 'rgba(0,0,0,0.08)' };
 
-function inferIcon(data: LibraryQuery): { icon: string; bg: string } {
+function inferIcon(data: LibraryQuery): { icon: React.ReactNode; bg: string; color: string } {
   const s = `${data.title} ${data.sql} ${data.tags.join(' ')}`.toLowerCase();
-  if (s.includes('revenue') || s.includes('sales')) return { icon: '💰', bg: 'rgba(0,229,255,0.1)' };
-  if (s.includes('customer') || s.includes('user') || s.includes('client')) return { icon: '👤', bg: 'rgba(124,58,255,0.1)' };
-  if (s.includes('churn') || s.includes('cancel')) return { icon: '📉', bg: 'rgba(248,113,113,0.1)' };
-  if (s.includes('dau') || s.includes('active user') || s.includes('session')) return { icon: '👥', bg: 'rgba(34,211,165,0.1)' };
-  if (s.includes('cart') || s.includes('funnel') || s.includes('conversion')) return { icon: '🛒', bg: 'rgba(245,158,11,0.1)' };
-  if (s.includes('marketing') || s.includes('signup') || s.includes('utm')) return { icon: '📣', bg: 'rgba(192,132,252,0.1)' };
-  if (s.includes('product') || s.includes('inventory')) return { icon: '📦', bg: 'rgba(0,229,255,0.1)' };
-  if (s.includes('order') || s.includes('shipment')) return { icon: '📋', bg: 'rgba(34,211,165,0.1)' };
-  if (s.includes('region') || s.includes('country') || s.includes('geo')) return { icon: '🌐', bg: 'rgba(59,130,246,0.1)' };
-  return { icon: data.icon || '📄', bg: data.icon_bg || 'rgba(148,163,184,0.1)' };
+  if (s.includes('revenue') || s.includes('sales')) return { icon: <DollarSign size={16} />, bg: 'rgba(0,0,0,0.03)', color: T.text };
+  if (s.includes('customer') || s.includes('user') || s.includes('client')) return { icon: <User size={16} />, bg: 'rgba(0,0,0,0.03)', color: T.text };
+  if (s.includes('churn') || s.includes('cancel')) return { icon: <TrendingDown size={16} />, bg: 'rgba(248,113,113,0.05)', color: T.red };
+  if (s.includes('dau') || s.includes('active user') || s.includes('session')) return { icon: <Users size={16} />, bg: 'rgba(34,211,165,0.05)', color: T.green };
+  if (s.includes('cart') || s.includes('funnel') || s.includes('conversion')) return { icon: <ShoppingCart size={16} />, bg: 'rgba(245,158,11,0.05)', color: T.yellow };
+  if (s.includes('marketing') || s.includes('signup') || s.includes('utm')) return { icon: <Megaphone size={16} />, bg: 'rgba(124,58,255,0.05)', color: T.purple };
+  if (s.includes('product') || s.includes('inventory')) return { icon: <Box size={16} />, bg: 'rgba(0,0,0,0.03)', color: T.text };
+  if (s.includes('order') || s.includes('shipment')) return { icon: <Clipboard size={16} />, bg: 'rgba(0,0,0,0.03)', color: T.text };
+  if (s.includes('region') || s.includes('country') || s.includes('geo')) return { icon: <Globe size={16} />, bg: 'rgba(0,0,0,0.03)', color: T.text };
+  return { icon: <FileText size={16} />, bg: 'rgba(0,0,0,0.03)', color: T.text3 };
 }
 
 export function QueryCard({ data, isSelected, onClick, onScheduleClick, index = 0 }: QueryCardProps) {
@@ -62,127 +77,121 @@ export function QueryCard({ data, isSelected, onClick, onScheduleClick, index = 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: T.s1,
-        border: `1px solid ${isSelected ? T.accent : hovered ? 'rgba(14, 165, 233, 0.3)' : T.border}`,
-        borderRadius: 14,
+        background: '#fff',
+        border: `1px solid ${isSelected ? T.text : hovered ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.08)'}`,
+        borderRadius: 0,
         overflow: 'hidden',
         cursor: 'pointer',
-        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: 'all 0.2s ease',
         position: 'relative',
-        transform: hovered && !isSelected ? 'translateY(-3px)' : 'none',
-        boxShadow: isSelected
-          ? '0 10px 30px rgba(14, 165, 233, 0.12), 0 0 0 1px rgba(14, 165, 233, 0.1)'
-          : hovered
-            ? '0 12px 35px rgba(0,0,0,0.06)'
-            : '0 1px 3px rgba(0,0,0,0.02)',
+        boxShadow: isSelected ? '0 12px 40px rgba(0,0,0,0.08)' : 'none',
         animation: `fadeUp 0.35s ease both`,
         animationDelay: `${index * 0.03}s`,
       }}
     >
       {/* Header */}
-      <div style={{ padding: '14px 16px 10px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <div style={{ padding: '18px 20px 12px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div style={{
-          width: 32, height: 32, borderRadius: 8,
+          width: 36, height: 36, borderRadius: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '0.9rem', flexShrink: 0, background: visual.bg,
+          flexShrink: 0, background: visual.bg, color: visual.color
         }}>
           {visual.icon}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.88rem', color: T.text,
-            marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            fontFamily: T.fontHead, fontWeight: 900, fontSize: '1.1rem', color: T.text,
+            marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            fontStyle: 'italic', letterSpacing: -0.5
           }}>
             {data.title}
           </div>
-          <div style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>
-            {folderLabel} · {connectionLabel}
+          <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {folderLabel} <span style={{ opacity: 0.3 }}>/</span> {connectionLabel}
           </div>
         </div>
       </div>
 
       {/* SQL Preview */}
       <div style={{
-        margin: '0 16px', padding: '12px 14px',
-        background: T.s2, border: `1px solid ${T.border}`, borderRadius: 10,
-        fontFamily: T.fontMono, fontSize: '0.72rem', lineHeight: 1.6,
-        overflow: 'hidden', maxHeight: 80, position: 'relative',
+        margin: '0 20px', padding: '14px',
+        background: T.s2, border: `1px solid rgba(0,0,0,0.05)`, borderRadius: 0,
+        fontFamily: T.fontMono, fontSize: '0.7rem', lineHeight: 1.6,
+        overflow: 'hidden', maxHeight: 90, position: 'relative',
         color: T.text2,
       }}>
+        <div style={{ position: 'absolute', right: 8, top: 6, opacity: 0.2 }}><Terminal size={12} /></div>
         {highlightSqlInline(data.sql, 'card')}
         {/* Fade gradient */}
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: 28,
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 32,
           background: `linear-gradient(transparent, ${T.s2})`, pointerEvents: 'none',
         }} />
       </div>
 
       {/* Meta row 1: connection + tags + run count */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px 8px', flexWrap: 'wrap' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.65rem',
-          fontFamily: T.fontMono, color: T.text3,
-        }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: T.green }} />
-          {connectionLabel}
-        </div>
-        <div style={{ display: 'flex', gap: 4, flex: 1, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px 10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 6, flex: 1, flexWrap: 'wrap' }}>
           {data.tags.slice(0, 3).map((t) => {
             const colors = TAG_COLORS[t] || DEFAULT_TAG;
             return (
               <span key={t} style={{
-                padding: '1px 7px', borderRadius: 10, fontSize: '0.62rem', fontFamily: T.fontMono,
+                padding: '2px 8px', borderRadius: 0, fontSize: '0.58rem', fontFamily: T.fontMono,
                 border: `1px solid ${colors.border}`, background: colors.bg, color: colors.color,
+                fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em'
               }}>{t}</span>
             );
           })}
         </div>
-        <div style={{ fontSize: '0.62rem', fontFamily: T.fontMono, color: T.text3, marginLeft: 'auto' }}>
-          {data.run_count} runs
+        <div style={{ 
+          display: 'flex', alignItems: 'center', gap: 5,
+          fontSize: '0.62rem', fontFamily: T.fontMono, color: T.text3, marginLeft: 'auto',
+          fontWeight: 700
+        }}>
+          <Activity size={10} /> {data.run_count} RUNS
         </div>
       </div>
 
       {/* Meta row 2: schedule + timestamp */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 16px 10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px 18px' }}>
         {isScheduled && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.62rem', fontFamily: T.fontMono,
-            color: T.yellow, background: T.yellowDim,
-            border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, padding: '1px 6px', whiteSpace: 'nowrap',
+            display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.62rem', fontFamily: T.fontMono,
+            color: T.text, background: '#fff', fontWeight: 800,
+            border: '1px solid rgba(0,0,0,0.15)', borderRadius: 0, padding: '2px 8px', whiteSpace: 'nowrap',
           }}>
-            <div style={{ width: 4, height: 4, borderRadius: '50%', background: T.yellow, animation: 'lp 2s infinite' }} />
-            {data.schedule_label}
+            <Calendar size={10} /> {data.schedule_label.toUpperCase()}
           </div>
         )}
-        <span style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, marginLeft: 'auto' }}>
-          {timeAgo(data.last_run_at || data.updated_at)}
+        <span style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, marginLeft: 'auto', fontWeight: 600 }}>
+          LAST RUN: {timeAgo(data.last_run_at || data.updated_at).toUpperCase()}
         </span>
       </div>
 
       {/* Action bar */}
-      <div style={{ display: 'flex', alignItems: 'center', borderTop: `1px solid ${T.border}`, background: T.s2 }}>
-        <ActionBtn label="Schedule" icon="📅" hoverColor={T.yellow} onClick={onScheduleClick} isLast />
+      <div style={{ display: 'flex', alignItems: 'center', borderTop: `1px solid rgba(0,0,0,0.08)`, background: 'rgba(0,0,0,0.01)' }}>
+        <ActionBtn label="CONFIGURE TASK" icon={<Calendar size={12} />} hoverColor={T.text} onClick={onScheduleClick} isLast />
       </div>
 
       <style>{`
         @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes lp { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
       `}</style>
     </div>
   );
 }
 
-function ActionBtn({ label, icon, hoverColor, isLast, onClick }: { label: string; icon: string; hoverColor?: string; isLast?: boolean; onClick?: () => void }) {
+function ActionBtn({ label, icon, hoverColor, isLast, onClick }: { label: string; icon: React.ReactNode; hoverColor?: string; isLast?: boolean; onClick?: () => void }) {
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick?.(); }}
       style={{
-        flex: 1, padding: '8px 6px', background: 'transparent', border: 'none',
-        color: T.text3, fontSize: '0.7rem', cursor: 'pointer', transition: 'all 0.15s',
-        fontFamily: T.fontBody, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-        borderRight: isLast ? 'none' : `1px solid ${T.border}`,
+        flex: 1, padding: '10px 12px', background: 'transparent', border: 'none',
+        color: T.text3, fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s ease',
+        fontFamily: T.fontMono, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        borderRight: isLast ? 'none' : `1px solid rgba(0,0,0,0.08)`,
+        letterSpacing: '0.05em'
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = T.s3; e.currentTarget.style.color = hoverColor || T.text2; }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = hoverColor || T.text; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.text3; }}
     >
       {icon} {label}

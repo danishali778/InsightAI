@@ -1,9 +1,20 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { 
+  MessageSquare, 
+  LayoutDashboard, 
+  Library, 
+  BarChart3, 
+  Database, 
+  Bell, 
+  Settings,
+  ShieldCheck,
+  ChevronRight
+} from 'lucide-react';
 import { T } from '../dashboard/tokens';
 import { useSettingsStore } from '../../store/settingsStore';
 
 interface NavItemProps {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   path?: string;
   active?: boolean;
@@ -22,35 +33,30 @@ function NavItem({ icon, label, path, active, onMouseEnter, onMouseLeave }: NavI
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        padding: '9px 12px',
-        borderRadius: 8,
+        padding: '10px 14px',
+        borderRadius: 0,
         cursor: clickable ? 'pointer' : 'default',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.15s ease',
         marginBottom: 2,
-        color: active ? '#000' : '#4b5563',
-        fontSize: '0.84rem',
-        fontWeight: active ? 600 : 500,
+        color: active ? T.text : T.text3,
+        fontSize: '0.82rem',
+        fontWeight: active ? 700 : 500,
         background: active ? '#fff' : 'transparent',
-        border: `1px solid ${active ? '#e5e5e5' : 'transparent'}`,
+        border: `1px solid ${active ? 'rgba(0,0,0,0.08)' : 'transparent'}`,
         fontFamily: T.fontBody,
         position: 'relative',
-        boxShadow: active ? '0 1px 3px rgba(0,0,0,0.04)' : 'none',
       }}
       onMouseEnter={e => {
         if (!active && clickable) {
-          e.currentTarget.style.background = '#fff';
-          e.currentTarget.style.borderColor = '#e5e5e5';
-          e.currentTarget.style.color = '#000';
-          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+          e.currentTarget.style.background = 'rgba(0,0,0,0.02)';
+          e.currentTarget.style.color = T.text;
         }
         onMouseEnter?.(e);
       }}
       onMouseLeave={e => {
         if (!active && clickable) {
           e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.borderColor = 'transparent';
-          e.currentTarget.style.color = '#4b5563';
-          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.color = T.text3;
         }
         onMouseLeave?.(e);
       }}
@@ -59,33 +65,34 @@ function NavItem({ icon, label, path, active, onMouseEnter, onMouseLeave }: NavI
       {active && (
         <div style={{
           position: 'absolute',
-          left: -12,
-          width: 4,
-          height: 18,
-          background: '#3b82f6',
-          borderRadius: '0 4px 4px 0',
+          left: -1,
+          top: 0,
+          bottom: 0,
+          width: 2,
+          background: T.text,
         }} />
       )}
 
       <span style={{
-        fontSize: '0.9rem',
-        width: 20,
+        width: 18,
+        height: 18,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: active ? 1 : 0.7,
+        opacity: active ? 1 : 0.6,
       }}>
         {icon}
       </span>
-      {label}
+      <span style={{ flex: 1 }}>{label}</span>
+      {active && <ChevronRight size={12} style={{ opacity: 0.3 }} />}
     </div>
   );
 }
 
 const sectionLabel: React.CSSProperties = {
-  fontSize: '0.65rem', fontWeight: 600, letterSpacing: 1.5,
-  color: '#666', textTransform: 'uppercase',
-  padding: '12px 12px 6px', fontFamily: T.fontMono,
+  fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.15em',
+  color: T.text3, textTransform: 'uppercase',
+  padding: '24px 14px 8px', fontFamily: T.fontMono,
 };
 
 /** Just the nav items — usable inside other sidebars (e.g. Chat) */
@@ -96,22 +103,22 @@ export function NavSection({ onDashboardHover }: { onDashboardHover?: (hovering:
   return (
     <div style={{ padding: '0 8px' }}>
       <div style={sectionLabel}>General</div>
-      <NavItem icon="💬" label="Chat" path="/chat" active={p === '/chat'} />
+      <NavItem icon={<MessageSquare size={16} />} label="Chat" path="/chat" active={p === '/chat'} />
       <NavItem 
-        icon="📊" 
+        icon={<LayoutDashboard size={16} />} 
         label="Dashboards" 
         path="/dashboard" 
         active={p === '/dashboard'} 
         onMouseEnter={() => onDashboardHover?.(true)}
         onMouseLeave={() => onDashboardHover?.(false)}
       />
-      <NavItem icon="📚" label="Library" path="/library" active={p === '/library'} />
-      <NavItem icon="📈" label="Analytics" path="/analytics" active={p === '/analytics'} />
+      <NavItem icon={<Library size={16} />} label="Library" path="/library" active={p === '/library'} />
+      <NavItem icon={<BarChart3 size={16} />} label="Analytics" path="/analytics" active={p === '/analytics'} />
 
-      <div style={{ ...sectionLabel, paddingTop: 20 }}>Infrastructure</div>
-      <NavItem icon="🔌" label="Connections" path="/connections" active={p === '/connections'} />
-      <NavItem icon="🔔" label="Alerts" />
-      <NavItem icon="⚙️" label="Settings" path="/settings" active={p === '/settings'} />
+      <div style={{ ...sectionLabel, paddingTop: 32 }}>Infrastructure</div>
+      <NavItem icon={<Database size={16} />} label="Connections" path="/connections" active={p === '/connections'} />
+      <NavItem icon={<Bell size={16} />} label="Alerts" />
+      <NavItem icon={<Settings size={16} />} label="Settings" path="/settings" active={p === '/settings'} />
     </div>
   );
 }
@@ -120,73 +127,82 @@ export function NavSection({ onDashboardHover }: { onDashboardHover?: (hovering:
 export function AppSidebar({ onDashboardHover }: { onDashboardHover?: (hovering: boolean) => void, activeId?: string }) {
   const { settings } = useSettingsStore();
   const displayName = settings?.full_name || 'User';
-  const avatarInitials = displayName.substring(0, 2).toUpperCase();
+  const avatarInitials = displayName.substring(0, 1).toUpperCase();
 
   return (
     <aside style={{
       width: 260, flexShrink: 0,
-      background: '#f9f9f8', 
-      borderRight: `1px solid #e5e5e5`,
+      background: T.bg, 
+      borderRight: `1px solid rgba(0,0,0,0.08)`,
       display: 'flex', flexDirection: 'column',
       height: '100vh', overflow: 'hidden',
       fontFamily: T.fontBody,
       zIndex: 100,
     }}>
-      {/* Logo */}
-      <div style={{ padding: '20px 20px 10px' }}>
+      {/* Logo Section */}
+      <div style={{ padding: '32px 20px 12px' }}>
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.2rem',
-          letterSpacing: -0.5, padding: '4px 0', marginBottom: 16, color: '#000',
+          display: 'flex', alignItems: 'center', gap: 14,
+          fontFamily: T.fontHead, fontWeight: 900, fontSize: '1.4rem',
+          letterSpacing: -1, padding: '4px 0', marginBottom: 24, color: T.text,
+          fontStyle: 'italic'
         }}>
-          {/* 4-Square Grid Logo */}
+          {/* Black Square Logo */}
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(2, 1fr)', 
-            gap: 2, 
-            width: 24, 
-            height: 24,
-            flexShrink: 0
+            width: 32, height: 32, 
+            background: T.text,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: '1rem', fontWeight: 900, flexShrink: 0
           }}>
-            <div style={{ background: '#000', borderRadius: 2 }} />
-            <div style={{ background: '#3b82f6', borderRadius: 2 }} />
-            <div style={{ background: '#3b82f6', borderRadius: 2 }} />
-            <div style={{ background: '#000', borderRadius: 2 }} />
+            Q
           </div>
-          Query<span style={{ color: '#3b82f6' }}>Mind</span>
+          QueryMind
         </div>
 
         <NavSection onDashboardHover={onDashboardHover} />
       </div>
 
-      {/* User Footer */}
-      <div style={{ marginTop: 'auto', padding: '16px 20px', borderTop: `1px solid #e5e5e5`, background: 'rgba(0,0,0,0.01)' }}>
+      {/* User Footer - Editorial Style */}
+      <div style={{ marginTop: 'auto', padding: '24px 20px', borderTop: `1px solid rgba(0,0,0,0.05)`, background: 'rgba(0,0,0,0.01)' }}>
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '8px',
-          borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s',
-          border: '1px solid transparent'
+          display: 'flex', alignItems: 'center', gap: 12, padding: '12px',
+          borderRadius: 0, cursor: 'pointer', transition: 'all 0.2s',
+          border: '1px solid transparent',
+          background: 'transparent'
         }}
           onMouseEnter={e => {
             e.currentTarget.style.background = '#fff';
-            e.currentTarget.style.borderColor = '#e5e5e5';
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+            e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)';
           }}
           onMouseLeave={e => {
             e.currentTarget.style.background = 'transparent';
             e.currentTarget.style.borderColor = 'transparent';
-            e.currentTarget.style.boxShadow = 'none';
           }}
         >
           <div style={{
-            width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-            background: `#f3f4f6`,
-            border: '1px solid #e5e5e5',
+            width: 36, height: 36, borderRadius: 0, flexShrink: 0,
+            background: T.text,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.8rem', fontWeight: 700, color: '#374151',
+            fontSize: '0.9rem', fontWeight: 900, color: '#fff',
+            fontFamily: T.fontHead, fontStyle: 'italic'
           }}>{avatarInitials}</div>
+          
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#000', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
-            <div style={{ fontSize: '0.68rem', color: '#3b82f6', fontWeight: 500 }}>Pro plan</div>
+            <div style={{ 
+              fontSize: '0.8rem', fontWeight: 800, color: T.text, 
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              fontFamily: T.fontHead, fontStyle: 'italic'
+            }}>
+              {displayName}
+            </div>
+            <div style={{ 
+              display: 'flex', alignItems: 'center', gap: 5,
+              fontSize: '0.62rem', color: T.accent, fontWeight: 700, 
+              textTransform: 'uppercase', letterSpacing: '0.05em',
+              fontFamily: T.fontMono
+            }}>
+              <ShieldCheck size={10} /> PRO MEMBER
+            </div>
           </div>
         </div>
       </div>

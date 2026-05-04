@@ -23,85 +23,121 @@ export function DashboardFilterBar({ filters, onFiltersChange, onApply }: Dashbo
   const hasFilters = Object.keys(filters).length > 0;
 
   return (
-    <div className="dash-section" style={{
-      background: 'rgba(11,17,32,0.4)',
-      border: `1px solid ${T.border}`,
-      borderRadius: 16,
-      padding: '12px 16px',
-      marginBottom: 20,
+    <div className="dash-filter-glass" style={{
+      background: 'rgba(255, 255, 255, 0.5)',
+      backdropFilter: 'blur(16px) saturate(180%)',
+      border: `1px solid rgba(255, 255, 255, 0.5)`,
+      borderRadius: 22,
+      padding: '16px 24px',
+      marginBottom: 32,
       display: 'flex',
       flexDirection: 'column',
-      gap: 12,
-      transition: 'all 0.3s ease',
+      gap: 16,
+      transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6), 0 12px 48px rgba(0,0,0,0.05)',
+      position: 'relative'
     }}>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        borderRadius: 22, border: '1px solid rgba(0,0,0,0.03)',
+        pointerEvents: 'none'
+      }} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{
-            width: 24, height: 24, borderRadius: 6,
-            background: 'rgba(0,229,255,0.1)',
+            width: 32, height: 32, borderRadius: 10,
+            background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(99, 102, 241, 0.1))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.8rem', color: T.accent
+            fontSize: '0.9rem', color: T.accent,
+            border: '1px solid rgba(14, 165, 233, 0.15)',
           }}>
-            ▽
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
           </div>
-          <span style={{ 
-            fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.85rem',
-            color: T.text, letterSpacing: 0.2
-          }}>
-            Global Runtime Filters
-          </span>
+          
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ 
+              fontFamily: T.fontHead, fontWeight: 800, fontSize: '0.9rem',
+              color: T.text, letterSpacing: '-0.01em'
+            }}>
+              Runtime Filters
+            </span>
+            <span style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, opacity: 0.7 }}>
+              GLOBAL DATA CONSTRAINTS
+            </span>
+          </div>
+
           {hasFilters && (
-            <span style={{
-              background: T.accentDim, color: T.accent, fontSize: '0.65rem',
-              fontWeight: 800, padding: '2px 8px', borderRadius: 20,
-              fontFamily: T.fontMono, border: '1px solid rgba(0,229,255,0.2)'
+            <div style={{
+              background: 'rgba(14, 165, 233, 0.1)', color: T.accent, fontSize: '0.65rem',
+              fontWeight: 800, padding: '3px 10px', borderRadius: 20,
+              fontFamily: T.fontMono, border: '1px solid rgba(14, 165, 233, 0.2)',
+              marginLeft: 4, letterSpacing: '0.05em'
             }}>
               {Object.keys(filters).length} ACTIVE
-            </span>
+            </div>
           )}
         </div>
         
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
             style={{
-              background: 'transparent', border: 'none', color: T.text3,
-              fontSize: '0.72rem', cursor: 'pointer', fontFamily: T.fontMono,
-              padding: '4px 8px'
+              background: 'rgba(15, 23, 42, 0.03)', 
+              border: '1px solid rgba(15, 23, 42, 0.05)', 
+              borderRadius: 8,
+              color: T.text2,
+              fontSize: '0.7rem', cursor: 'pointer', fontFamily: T.fontMono,
+              padding: '6px 12px', fontWeight: 600,
+              transition: 'all 0.2s ease',
             }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(15, 23, 42, 0.06)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(15, 23, 42, 0.03)'}
           >
-            {isExpanded ? '[ COLLAPSE ]' : '[ EDIT FILTERS ]'}
+            {isExpanded ? 'COLLAPSE' : 'EDIT FILTERS'}
           </button>
           
           <button 
             onClick={onApply}
             style={{
-              background: 'linear-gradient(135deg, #00E5FF, #7C3AFF)',
-              border: 'none', borderRadius: 8, padding: '6px 16px',
-              color: 'white', fontWeight: 700, fontSize: '0.78rem',
-              cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,229,255,0.2)'
+              background: 'linear-gradient(135deg, #0ea5e9, #6366f1)',
+              border: 'none', borderRadius: 10, padding: '8px 20px',
+              color: 'white', fontWeight: 700, fontSize: '0.8rem',
+              cursor: 'pointer', 
+              boxShadow: '0 4px 15px rgba(14, 165, 233, 0.25)',
+              transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'scale(1.04)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(14, 165, 233, 0.35)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(14, 165, 233, 0.25)';
             }}
           >
-            Apply to All Widgets
+            Apply Changes
           </button>
         </div>
       </div>
 
       {isExpanded && (
         <div style={{ 
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: 12, paddingTop: 12, borderTop: `1px solid ${T.border}`
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: 16, paddingTop: 20, borderTop: `1px solid rgba(0,0,0,0.06)`
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: '0.65rem', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono }}>
-              Date Range (Days)
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label style={{ fontSize: '0.62rem', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, fontWeight: 700 }}>
+              Date Range
             </label>
             <select 
               value={filters.date_range || '30'}
               onChange={(e) => setFilter('date_range', e.target.value)}
               style={{
-                background: T.s2, border: `1px solid ${T.border}`, borderRadius: 8,
-                padding: '8px 12px', color: T.text, fontSize: '0.8rem', outline: 'none'
+                background: 'rgba(255,255,255,0.5)', border: `1px solid rgba(0,0,0,0.08)`, borderRadius: 10,
+                padding: '10px 14px', color: T.text, fontSize: '0.82rem', outline: 'none',
+                fontFamily: T.fontBody, appearance: 'none',
               }}
             >
               <option value="7">Last 7 Days</option>
@@ -111,8 +147,8 @@ export function DashboardFilterBar({ filters, onFiltersChange, onApply }: Dashbo
             </select>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: '0.65rem', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label style={{ fontSize: '0.62rem', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, fontWeight: 700 }}>
               Status Filter
             </label>
             <input 
@@ -120,15 +156,16 @@ export function DashboardFilterBar({ filters, onFiltersChange, onApply }: Dashbo
               value={filters.status || ''}
               onChange={(e) => setFilter('status', e.target.value)}
               style={{
-                background: T.s2, border: `1px solid ${T.border}`, borderRadius: 8,
-                padding: '8px 12px', color: T.text, fontSize: '0.8rem', outline: 'none'
+                background: 'rgba(255,255,255,0.5)', border: `1px solid rgba(0,0,0,0.08)`, borderRadius: 10,
+                padding: '10px 14px', color: T.text, fontSize: '0.82rem', outline: 'none',
+                fontFamily: T.fontBody,
               }}
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: '0.65rem', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono }}>
-              Limit Rows
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label style={{ fontSize: '0.62rem', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, fontWeight: 700 }}>
+              Row Limit
             </label>
             <input 
               type="number"
@@ -136,8 +173,9 @@ export function DashboardFilterBar({ filters, onFiltersChange, onApply }: Dashbo
               value={filters.limit || ''}
               onChange={(e) => setFilter('limit', e.target.value)}
               style={{
-                background: T.s2, border: `1px solid ${T.border}`, borderRadius: 8,
-                padding: '8px 12px', color: T.text, fontSize: '0.8rem', outline: 'none'
+                background: 'rgba(255,255,255,0.5)', border: `1px solid rgba(0,0,0,0.08)`, borderRadius: 10,
+                padding: '10px 14px', color: T.text, fontSize: '0.82rem', outline: 'none',
+                fontFamily: T.fontBody,
               }}
             />
           </div>
@@ -145,18 +183,26 @@ export function DashboardFilterBar({ filters, onFiltersChange, onApply }: Dashbo
       )}
 
       {hasFilters && !isExpanded && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', paddingTop: 4 }}>
           {Object.entries(filters).map(([key, value]) => (
             <div key={key} style={{
-              background: T.s3, border: `1px solid ${T.border}`, borderRadius: 6,
-              padding: '2px 8px', fontSize: '0.7rem', color: T.text2,
-              display: 'flex', alignItems: 'center', gap: 6
+              background: 'rgba(255,255,255,0.8)', 
+              border: `1px solid rgba(14, 165, 233, 0.15)`, 
+              borderRadius: 8,
+              padding: '4px 10px', fontSize: '0.72rem', color: T.text2,
+              display: 'flex', alignItems: 'center', gap: 8,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
             }}>
-              <span style={{ color: T.text3 }}>{key}:</span>
-              <span style={{ color: T.accent, fontWeight: 600 }}>{String(value)}</span>
+              <span style={{ color: T.text3, textTransform: 'uppercase', fontSize: '0.6rem', fontWeight: 700 }}>{key}</span>
+              <span style={{ color: T.accent, fontWeight: 700 }}>{String(value)}</span>
               <button 
                 onClick={() => removeFilter(key)}
-                style={{ background: 'transparent', border: 'none', color: T.red, cursor: 'pointer', padding: 0 }}
+                style={{ 
+                  background: 'rgba(239, 68, 68, 0.1)', border: 'none', 
+                  color: T.red, cursor: 'pointer', padding: '2px 5px',
+                  borderRadius: 4, display: 'flex', alignItems: 'center',
+                  fontSize: '0.8rem',
+                }}
               >
                 ×
               </button>

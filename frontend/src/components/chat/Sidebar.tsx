@@ -50,8 +50,8 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
     <aside style={{ 
       width: 280, 
       flexShrink: 0, 
-      background: '#f9f9f8', 
-      borderRight: `1px solid #e5e5e5`, 
+      background: '#fdfcfb', 
+      borderRight: `1px solid rgba(0,0,0,0.08)`, 
       display: 'flex', 
       flexDirection: 'column', 
       height: '100%', 
@@ -59,46 +59,38 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
     }}>
       {/* Logo + Active Connection */}
       <div style={{ padding: '24px 20px 10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: T.fontHead, fontWeight: 800, fontSize: '1.25rem', letterSpacing: -0.6, marginBottom: 16, color: '#1a1a1a' }}>
-          {/* Grid Logo Icon */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, width: 22, height: 22 }}>
-            <div style={{ background: '#1a1a1a', borderRadius: 2 }} />
-            <div style={{ background: '#3b82f6', borderRadius: 2 }} />
-            <div style={{ background: '#6366f1', borderRadius: 2 }} />
-            <div style={{ background: '#d1d1d1', borderRadius: 2 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: T.fontHead, fontWeight: 900, fontSize: '1.4rem', letterSpacing: -0.8, marginBottom: 20, color: '#1a1a1a' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, background: '#1a1a1a', borderRadius: 4, color: '#fff', fontSize: '0.9rem', fontWeight: 900, fontStyle: 'italic' }}>
+            Q
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline' }}>
-            Query<span style={{ color: '#3b82f6' }}>Mind</span>
+          <div style={{ fontStyle: 'italic' }}>
+            QueryMind
           </div>
         </div>
 
         {/* Active Connection Pill - White Border Style */}
         <div style={{ 
           display: 'inline-flex', alignItems: 'center', gap: 8, 
-          padding: '4px 12px', borderRadius: 20, 
-          background: '#fff', border: `1px solid #e5e5e5`, 
-          boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-          marginBottom: 20
+          padding: '5px 12px', borderRadius: 0, 
+          background: '#fff', border: `1px solid rgba(0,0,0,0.1)`, 
+          marginBottom: 24
         }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeConn ? '#22c55e' : '#ef4444' }} />
-          <span style={{ fontSize: '0.7rem', color: '#666', fontWeight: 500, fontFamily: T.fontBody }}>
-            {activeConn?.database || 'ecommerce_analytics'}
-            <span style={{ color: '#999', marginLeft: 4, fontWeight: 400 }}>- {dbTypeLabel(activeConn?.db_type || 'pg')}</span>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeConn ? '#1a1a1a' : '#ef4444' }} />
+          <span style={{ fontSize: '0.68rem', color: T.text, fontWeight: 700, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+            {activeConn?.database || 'NOT CONNECTED'}
+            <span style={{ color: T.text3, marginLeft: 6, fontWeight: 500 }}>{dbTypeLabel(activeConn?.db_type || 'pg')}</span>
           </span>
         </div>
 
         <button onClick={onNewChat} style={{
-          width: '100%', padding: '10px 14px',
+          width: '100%', padding: '12px 14px',
           background: '#fff',
-          border: `1px solid #1a1a1a`, borderRadius: 8, color: '#1a1a1a',
-          fontFamily: T.fontBody, fontSize: '0.85rem', fontWeight: 600,
+          border: `1.5px solid #1a1a1a`, borderRadius: 0, color: '#1a1a1a',
+          fontFamily: T.fontBody, fontSize: '0.85rem', fontWeight: 800,
           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-        }}
-          onMouseEnter={e => e.currentTarget.style.background = '#fcfcfc'}
-          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-        >
-          <span style={{ fontSize: '1.2rem', fontWeight: 300, color: '#1a1a1a', transform: 'translateY(-1px)' }}>+</span> New conversation
+          textTransform: 'uppercase', letterSpacing: '0.05em'
+        }}>
+          <span style={{ fontSize: '1.2rem', fontWeight: 300, transform: 'translateY(-1px)' }}>+</span> New conversation
         </button>
       </div>
 
@@ -110,9 +102,10 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search conversations..."
             style={{
-              width: '100%', background: T.s2, border: `1px solid ${T.border}`,
-              borderRadius: 8, padding: '7px 10px 7px 30px',
-              color: T.text2, fontFamily: T.fontBody, fontSize: '0.78rem', outline: 'none',
+              width: '100%', background: 'transparent', border: 'none',
+              borderBottom: `1px solid rgba(0,0,0,0.1)`,
+              borderRadius: 0, padding: '10px 10px 10px 30px',
+              color: T.text, fontFamily: T.fontBody, fontSize: '0.8rem', outline: 'none',
             }}
           />
         </div>
@@ -130,16 +123,17 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
                 return (
                   <div key={s.id} onClick={() => onSelectSession(s.id)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 9, padding: '10px 12px',
-                      cursor: 'pointer', marginBottom: 1, 
-                      background: isActive ? '#fff' : hoveredId === s.id ? 'rgba(255,255,255,0.5)' : 'transparent', 
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '12px 12px',
+                      cursor: 'pointer', marginBottom: 2, 
+                      background: isActive ? '#fff' : hoveredId === s.id ? 'rgba(0,0,0,0.02)' : 'transparent', 
                       position: 'relative', transition: 'background 0.15s',
+                      border: isActive ? `1px solid rgba(0,0,0,0.08)` : '1px solid transparent'
                     }}
                     onMouseEnter={() => setHoveredId(s.id)}
                     onMouseLeave={() => setHoveredId(null)}
                   >
-                    {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: '#3b82f6' }} />}
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.green, flexShrink: 0, boxShadow: '0 0 5px rgba(34,211,165,0.5)' }} />
+                    {isActive && <div style={{ position: 'absolute', left: -1, top: 0, bottom: 0, width: 2, background: '#1a1a1a' }} />}
+                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: isActive ? '#1a1a1a' : 'rgba(0,0,0,0.1)', flexShrink: 0 }} />
                     {editingId === s.id ? (
                       <input
                         autoFocus
@@ -210,20 +204,21 @@ export function Sidebar({ sessions, activeSessionId, onSelectSession, onNewChat,
       {/* User Footer - Premium Image 2 Style */}
       <div style={{ 
         padding: '16px 20px', 
-        borderTop: `1px solid #e5e5e5`, 
+        borderTop: `1px solid rgba(0,0,0,0.08)`, 
         display: 'flex', 
         alignItems: 'center', 
         gap: 12, 
-        background: 'transparent' // Maintained beige feel
+        background: '#fff'
       }}>
         <div style={{ 
-          width: 32, height: 32, borderRadius: '50%', background: '#1a1a1a', 
+          width: 34, height: 34, borderRadius: 0, background: '#1a1a1a', 
           display: 'flex', alignItems: 'center', justifyContent: 'center', 
-          fontSize: '0.8rem', fontWeight: 800, color: '#fff', flexShrink: 0
+          fontSize: '0.85rem', fontWeight: 900, color: '#fff', flexShrink: 0,
+          fontStyle: 'italic'
         }}>U</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1a1a1a' }}>User</div>
-          <div style={{ fontSize: '0.72rem', color: '#3b82f6', fontWeight: 500 }}>Pro plan</div>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1a1a1a' }}>User Account</div>
+          <div style={{ fontSize: '0.68rem', color: T.text3, fontWeight: 700, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pro Member</div>
         </div>
       </div>
     </aside>

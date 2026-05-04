@@ -5,18 +5,18 @@ export function AnalyticsSectionCard({ title, eyebrow, children }: { title: stri
   return (
     <section
       style={{
-        background: T.s1,
-        border: `1px solid ${T.border}`,
-        borderRadius: 18,
-        padding: 20,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+        background: '#fff',
+        border: `1px solid rgba(0,0,0,0.08)`,
+        borderRadius: 0,
+        padding: 24,
+        boxShadow: 'none',
       }}
     >
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ color: T.accent, fontFamily: T.fontMono, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ color: T.text3, fontFamily: T.fontMono, fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8, fontWeight: 900 }}>
           {eyebrow}
         </div>
-        <div style={{ color: T.text, fontFamily: T.fontHead, fontSize: '1.15rem', fontWeight: 700 }}>{title}</div>
+        <div style={{ color: T.text, fontFamily: T.fontHead, fontSize: '1.25rem', fontWeight: 900, fontStyle: 'italic', letterSpacing: -0.5 }}>{title}</div>
       </div>
       {children}
     </section>

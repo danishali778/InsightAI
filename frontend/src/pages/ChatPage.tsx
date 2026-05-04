@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Pin, Send, Plus, Search, Layers, Database, Sparkles, MessageSquare } from 'lucide-react';
 import { MainShell } from '../components/common/MainShell';
 import { Sidebar as ChatSidebar } from '../components/chat/Sidebar';
 import { ChatInput } from '../components/chat/ChatInput';
@@ -225,22 +226,22 @@ export function ChatPage() {
               id="chat-messages-scroll"
               style={{ 
                 width: '100%', 
-                maxWidth: 1200, // Standard professional width for readability
+                maxWidth: 1200, 
                 display: 'flex', 
                 flexDirection: 'column',
                 overflowY: 'auto', 
-                padding: '0 60px 40px', // Standardized horizontal padding
+                padding: '0 80px 40px', // Increased padding for editorial feel
                 scrollBehavior: 'smooth' 
               }}
             >
               <div style={{ width: '100%', paddingTop: 24 }}>
-              {/* Pinned Messages Bar */}
+              {/* Pinned Messages Bar - Editorial Style */}
               {messages.filter(m => m.is_pinned).length > 0 && (
-                <div style={{ padding: '0 24px 16px', borderBottom: `1px solid #e5e5e5`, marginBottom: 16 }}>
-                  <div style={{ fontSize: '0.65rem', fontWeight: 600, color: T.text3, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontFamily: T.fontMono }}>
-                    <span style={{ color: T.accent }}>📍</span> Pinned Results
+                <div style={{ padding: '0 0 24px', borderBottom: `1px solid rgba(0,0,0,0.05)`, marginBottom: 32 }}>
+                  <div style={{ fontSize: '0.62rem', fontWeight: 700, color: T.text3, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, fontFamily: T.fontMono }}>
+                    <Pin size={10} strokeWidth={3} /> PINNED OBSERVATIONS
                   </div>
-                  <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
+                  <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
                     {messages.filter(m => m.is_pinned).map(m => (
                       <div 
                         key={m.id} 
@@ -249,18 +250,16 @@ export function ChatPage() {
                           el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }}
                         style={{
-                          minWidth: 160, maxWidth: 220, background: T.s2, border: `1px solid ${T.border}`,
-                          borderRadius: 8, padding: '10px 12px', cursor: 'pointer', transition: 'all 0.2s',
-                          display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0,
+                          minWidth: 200, maxWidth: 260, background: '#fff', border: `1px solid rgba(0,0,0,0.08)`,
+                          borderRadius: 0, padding: '12px 16px', cursor: 'pointer', transition: 'all 0.2s',
+                          display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0,
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >
-                        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 800, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: T.fontHead, fontStyle: 'italic' }}>
                           {m.content.length > 30 ? m.content.substring(0, 30) + '...' : m.content}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: T.text3, fontFamily: T.fontMono }}>
-                          {m.rows?.length || 0} rows • {m.columns?.length || 0} cols
+                        <div style={{ fontSize: '0.6rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {m.rows?.length || 0} ROWS • {m.columns?.length || 0} COLS
                         </div>
                       </div>
                     ))}
@@ -269,21 +268,32 @@ export function ChatPage() {
               )}
 
               {messages.length === 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 14 }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 16, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800, color: '#fff', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.2)', marginBottom: 8, fontFamily: T.fontHead }}>Q</div>
-                  <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.5rem', color: T.text, letterSpacing: -0.5 }}>What would you like to know?</div>
-                  <div style={{ fontSize: '0.88rem', color: T.text3, maxWidth: 420, textAlign: 'center', lineHeight: 1.65, fontWeight: 300 }}>
-                    Ask a question in plain English. QueryMind will write the SQL, run it, and show you the results.
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '65vh', gap: 20 }}>
+                  <div style={{ 
+                    width: 64, height: 64, borderRadius: 0, background: '#1a1a1a', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    fontSize: '1.8rem', fontWeight: 900, color: '#fff', 
+                    marginBottom: 12, fontFamily: T.fontHead, fontStyle: 'italic' 
+                  }}>Q</div>
+                  <div style={{ 
+                    fontFamily: T.fontHead, fontWeight: 900, fontSize: '2.8rem', 
+                    color: T.text, letterSpacing: -1.2, fontStyle: 'italic',
+                    textAlign: 'center', lineHeight: 1
+                  }}>
+                    What would you <br/>like to know?
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10, justifyContent: 'center' }}>
-                    {['Show me all tables', 'How many records per table?', 'Describe the database'].map(s => (
+                  <div style={{ fontSize: '1rem', color: T.text2, maxWidth: 460, textAlign: 'center', lineHeight: 1.6, fontWeight: 400, opacity: 0.7 }}>
+                    QueryMind translates your plain English questions into optimized SQL, executing them against your database in real-time.
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16, justifyContent: 'center' }}>
+                    {['Show me all tables', 'Describe the database', 'Who are the top customers?'].map(s => (
                       <button key={s} onClick={() => handleSend(s)} disabled={!activeConnectionId || loading} style={{
-                        padding: '7px 14px', borderRadius: 20, border: `1px solid ${T.border}`, background: T.s1,
-                        color: T.text2, fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
-                        fontWeight: 500, boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        padding: '10px 20px', borderRadius: 0, border: `1px solid rgba(0,0,0,0.1)`, background: '#fff',
+                        color: T.text, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap',
+                        fontWeight: 700, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em'
                       }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; e.currentTarget.style.background = T.s1; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text2; e.currentTarget.style.background = T.s1; e.currentTarget.style.transform = 'translateY(0)'; }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#1a1a1a'; e.currentTarget.style.background = '#fdfcfb'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; e.currentTarget.style.background = '#fff'; }}
                       >{s}</button>
                     ))}
                   </div>
@@ -301,14 +311,12 @@ export function ChatPage() {
               ))}
 
               {loading && (
-                <div style={{ padding: '24px 32px', display: 'flex', gap: 12 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800 }}>Q</div>
-                  <div style={{ padding: '12px 18px', background: 'rgba(255,255,255,0.6)', borderRadius: '4px 18px 18px 18px', border: `1px solid #e5e5e5` }}>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent, animation: 'thinkbounce 1.2s 0s infinite' }} />
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent, animation: 'thinkbounce 1.2s 0.2s infinite' }} />
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent, animation: 'thinkbounce 1.2s 0.4s infinite' }} />
-                    </div>
+                <div style={{ padding: '24px 12px', display: 'flex', gap: 14 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 0, background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.7rem', fontWeight: 900, fontStyle: 'italic' }}>Q</div>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#1a1a1a', animation: 'thinkbounce 1.2s 0s infinite' }} />
+                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#1a1a1a', animation: 'thinkbounce 1.2s 0.2s infinite' }} />
+                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#1a1a1a', animation: 'thinkbounce 1.2s 0.4s infinite' }} />
                   </div>
                 </div>
               )}
@@ -318,8 +326,8 @@ export function ChatPage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', background: 'transparent', flexShrink: 0 }}>
-          <div style={{ width: '100%', maxWidth: 1200, padding: '0 60px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', background: 'transparent', flexShrink: 0, paddingBottom: 24 }}>
+          <div style={{ width: '100%', maxWidth: 1200, padding: '0 80px' }}>
             <ChatInput
               connections={connections} activeConnectionId={activeConnectionId}
               onConnectionChange={setActiveConnectionId} onSend={handleSend} loading={loading}

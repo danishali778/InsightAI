@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { T } from '../dashboard/tokens';
 import type { ConnectionListItem } from '../../types/connections';
 
@@ -12,110 +13,134 @@ export function ConnectionListPanel({
   onSelect: (id: string) => void,
   onAdd: () => void 
 }) {
-  const activeConns = connections.filter(c => c.status !== 'offline');
-  const offlineConns = connections.filter(c => c.status === 'offline');
+  const [search, setSearch] = useState('');
+  
+  const filtered = connections.filter(c => 
+    c.name.toLowerCase().includes(search.toLowerCase()) || 
+    c.type.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div style={{
-      width: 300, flexShrink: 0, background: T.s1, borderRight: `1px solid ${T.border}`,
-      display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: T.fontBody
+      width: 320, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column',
+      background: T.s1, flexShrink: 0, height: '100%', overflow: 'hidden'
     }}>
-      <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.85rem', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: T.text }}>
-          My Connections
-          <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>{connections.length} total</span>
-        </div>
+      {/* Search Header */}
+      <div style={{ padding: '20px 20px 16px', borderBottom: `1px solid ${T.border}` }}>
         <div style={{ position: 'relative' }}>
-          <svg style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: T.text3, pointerEvents: 'none' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input 
-            placeholder="Search connections..."
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="FILTER SOURCES..."
             style={{
-              width: '100%', background: T.s2, border: `1px solid ${T.border}`, borderRadius: 8,
-              padding: '7px 10px 7px 28px', color: T.text2, fontFamily: T.fontBody, fontSize: '0.76rem',
-              outline: 'none', transition: 'border-color 0.2s'
+              width: '100%', background: T.s2, border: `1px solid ${T.border}`,
+              padding: '10px 14px 10px 34px', fontSize: '0.68rem', fontFamily: T.fontMono,
+              color: T.text, outline: 'none', transition: 'all 0.15s',
+              borderRadius: 0, letterSpacing: '0.5px'
             }}
-            onFocus={e => e.target.style.borderColor = 'rgba(0,229,255,0.3)'}
+            onFocus={e => e.target.style.borderColor = T.accent}
             onBlur={e => e.target.style.borderColor = T.border}
           />
+          <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: T.text3 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }} className="custom-scrollbar">
-        {activeConns.length > 0 && (
-          <>
-            <div style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '1.2px', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, padding: '8px 8px 5px' }}>Active</div>
-            {activeConns.map(c => <ConnectionItem key={c.id} data={c} active={activeId === c.id} onClick={() => onSelect(c.id)} />)}
-          </>
-        )}
+      {/* List */}
+      <div style={{ flex: 1, overflowY: 'auto' }} className="conn-list">
+        {filtered.map(conn => {
+          const isActive = conn.id === activeId;
+          const statusColor = conn.status === 'live' ? T.green : (conn.status === 'offline' ? T.red : T.yellow);
+          
+          return (
+            <div
+              key={conn.id}
+              onClick={() => onSelect(conn.id)}
+              style={{
+                padding: '16px 20px', cursor: 'pointer', transition: 'all 0.15s',
+                borderBottom: `1px solid ${T.border}`, position: 'relative',
+                background: isActive ? T.s2 : 'transparent'
+              }}
+              onMouseEnter={e => { if(!isActive) e.currentTarget.style.background = T.s2; }}
+              onMouseLeave={e => { if(!isActive) e.currentTarget.style.background = 'transparent'; }}
+            >
+              {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: T.accent }} />}
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                <div style={{ 
+                  width: 32, height: 32, background: conn.color, 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  fontSize: '1rem', flexShrink: 0, borderRadius: 0
+                }}>
+                  {conn.icon}
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ 
+                    fontFamily: T.fontHead, fontWeight: 800, fontSize: '0.88rem', 
+                    color: isActive ? T.text : T.text2, whiteSpace: 'nowrap', 
+                    overflow: 'hidden', textOverflow: 'ellipsis' 
+                  }}>{conn.name}</div>
+                  <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{conn.type} · {conn.database || 'public'}</div>
+                </div>
+                <div style={{ 
+                  width: 6, height: 6, borderRadius: 0, 
+                  background: statusColor,
+                  opacity: conn.status === 'live' ? 1 : 0.4
+                }} />
+              </div>
 
-        {offlineConns.length > 0 && (
-          <>
-            <div style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '1.2px', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, padding: '16px 8px 5px' }}>Offline</div>
-            {offlineConns.map(c => <ConnectionItem key={c.id} data={c} active={activeId === c.id} onClick={() => onSelect(c.id)} />)}
-          </>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                 <div style={{ display: 'flex', gap: 8 }}>
+                   <Stat label="latency" val={conn.status === 'offline' ? 'OFF' : `${conn.latency}ms`} col={statusColor} />
+                   <Stat label="queries" val={String(conn.queries || 0)} />
+                 </div>
+                 <div style={{ fontSize: '0.55rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase' }}>
+                   {conn.status}
+                 </div>
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div style={{ padding: 40, textAlign: 'center', color: T.text3, fontSize: '0.68rem', fontFamily: T.fontMono }}>
+            NO SOURCES FOUND
+          </div>
         )}
       </div>
 
-      <button onClick={onAdd} style={{
-        margin: '8px 10px', padding: '9px 12px', borderRadius: 10,
-        border: `1px dashed ${T.border2}`, background: 'transparent',
-        color: T.text3, fontSize: '0.78rem', cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-        transition: 'all 0.2s', fontFamily: T.fontBody
-      }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.35)'; e.currentTarget.style.color = T.accent; e.currentTarget.style.background = T.accentDim; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.color = T.text3; e.currentTarget.style.background = 'transparent'; }}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add new connection
-      </button>
+      {/* Add Button */}
+      <div style={{ padding: 16, borderTop: `1px solid ${T.border}` }}>
+        <button
+          onClick={onAdd}
+          style={{
+            width: '100%', padding: '12px', background: 'transparent', border: `1px solid ${T.border}`,
+            color: T.text2, fontSize: '0.68rem', fontFamily: T.fontMono, cursor: 'pointer',
+            transition: 'all 0.15s', fontWeight: 700, display: 'flex', alignItems: 'center', 
+            justifyContent: 'center', gap: 8, borderRadius: 0, textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = T.text; e.currentTarget.style.color = T.text; e.currentTarget.style.background = T.s2; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text2; e.currentTarget.style.background = 'transparent'; }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Initialize New Source
+        </button>
+      </div>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: ${T.s4}; border-radius: 2px; }
+        .conn-list::-webkit-scrollbar { width: 4px; }
+        .conn-list::-webkit-scrollbar-thumb { background: ${T.s4}; }
       `}</style>
     </div>
   );
 }
 
-function ConnectionItem({ data, active, onClick }: { data: ConnectionListItem, active: boolean, onClick: () => void }) {
-  const getRingColor = () => {
-    switch(data.status) {
-      case 'live': return T.green;
-      case 'offline': return T.red;
-      case 'warning': return T.yellow;
-      default: return T.text3;
-    }
-  };
-
-  const latencyColor = data.status === 'offline' ? T.red : data.status === 'warning' ? T.yellow : T.green;
-
+function Stat({ label, val, col }: { label: string, val: string, col?: string }) {
   return (
-    <div onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-      transition: 'all 0.15s', marginBottom: 2, border: `1px solid ${active ? 'rgba(0,229,255,0.15)' : 'transparent'}`,
-      background: active ? T.s2 : 'transparent',
-    }}
-    onMouseEnter={e => { if(!active) e.currentTarget.style.background = T.s2; }}
-    onMouseLeave={e => { if(!active) e.currentTarget.style.background = 'transparent'; }}
-    >
-      <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', position: 'relative', background: data.color }}>
-        {data.icon}
-        <div style={{ position: 'absolute', bottom: -2, right: -2, width: 11, height: 11, borderRadius: '50%', border: `2px solid ${T.s2}`, background: getRingColor() }} />
-      </div>
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '0.83rem', fontWeight: 600, color: active ? T.text : T.text2, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{data.name}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ fontSize: '0.62rem', fontFamily: T.fontMono, color: T.text3 }}>{data.type}</span>
-          <span style={{ color: T.text3, fontSize: '0.6rem' }}>·</span>
-          <span style={{ fontSize: '0.62rem', fontFamily: T.fontMono, color: latencyColor }}>{data.status === 'offline' ? 'Offline' : `${data.latency}ms`}</span>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
-        <span style={{ fontSize: '0.62rem', fontFamily: T.fontMono, color: T.text3 }}>{data.queries.toLocaleString()} queries</span>
-      </div>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+      <span style={{ fontSize: '0.55rem', color: T.text3, fontFamily: T.fontMono, textTransform: 'uppercase' }}>{label}:</span>
+      <span style={{ fontSize: '0.62rem', color: col || T.text2, fontFamily: T.fontMono, fontWeight: 700 }}>{val}</span>
     </div>
   );
 }
