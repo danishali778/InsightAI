@@ -1,33 +1,45 @@
-const productLinks = ['Features', 'Integrations', 'Pricing', 'Changelog', 'Roadmap'];
-const resourceLinks = ['Documentation', 'API Reference', 'SQL Guide', 'Blog', 'Community'];
-const companyLinks = ['About', 'Careers', 'Privacy Policy', 'Terms of Service', 'Contact'];
+import { T } from '../dashboard/tokens';
+
+const productLinks = ['FEATURES', 'INTEGRATIONS', 'PRICING', 'CHANGELOG', 'ROADMAP'];
+const resourceLinks = ['DOCUMENTATION', 'API_REFERENCE', 'SQL_GUIDE', 'BLOG', 'COMMUNITY'];
+const companyLinks = ['ABOUT', 'CAREERS', 'PRIVACY_POLICY', 'TERMS_OF_SERVICE', 'CONTACT'];
 
 export function Footer() {
     return (
-        <footer style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', padding: '60px 60px 36px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 40, maxWidth: 1100, margin: '0 auto 48px' }}>
+        <footer style={{ background: T.bg, borderTop: `1px solid ${T.border}`, padding: '80px 60px 48px', color: T.text }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 60, maxWidth: 1200, margin: '0 auto 80px' }}>
                 {/* Brand */}
                 <div>
-                    <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '1.3rem', color: 'var(--text)', display: 'block', marginBottom: 14, fontStyle: 'normal' }}>
-                        Query<span style={{ color: 'var(--accent)' }}>Mind</span>
-                    </span>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.7, maxWidth: 240 }}>
-                        Turn plain English into powerful SQL queries and stunning data visualizations — in seconds.
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                        <div style={{ width: 28, height: 28, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: '1rem', fontWeight: 950, fontFamily: T.fontHead }}>Q</div>
+                        <span style={{ fontFamily: T.fontHead, fontWeight: 950, fontSize: '1.4rem', color: T.text, letterSpacing: '-1px', textTransform: 'uppercase' }}>
+                            QUERY<span style={{ color: T.accent }}>MIND</span>
+                        </span>
+                    </div>
+                    <p style={{ fontSize: '0.7rem', color: T.text3, lineHeight: 1.8, maxWidth: 280, fontFamily: T.fontMono, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        INITIALIZING NATURAL LANGUAGE INVESTIGATIONS. TRANSFORM PLAIN TEXT INTO PRODUCTION-READY SQL NODES INSTANTLY.
                     </p>
                 </div>
 
                 {/* Columns */}
                 {[
-                    { title: 'Product', links: productLinks },
-                    { title: 'Resources', links: resourceLinks },
-                    { title: 'Company', links: companyLinks },
+                    { title: 'PRODUCT', links: productLinks },
+                    { title: 'RESOURCES', links: resourceLinks },
+                    { title: 'COMPANY', links: companyLinks },
                 ].map((col) => (
                     <div key={col.title}>
-                        <h4 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '0.85rem', marginBottom: 16, color: 'var(--text)', fontStyle: 'normal' }}>{col.title}</h4>
-                        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <h4 style={{ fontFamily: T.fontHead, fontWeight: 950, fontSize: '0.75rem', marginBottom: 24, color: T.text, letterSpacing: '2px' }}>{col.title}</h4>
+                        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14, margin: 0, padding: 0 }}>
                             {col.links.map((link) => (
                                 <li key={link}>
-                                    <a href="#" style={{ fontSize: '0.83rem', color: 'var(--muted)', textDecoration: 'none' }}>{link}</a>
+                                    <a href="#" style={{ 
+                                      fontSize: '0.65rem', color: T.text3, textDecoration: 'none', 
+                                      fontFamily: T.fontMono, fontWeight: 800, letterSpacing: '1px',
+                                      transition: 'color 0.2s'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.color = T.accent}
+                                    onMouseLeave={e => e.currentTarget.style.color = T.text3}
+                                    >{link}</a>
                                 </li>
                             ))}
                         </ul>
@@ -36,13 +48,22 @@ export function Footer() {
             </div>
 
             {/* Bottom bar */}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 28, display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1100, margin: '0 auto' }}>
-                <p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>© 2025 QueryMind. All rights reserved.</p>
-                <div style={{ display: 'flex', gap: 14 }}>
-                    {['𝕏', 'in', 'gh'].map((icon) => (
+            <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 1200, margin: '0 auto' }}>
+                <p style={{ fontSize: '0.6rem', color: T.text3, fontFamily: T.fontMono, fontWeight: 800, letterSpacing: '1px' }}>
+                    © 2025 QUERYMIND_SYSTEMS // ALL_RIGHTS_RESERVED
+                </p>
+                <div style={{ display: 'flex', gap: 16 }}>
+                    {['𝕏', 'IN', 'GH'].map((icon) => (
                         <div
                             key={icon}
-                            style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', cursor: 'pointer' }}
+                            style={{ 
+                              width: 36, height: 36, borderRadius: 0, border: `1px solid ${T.border}`, 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                              fontSize: '0.8rem', cursor: 'pointer', color: T.text,
+                              fontFamily: T.fontMono, fontWeight: 950, transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
                         >
                             {icon}
                         </div>

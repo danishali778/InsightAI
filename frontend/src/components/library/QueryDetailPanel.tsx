@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
+import { X, Play, Trash2, Calendar, Clock, Database, Tag, Info, FileText, ChevronRight, Activity, Terminal } from 'lucide-react';
 import { T } from '../dashboard/tokens';
 import { runSavedQuery, getQueryRunHistory, setQuerySchedule, removeQuerySchedule, updateSavedQuery, listLibraryFolders } from '../../services/api';
 import { highlightSqlInline, extractTablesFromSql } from '../../utils/sqlHighlight';
@@ -66,12 +67,9 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
       const result = await runSavedQuery(query.id);
       setRunResult(result);
       if (result.success) {
-        // Proactively refresh history so it shows up immediately
         getQueryRunHistory(query.id).then(setRunHistory).catch(() => {});
-        // Automatically switch to history to show the result was logged
         setActiveTab('history');
       } else {
-        // Switch to info to show the error
         setActiveTab('info');
       }
       onRefresh?.();
@@ -130,47 +128,39 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
     return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const TAG_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-    revenue: { bg: T.accentDim, color: T.accent, border: 'rgba(0,229,255,0.2)' },
-    churn: { bg: T.purpleDim, color: T.purple, border: 'rgba(124,58,255,0.2)' },
-    users: { bg: T.greenDim, color: T.green, border: 'rgba(34,211,165,0.2)' },
-    daily: { bg: T.yellowDim, color: T.yellow, border: 'rgba(245,158,11,0.2)' },
-    critical: { bg: T.redDim, color: T.red, border: 'rgba(248,113,113,0.2)' },
-  };
-  const DEFAULT_TAG = { bg: 'transparent', color: T.text3, border: T.border };
   const tables = extractTablesFromSql(query.sql);
 
   return (
     <div style={{
-      width: 340, flexShrink: 0, background: T.s1, borderLeft: `1px solid ${T.border}`,
+      width: 380, flexShrink: 0, background: '#fff', borderLeft: `1px solid rgba(0,0,0,0.08)`,
       display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: T.fontBody
     }}>
       {/* Header */}
-      <div style={{ padding: '14px 18px 12px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <div style={{ padding: '24px 24px 16px', borderBottom: `1px solid rgba(0,0,0,0.05)`, display: 'flex', alignItems: 'flex-start', gap: 16 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: '0.95rem', color: T.text, lineHeight: 1.3 }}>{query.title}</div>
-          <div style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono, marginTop: 4 }}>{query.folder_name}{query.connection_id ? ` · ${query.connection_id}` : ''}</div>
+          <div style={{ fontFamily: T.fontHead, fontWeight: 900, fontSize: '1.2rem', color: T.text, lineHeight: 1.2, fontStyle: 'italic', letterSpacing: -0.5 }}>{query.title}</div>
+          <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {query.folder_name} <span style={{ opacity: 0.3 }}>/</span> {query.connection_id || 'LOCAL ENGINE'}
+          </div>
         </div>
         <button onClick={onClose} style={{
-          width: 24, height: 24, borderRadius: 6, background: 'transparent', border: `1px solid ${T.border}`,
+          width: 28, height: 28, borderRadius: 0, background: 'transparent', border: `1px solid rgba(0,0,0,0.08)`,
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text3,
           fontSize: '0.75rem', flexShrink: 0, transition: 'all 0.15s'
         }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.color = T.text2; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text3; }}
-        >✕</button>
+          onMouseEnter={e => { e.currentTarget.style.borderColor = T.text; e.currentTarget.style.color = T.text; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.color = T.text3; }}
+        ><X size={14} /></button>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, background: T.s2 }}>
+      <div style={{ display: 'flex', borderBottom: `1px solid rgba(0,0,0,0.05)`, background: 'rgba(0,0,0,0.01)' }}>
         {(['info','sql','history','schedule'] as const).map((t) => (
           <div key={t} onClick={() => setActiveTab(t)} style={{
-            flex: 1, padding: '9px 6px', textAlign: 'center', fontSize: '0.72rem', fontFamily: T.fontMono,
-            color: activeTab === t ? T.accent : T.text3, cursor: 'pointer', borderBottom: `2px solid ${activeTab === t ? T.accent : 'transparent'}`,
-            transition: 'all 0.15s', textTransform: 'capitalize'
+            flex: 1, padding: '12px 6px', textAlign: 'center', fontSize: '0.62rem', fontFamily: T.fontMono, fontWeight: 800,
+            color: activeTab === t ? T.text : T.text3, cursor: 'pointer', borderBottom: `2px solid ${activeTab === t ? T.text : 'transparent'}`,
+            transition: 'all 0.15s', textTransform: 'uppercase', letterSpacing: '0.08em'
           }}
-            onMouseEnter={e => { if(activeTab !== t) e.currentTarget.style.color = T.text2; }}
-            onMouseLeave={e => { if(activeTab !== t) e.currentTarget.style.color = T.text3; }}
           >
             {t}
           </div>
@@ -178,26 +168,24 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 18px' }} className="custom-scroll">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }} className="custom-scroll">
 
         {/* INFO TAB */}
         {activeTab === 'info' && (
-          <>
-            <Section label="Details">
-              <InfoRow label="Created" value={formatDate(query.created_at)} />
-              <InfoRow label="Last Run" value={timeAgo(query.last_run_at)} color={query.last_run_at ? T.green : undefined} />
-              <InfoRow label="Total Runs" value={`${query.run_count} times`} />
-              <InfoRow label="Avg Runtime" value={runHistory.length > 0 ? `${(runHistory.reduce((s, r) => s + r.execution_time_ms, 0) / runHistory.length).toFixed(0)}ms` : '—'} />
-              <InfoRow label="Last Rows" value={runHistory.length > 0 ? `${runHistory[0].row_count} rows returned` : '—'} />
-              <InfoRow label="Database" value={query.connection_id || 'None'} color={query.connection_id ? T.accent : undefined} />
-              {tables.length > 0 && <InfoRow label="Tables Used" value={tables.join(', ')} />}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <Section label="Operational Metadata">
+              <InfoRow label="Created" value={formatDate(query.created_at)} icon={<Clock size={12} />} />
+              <InfoRow label="Last run" value={timeAgo(query.last_run_at).toUpperCase()} color={query.last_run_at ? T.text : undefined} icon={<Activity size={12} />} />
+              <InfoRow label="Frequency" value={`${query.run_count} TOTAL RUNS`} icon={<Terminal size={12} />} />
+              <InfoRow label="Source" value={query.connection_id || 'DEFAULT'} color={T.text} icon={<Database size={12} />} />
+              {tables.length > 0 && <InfoRow label="Lineage" value={tables.join(', ').toUpperCase()} icon={<FileText size={12} />} />}
+            </Section>
 
-              {/* Editable folder row */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid ${T.border}` }}>
-                <span style={{ fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono, minWidth: 80, paddingTop: 2 }}>Folder</span>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+            <Section label="Organizational Unit">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
+                <div style={{ flex: 1 }}>
                   {!newFolderMode ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <select
                         value={folderDraft}
                         onChange={e => {
@@ -205,9 +193,10 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
                           else { setFolderDraft(e.target.value); }
                         }}
                         style={{
-                          background: T.s2, border: `1px solid ${T.border}`, borderRadius: 6,
-                          padding: '3px 8px', color: T.text2, fontSize: '0.72rem',
-                          fontFamily: T.fontMono, outline: 'none', cursor: 'pointer',
+                          background: '#fff', border: `1px solid rgba(0,0,0,0.1)`, borderRadius: 0,
+                          padding: '6px 10px', color: T.text, fontSize: '0.72rem',
+                          fontFamily: T.fontMono, outline: 'none', cursor: 'pointer', width: '100%',
+                          fontWeight: 700, textTransform: 'uppercase'
                         }}
                       >
                         <option value="Uncategorized">Uncategorized</option>
@@ -215,40 +204,34 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
                           <option key={f.name} value={f.name}>{f.name}</option>
                         ))}
                         <option disabled>──────────</option>
-                        <option value="__new__">＋ New folder…</option>
+                        <option value="__new__">＋ NEW DIRECTORY</option>
                       </select>
                       {folderDraft !== query.folder_name && (
                         <button onClick={handleFolderSave} disabled={folderSaving} style={{
-                          padding: '3px 8px', borderRadius: 6, fontSize: '0.65rem', fontFamily: T.fontMono,
-                          cursor: 'pointer', border: `1px solid rgba(0,229,255,0.3)`,
-                          background: T.accentDim, color: T.accent,
-                        }}>{folderSaving ? '…' : 'Move'}</button>
+                          padding: '6px 12px', borderRadius: 0, fontSize: '0.62rem', fontFamily: T.fontMono,
+                          cursor: 'pointer', border: `1px solid ${T.text}`, fontWeight: 900,
+                          background: T.text, color: '#fff', textTransform: 'uppercase'
+                        }}>{folderSaving ? '...' : 'MOVE'}</button>
                       )}
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <input
                         autoFocus
                         value={newFolderName}
                         onChange={e => setNewFolderName(e.target.value)}
-                        placeholder="Folder name"
+                        placeholder="NAME..."
                         onKeyDown={e => { if (e.key === 'Enter') handleFolderSave(); if (e.key === 'Escape') setNewFolderMode(false); }}
                         style={{
-                          background: T.s2, border: `1px solid rgba(0,229,255,0.3)`, borderRadius: 6,
-                          padding: '3px 8px', color: T.text, fontSize: '0.72rem',
-                          fontFamily: T.fontMono, outline: 'none', width: 120,
+                          background: '#fff', border: `1px solid ${T.text}`, borderRadius: 0,
+                          padding: '6px 10px', color: T.text, fontSize: '0.72rem',
+                          fontFamily: T.fontMono, outline: 'none', width: '100%',
                         }}
                       />
                       <button onClick={handleFolderSave} disabled={folderSaving} style={{
-                        padding: '3px 8px', borderRadius: 6, fontSize: '0.65rem', fontFamily: T.fontMono,
-                        cursor: 'pointer', border: `1px solid rgba(0,229,255,0.3)`,
-                        background: T.accentDim, color: T.accent,
-                      }}>{folderSaving ? '…' : 'Create'}</button>
-                      <button onClick={() => setNewFolderMode(false)} style={{
-                        padding: '3px 6px', borderRadius: 6, fontSize: '0.65rem', fontFamily: T.fontMono,
-                        cursor: 'pointer', border: `1px solid ${T.border}`,
-                        background: 'transparent', color: T.text3,
-                      }}>✕</button>
+                        padding: '6px 12px', borderRadius: 0, fontSize: '0.62rem', fontFamily: T.fontMono,
+                        cursor: 'pointer', background: T.text, color: '#fff', border: 'none', fontWeight: 900
+                      }}>{folderSaving ? '...' : 'CREATE'}</button>
                     </div>
                   )}
                 </div>
@@ -256,183 +239,151 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
             </Section>
 
             {query.description && (
-              <Section label="Description">
-                <div style={{ fontSize: '0.78rem', color: T.text2, lineHeight: 1.6, background: T.s2, border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px' }}>
+              <Section label="Executive Summary">
+                <div style={{ fontSize: '0.8rem', color: T.text2, lineHeight: 1.7, padding: '16px', background: 'rgba(0,0,0,0.02)', borderLeft: `3px solid ${T.text}` }}>
                   {query.description}
                 </div>
               </Section>
             )}
 
-
-            {/* Tags */}
             {query.tags.length > 0 && (
-              <Section label="Tags">
-                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                  {query.tags.map(t => {
-                    const colors = TAG_COLORS[t] || DEFAULT_TAG;
-                    return (
-                      <span key={t} style={{ padding: '1px 7px', borderRadius: 10, fontSize: '0.62rem', fontFamily: T.fontMono, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.color }}>
-                        {t}
-                      </span>
-                    );
-                  })}
+              <Section label="Taxonomy">
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {query.tags.map(t => (
+                    <span key={t} style={{ 
+                      padding: '4px 10px', borderRadius: 0, fontSize: '0.58rem', fontFamily: T.fontMono, 
+                      border: `1px solid rgba(0,0,0,0.08)`, background: '#fff', color: T.text2,
+                      fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em'
+                    }}>
+                      {t}
+                    </span>
+                  ))}
                 </div>
               </Section>
             )}
 
-            {/* Run Result */}
             {runResult && (
-              <Section label="Last Run Result">
-                <div style={{ padding: '10px 12px', borderRadius: 8, background: runResult.success ? T.greenDim : T.redDim, border: `1px solid ${runResult.success ? 'rgba(34,211,165,0.2)' : 'rgba(248,113,113,0.2)'}`, color: runResult.success ? T.green : T.red, fontSize: '0.78rem' }}>
-                  {runResult.success ? `${runResult.row_count} rows returned in ${runResult.execution_time_ms}ms` : runResult.error}
+              <Section label="Execution Status">
+                <div style={{ 
+                  padding: '16px', borderRadius: 0, 
+                  background: runResult.success ? 'rgba(34,211,165,0.05)' : 'rgba(248,113,113,0.05)', 
+                  border: `1px solid ${runResult.success ? 'rgba(34,211,165,0.15)' : 'rgba(248,113,113,0.15)'}`, 
+                  color: runResult.success ? T.green : T.red, fontSize: '0.72rem', fontFamily: T.fontMono,
+                  fontWeight: 700
+                }}>
+                  {runResult.success ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ textTransform: 'uppercase' }}>SUCCESS</div>
+                      <div style={{ color: T.text3, fontWeight: 400 }}>{runResult.row_count} rows in {runResult.execution_time_ms}ms</div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ textTransform: 'uppercase' }}>FAILED</div>
+                      <div style={{ color: T.red, fontWeight: 400 }}>{runResult.error}</div>
+                    </div>
+                  )}
                 </div>
               </Section>
             )}
-          </>
+          </div>
         )}
 
         {/* SQL TAB */}
         {activeTab === 'sql' && (
-          <Section label="">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: 1, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono }}>Current SQL</span>
-                <button 
-                  onClick={() => setActiveTab('info')}
-                  style={{ ...miniBtnStyle, border: 'none', padding: 0, textDecoration: 'underline', opacity: 0.7 }}
-                >
-                  (View Info)
-                </button>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {runResult && (
-                  <span style={{ fontSize: '0.6rem', color: runResult.success ? T.green : T.red, fontFamily: T.fontMono }}>
-                    {runResult.success ? `${runResult.row_count} rows` : 'Last run failed'}
-                  </span>
-                )}
-                <button 
-                  onClick={handleCopy} 
-                  style={{ 
-                    ...miniBtnStyle, 
-                    borderColor: copied ? T.green : T.border,
-                    color: copied ? T.green : T.text3,
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.62rem', fontWeight: 800, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, letterSpacing: '0.1em' }}>Source Code</span>
+              <button onClick={handleCopy} style={{ 
+                padding: '4px 12px', borderRadius: 0, border: `1px solid ${copied ? T.green : 'rgba(0,0,0,0.1)'}`, 
+                background: copied ? 'rgba(34,211,165,0.05)' : '#fff', color: copied ? T.green : T.text, 
+                fontSize: '0.62rem', fontFamily: T.fontMono, fontWeight: 800, cursor: 'pointer' 
+              }}>
+                {copied ? 'COPIED' : 'COPY'}
+              </button>
             </div>
             <div style={{
-              background: 'rgba(0,0,0,0.3)', border: `1px solid ${T.border}`, borderRadius: 9,
-              padding: '12px 14px', fontFamily: T.fontMono, fontSize: '0.72rem', lineHeight: 1.8,
-              maxHeight: 280, overflowY: 'auto',
+              background: '#1a1a1a', border: 'none', borderRadius: 0,
+              padding: '20px', fontFamily: T.fontMono, fontSize: '0.72rem', lineHeight: 1.8,
+              maxHeight: 400, overflowY: 'auto', color: '#fff',
+              boxShadow: 'inset 0 0 10px rgba(0,0,0,0.3)'
             }} className="custom-scroll">
               {highlightSqlInline(query.sql, 'panel')}
             </div>
-          </Section>
+          </div>
         )}
 
-        {/* HISTORY TAB — Run History */}
+        {/* HISTORY TAB */}
         {activeTab === 'history' && (
-          <Section label="Run History">
+          <Section label="Timeline">
             {runHistory.length > 0 ? (
-              runHistory.map((run, i, arr) => (
-                <div key={run.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, padding: '9px 0', borderBottom: i < arr.length - 1 ? `1px solid ${T.border}` : 'none' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{
-                      width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                      background: run.success ? T.green : T.red,
-                      border: `2px solid ${run.success ? T.green : T.red}`,
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {runHistory.map((run, i) => (
+                  <div key={run.id} style={{ 
+                    display: 'flex', alignItems: 'flex-start', gap: 16, padding: '16px 0', 
+                    borderBottom: i < runHistory.length - 1 ? `1px solid rgba(0,0,0,0.05)` : 'none' 
+                  }}>
+                    <div style={{ 
+                      width: 8, height: 8, borderRadius: 0, marginTop: 4,
+                      background: run.success ? T.green : T.red, flexShrink: 0
                     }} />
-                    {i < arr.length - 1 && <div style={{ width: 2, background: T.border, flex: 1, minHeight: 30, margin: '2px 3px 0' }} />}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.76rem', color: T.text2, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {run.success ? `${run.row_count} rows returned` : 'Failed'}
-                      {i === 0 && (
-                        <span style={{ fontSize: '0.6rem', fontFamily: T.fontMono, padding: '1px 6px', borderRadius: 4, background: T.accentDim, color: T.accent, border: '1px solid rgba(0,229,255,0.2)' }}>latest</span>
-                      )}
-                      {run.triggered_by === 'schedule' && (
-                        <span style={{ fontSize: '0.6rem', fontFamily: T.fontMono, padding: '1px 6px', borderRadius: 4, background: T.yellowDim, color: T.yellow, border: '1px solid rgba(245,158,11,0.2)' }}>scheduled</span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono }}>
-                      {run.execution_time_ms.toFixed(0)}ms · {timeAgo(run.ran_at)}
-                      {run.error && <span style={{ color: T.red }}> · {run.error}</span>}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: T.text, display: 'flex', alignItems: 'center', gap: 8, fontFamily: T.fontMono }}>
+                        {run.success ? `${run.row_count} ROWS` : 'ERROR'}
+                        {i === 0 && <span style={{ fontSize: '0.55rem', padding: '2px 6px', background: T.text, color: '#fff' }}>LATEST</span>}
+                      </div>
+                      <div style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, marginTop: 4, textTransform: 'uppercase' }}>
+                        {run.execution_time_ms.toFixed(0)}ms · {timeAgo(run.ran_at)}
+                      </div>
+                      {run.error && <div style={{ color: T.red, fontSize: '0.65rem', marginTop: 8, fontFamily: T.fontMono }}>{run.error}</div>}
                     </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div style={{ textAlign: 'center', padding: '24px 12px', color: T.text3 }}>
-                <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>📊</div>
-                <div style={{ fontSize: '0.78rem', color: T.text2, marginBottom: 4 }}>No runs yet</div>
-                <div style={{ fontSize: '0.72rem', lineHeight: 1.5 }}>Run this query to see execution history here.</div>
+                ))}
               </div>
+            ) : (
+              <EmptyState message="No execution records found." sub="Run this query to begin instrumentation." icon={<Activity size={24} />} />
             )}
           </Section>
         )}
 
         {/* SCHEDULE TAB */}
         {activeTab === 'schedule' && (
-          <>
-            <Section label="Schedule Settings">
-              <div style={{ background: T.s2, border: `1px solid ${T.border}`, borderRadius: 9, padding: '12px 14px' }}>
-                <SettingsRow label="Enabled">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <Section label="Automated Scheduling">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, background: 'rgba(0,0,0,0.02)', padding: '20px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                <SettingsRow label="Status">
                   <Toggle on={schedDraft.enabled} onToggle={() => setSchedDraft({ ...schedDraft, enabled: !schedDraft.enabled })} />
                 </SettingsRow>
 
                 {schedDraft.enabled && (
                   <>
-                    {/* Frequency pills */}
                     <SettingsRow label="Frequency">
-                      <div style={{ display: 'flex', gap: 4 }}>
+                      <div style={{ display: 'flex', border: '1px solid rgba(0,0,0,0.1)', background: '#fff' }}>
                         {(['daily','weekly','monthly'] as const).map(f => (
                           <button key={f} onClick={() => setSchedDraft({ ...schedDraft, frequency: f })} style={{
-                            padding: '3px 10px', borderRadius: 6, fontSize: '0.68rem', fontFamily: T.fontMono, cursor: 'pointer',
-                            border: `1px solid ${schedDraft.frequency === f ? T.accent : T.border}`,
-                            background: schedDraft.frequency === f ? T.accentDim : 'transparent',
-                            color: schedDraft.frequency === f ? T.accent : T.text3,
-                            transition: 'all 0.15s', textTransform: 'capitalize',
+                            padding: '6px 12px', border: 'none', borderRight: f !== 'monthly' ? '1px solid rgba(0,0,0,0.1)' : 'none',
+                            background: schedDraft.frequency === f ? T.text : 'transparent',
+                            color: schedDraft.frequency === f ? '#fff' : T.text3,
+                            fontSize: '0.62rem', fontFamily: T.fontMono, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase'
                           }}>{f}</button>
                         ))}
                       </div>
                     </SettingsRow>
 
-                    {/* Day of week (weekly) */}
                     {schedDraft.frequency === 'weekly' && (
-                      <SettingsRow label="Day">
-                        <div style={{ display: 'flex', gap: 3 }}>
-                          {DAYS_OF_WEEK.map((d, i) => (
-                            <button key={d} onClick={() => setSchedDraft({ ...schedDraft, day_of_week: d })} style={{
-                              width: 28, height: 24, borderRadius: 5, fontSize: '0.62rem', fontFamily: T.fontMono, cursor: 'pointer',
-                              border: `1px solid ${schedDraft.day_of_week === d ? T.accent : T.border}`,
-                              background: schedDraft.day_of_week === d ? T.accentDim : 'transparent',
-                              color: schedDraft.day_of_week === d ? T.accent : T.text3,
-                              transition: 'all 0.15s',
-                            }}>{DAY_LABELS[i]}</button>
-                          ))}
-                        </div>
+                      <SettingsRow label="Window">
+                        <select 
+                          value={schedDraft.day_of_week} 
+                          onChange={e => setSchedDraft({ ...schedDraft, day_of_week: e.target.value as any })}
+                          style={selectStyle}
+                        >
+                          {DAYS_OF_WEEK.map(d => <option key={d} value={d}>{d.toUpperCase()}</option>)}
+                        </select>
                       </SettingsRow>
                     )}
 
-                    {/* Day of month (monthly) */}
-                    {schedDraft.frequency === 'monthly' && (
-                      <SettingsRow label="Day of month">
-                        <input type="number" min={1} max={28} value={schedDraft.day_of_month ?? 1}
-                          onChange={e => setSchedDraft({ ...schedDraft, day_of_month: Math.min(28, Math.max(1, Number(e.target.value))) })}
-                          style={{ width: 50, padding: '3px 6px', borderRadius: 5, border: `1px solid ${T.border}`, background: T.s1, color: T.text, fontSize: '0.72rem', fontFamily: T.fontMono, outline: 'none' }}
-                        />
-                      </SettingsRow>
-                    )}
-
-                    {/* Time */}
-                    <SettingsRow label="Time">
+                    <SettingsRow label="Timestamp">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <input
-                          type="number" min={1} max={12}
-                          value={schedDraft.hour % 12 || 12}
+                        <input type="number" min={1} max={12} value={schedDraft.hour % 12 || 12}
                           onChange={e => {
                             const h12 = Math.min(12, Math.max(1, Number(e.target.value)));
                             const isPm = schedDraft.hour >= 12;
@@ -440,183 +391,136 @@ export function QueryDetailPanel({ query, onClose, onDelete, onRefresh, initialT
                           }}
                           style={{ ...selectStyle, width: 44, textAlign: 'center' }}
                         />
-                        <span style={{ color: T.text3, fontSize: '0.72rem' }}>:</span>
-                        <input
-                          type="number" min={0} max={59}
-                          value={String(schedDraft.minute).padStart(2, '0')}
-                          onChange={e => {
-                            const m = Math.min(59, Math.max(0, Number(e.target.value)));
-                            setSchedDraft({ ...schedDraft, minute: m });
-                          }}
+                        <span style={{ fontFamily: T.fontMono }}>:</span>
+                        <input type="number" min={0} max={59} value={String(schedDraft.minute).padStart(2, '0')}
+                          onChange={e => setSchedDraft({ ...schedDraft, minute: Math.min(59, Math.max(0, Number(e.target.value))) })}
                           style={{ ...selectStyle, width: 44, textAlign: 'center' }}
                         />
                         <button onClick={() => {
                           const isPm = schedDraft.hour >= 12;
                           setSchedDraft({ ...schedDraft, hour: isPm ? schedDraft.hour - 12 : schedDraft.hour + 12 });
                         }} style={{
-                          padding: '3px 8px', borderRadius: 5, fontSize: '0.68rem', fontFamily: T.fontMono, cursor: 'pointer',
-                          border: `1px solid ${T.border}`, background: T.accentDim, color: T.accent, transition: 'all 0.15s',
+                          padding: '4px 8px', background: '#fff', border: '1px solid rgba(0,0,0,0.1)', 
+                          fontSize: '0.62rem', fontFamily: T.fontMono, fontWeight: 800, cursor: 'pointer'
                         }}>{schedDraft.hour >= 12 ? 'PM' : 'AM'}</button>
                       </div>
                     </SettingsRow>
 
-                    {/* Timezone */}
                     <SettingsRow label="Timezone">
-                      <select value={schedDraft.timezone} onChange={e => setSchedDraft({ ...schedDraft, timezone: e.target.value })} style={{ ...selectStyle, width: 'auto' }}>
-                        {COMMON_TIMEZONES.map(tz => <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>)}
+                      <select value={schedDraft.timezone} onChange={e => setSchedDraft({ ...schedDraft, timezone: e.target.value })} style={{ ...selectStyle, width: 140 }}>
+                        {COMMON_TIMEZONES.map(tz => <option key={tz} value={tz}>{tz.split('/').pop()?.replace(/_/g, ' ')}</option>)}
                       </select>
                     </SettingsRow>
-
-                    {/* Next run (read-only, shown if saved) */}
-                    {query.schedule?.next_run_at && (
-                      <SettingsRow label="Next run">
-                        <span style={{ fontSize: '0.72rem', fontFamily: T.fontMono, color: T.green }}>
-                          {new Date(query.schedule.next_run_at).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                        </span>
-                      </SettingsRow>
-                    )}
                   </>
                 )}
               </div>
 
-              {/* Save / Remove buttons */}
-              <div style={{ display: 'flex', gap: 7, marginTop: 10 }}>
-                <button onClick={async () => {
-                  setSchedSaving(true);
-                  try {
-                    await setQuerySchedule(query.id, schedDraft);
-                    onRefresh?.();
-                  } catch { /* ignore */ }
-                  setSchedSaving(false);
-                }} disabled={schedSaving || !query.connection_id} style={{
-                  flex: 1, padding: '8px 12px', borderRadius: 7, fontSize: '0.76rem', cursor: schedSaving || !query.connection_id ? 'not-allowed' : 'pointer',
-                  background: `linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,255,0.1))`,
-                  border: '1px solid rgba(0,229,255,0.25)', color: T.accent, fontFamily: T.fontBody,
-                  opacity: schedSaving || !query.connection_id ? 0.5 : 1, transition: 'all 0.15s',
-                }}>
-                  {schedSaving ? 'Saving...' : 'Save Schedule'}
+              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                <button 
+                  onClick={async () => {
+                    setSchedSaving(true);
+                    try { await setQuerySchedule(query.id, schedDraft); onRefresh?.(); } catch { }
+                    setSchedSaving(false);
+                  }} 
+                  disabled={schedSaving || !query.connection_id} 
+                  style={{
+                    flex: 1, padding: '12px', border: 'none', background: T.text, color: '#fff',
+                    fontSize: '0.72rem', fontWeight: 900, fontFamily: T.fontMono, cursor: 'pointer',
+                    opacity: schedSaving || !query.connection_id ? 0.5 : 1, textTransform: 'uppercase'
+                  }}
+                >
+                  {schedSaving ? 'COMMITTING...' : 'COMMIT SCHEDULE'}
                 </button>
                 {query.schedule && (
                   <button onClick={async () => {
                     setSchedSaving(true);
-                    try {
-                      await removeQuerySchedule(query.id);
-                      setSchedDraft(defaultSchedule());
-                      onRefresh?.();
-                    } catch { /* ignore */ }
+                    try { await removeQuerySchedule(query.id); setSchedDraft(defaultSchedule()); onRefresh?.(); } catch { }
                     setSchedSaving(false);
                   }} style={{
-                    padding: '8px 12px', borderRadius: 7, fontSize: '0.76rem', cursor: 'pointer',
-                    background: 'transparent', border: '1px solid rgba(248,113,113,0.2)', color: T.red,
-                    fontFamily: T.fontBody, transition: 'all 0.15s',
-                  }}>Remove</button>
+                    padding: '12px', border: '1px solid rgba(0,0,0,0.1)', background: '#fff', color: T.red,
+                    fontSize: '0.72rem', fontWeight: 900, fontFamily: T.fontMono, cursor: 'pointer', textTransform: 'uppercase'
+                  }}>ABORT</button>
                 )}
               </div>
-              {!query.connection_id && (
-                <div style={{ fontSize: '0.68rem', color: T.yellow, marginTop: 6 }}>Assign a database connection before scheduling.</div>
-              )}
             </Section>
-
-          </>
+          </div>
         )}
 
       </div>
 
       {/* Action Buttons */}
-      <div style={{ padding: '12px 18px', borderTop: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', gap: 7, flexShrink: 0 }}>
-        <PanelBtn label={running ? 'Running...' : '▶  Run Query'} type="accent" onClick={handleRun} disabled={running} />
-        <PanelBtn label="🗑  Delete Query" type="danger" onClick={handleDelete} />
+      <div style={{ padding: '24px', borderTop: `1px solid rgba(0,0,0,0.08)`, display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0, background: 'rgba(0,0,0,0.01)' }}>
+        <PanelBtn label={running ? 'EXECUTING...' : 'RUN ANALYTICS'} type="accent" onClick={handleRun} disabled={running} icon={<Play size={14} />} />
+        <PanelBtn label="ARCHIVE QUERY" type="danger" onClick={handleDelete} icon={<Trash2 size={14} />} />
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation */}
       {showDeleteConfirm && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+          background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, padding: 20
         }} onClick={() => setShowDeleteConfirm(false)}>
           <div style={{
-            width: '100%', maxWidth: 300, background: T.s2, borderRadius: 16,
-            border: `1px solid ${T.border}`, boxShadow: T.shadow.xl,
-            padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16,
-            transform: 'scale(1)', animation: 'popIn 0.2s ease-out'
+            width: '100%', maxWidth: 360, background: '#fff', border: `2px solid ${T.text}`,
+            padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 24,
+            animation: 'popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
           }} onClick={e => e.stopPropagation()}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: '50%', background: T.redDim,
-                color: T.red, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.4rem', margin: '0 auto 12px', border: '1px solid rgba(248,113,113,0.2)'
-              }}>⚠️</div>
-              <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '1.05rem', color: T.text, marginBottom: 6 }}>Delete Query?</div>
-              <div style={{ fontSize: '0.8rem', color: T.text3, lineHeight: 1.5 }}>
-                Are you sure you want to remove <span style={{ color: T.text2, fontWeight: 500 }}>"{query.title}"</span>? This action cannot be undone.
+              <div style={{ fontFamily: T.fontHead, fontWeight: 900, fontSize: '1.4rem', color: T.text, marginBottom: 12, fontStyle: 'italic' }}>Destructive Action</div>
+              <div style={{ fontSize: '0.85rem', color: T.text3, lineHeight: 1.6 }}>
+                Are you certain you wish to archive <span style={{ color: T.text, fontWeight: 800 }}>"{query.title}"</span>? This operation cannot be reversed.
               </div>
             </div>
-            
-            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-              <button 
-                onClick={() => setShowDeleteConfirm(false)}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: 10, border: `1px solid ${T.border}`,
-                  background: 'transparent', color: T.text2, fontSize: '0.85rem', cursor: 'pointer',
-                  fontFamily: T.fontBody, fontWeight: 500, transition: 'all 0.15s'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = T.s3; e.currentTarget.style.borderColor = T.border2; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = T.border; }}
-              >Cancel</button>
-              <button 
-                onClick={confirmDelete}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: 10, border: 'none',
-                  background: T.red, color: '#fff', fontSize: '0.85rem', cursor: 'pointer',
-                  fontFamily: T.fontBody, fontWeight: 600, boxShadow: '0 4px 12px rgba(248,113,113,0.3)',
-                  transition: 'all 0.1s'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(248,113,113,0.4)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(248,113,113,0.3)'; }}
-              >Delete</button>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setShowDeleteConfirm(false)} style={{
+                flex: 1, padding: '12px', border: `1px solid rgba(0,0,0,0.1)`,
+                background: 'transparent', color: T.text, fontSize: '0.72rem', cursor: 'pointer',
+                fontFamily: T.fontMono, fontWeight: 800, textTransform: 'uppercase'
+              }}>Cancel</button>
+              <button onClick={confirmDelete} style={{
+                flex: 1, padding: '12px', border: 'none', background: T.red, color: '#fff', 
+                fontSize: '0.72rem', cursor: 'pointer', fontFamily: T.fontMono, fontWeight: 800,
+                textTransform: 'uppercase'
+              }}>Confirm Archive</button>
             </div>
           </div>
         </div>
       )}
 
       <style>{`
-        .custom-scroll::-webkit-scrollbar { width: 3px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: ${T.s4}; border-radius: 2px; }
-        @keyframes popIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
+        .custom-scroll::-webkit-scrollbar { width: 2px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.98) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
       `}</style>
     </div>
   );
 }
 
-// ── Helpers ──────────────────────────────────────────
-
 function Section({ label, children }: { label: string, children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 18 }}>
-      {label && <span style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: 1, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, marginBottom: 8, display: 'block' }}>{label}</span>}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {label && <div style={{ fontSize: '0.58rem', fontWeight: 900, color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, letterSpacing: '0.15em' }}>{label}</div>}
       {children}
     </div>
   );
 }
 
-function InfoRow({ label, value, color }: { label: string, value: string, color?: string }) {
+function InfoRow({ label, value, color, icon }: { label: string, value: string, color?: string, icon?: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: `1px solid ${T.border}` }}>
-      <span style={{ fontSize: '0.72rem', color: T.text3, fontFamily: T.fontMono, width: 90, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: '0.76rem', color: color || T.text2, flex: 1 }}>{value}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: `1px solid rgba(0,0,0,0.05)` }}>
+      <span style={{ color: T.text3, display: 'flex' }}>{icon}</span>
+      <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono, width: 80, flexShrink: 0, textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontSize: '0.75rem', color: color || T.text, flex: 1, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</span>
     </div>
   );
 }
 
 function SettingsRow({ label, children }: { label: string, children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0' }}>
-      <span style={{ fontSize: '0.74rem', color: T.text2 }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <span style={{ fontSize: '0.7rem', color: T.text, fontWeight: 800, fontFamily: T.fontMono, textTransform: 'uppercase' }}>{label}</span>
       {children}
     </div>
   );
@@ -625,47 +529,47 @@ function SettingsRow({ label, children }: { label: string, children: React.React
 function Toggle({ on, onToggle }: { on: boolean, onToggle: () => void }) {
   return (
     <div onClick={onToggle} style={{
-      width: 32, height: 18, borderRadius: 20, background: on ? T.accent : T.s4,
-      cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background 0.2s',
+      width: 36, height: 20, borderRadius: 0, background: on ? T.text : 'rgba(0,0,0,0.1)',
+      cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'all 0.2s',
+      border: `1px solid ${on ? T.text : 'rgba(0,0,0,0.1)'}`
     }}>
-      <div style={{ position: 'absolute', width: 12, height: 12, borderRadius: '50%', background: '#000', top: 3, right: on ? 3 : 17, transition: 'right 0.2s' }} />
+      <div style={{ position: 'absolute', width: 14, height: 14, borderRadius: 0, background: on ? '#fff' : '#fff', top: 2, right: on ? 2 : 18, transition: 'right 0.2s' }} />
     </div>
   );
 }
 
-const miniBtnStyle: React.CSSProperties = {
-  padding: '3px 8px', borderRadius: 5, border: `1px solid ${T.border}`, background: 'transparent',
-  color: T.text3, fontSize: '0.65rem', cursor: 'pointer', fontFamily: T.fontMono,
-};
-
 const selectStyle: React.CSSProperties = {
-  padding: '3px 6px', borderRadius: 5, border: `1px solid ${T.border}`,
-  background: T.s1, color: T.text, fontSize: '0.72rem', fontFamily: T.fontMono,
-  outline: 'none', cursor: 'pointer', appearance: 'none' as const,
+  padding: '6px 10px', borderRadius: 0, border: `1px solid rgba(0,0,0,0.1)`,
+  background: '#fff', color: T.text, fontSize: '0.7rem', fontFamily: T.fontMono,
+  outline: 'none', cursor: 'pointer', appearance: 'none' as const, fontWeight: 700
 };
 
-function PanelBtn({ label, type, onClick, disabled }: { label: string, type: 'accent'|'ghost'|'danger', onClick?: () => void, disabled?: boolean }) {
+function PanelBtn({ label, type, onClick, disabled, icon }: { label: string, type: 'accent'|'ghost'|'danger', onClick?: () => void, disabled?: boolean, icon?: React.ReactNode }) {
   const getStyle = (): React.CSSProperties => {
-    if (type === 'accent') return { background: `linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,255,0.1))`, border: '1px solid rgba(0,229,255,0.25)', color: T.accent };
-    if (type === 'danger') return { background: 'transparent', border: '1px solid rgba(248,113,113,0.2)', color: T.red };
-    return { background: 'transparent', border: `1px solid ${T.border}`, color: T.text2 };
+    if (type === 'accent') return { background: T.text, color: '#fff', border: 'none' };
+    if (type === 'danger') return { background: 'transparent', border: `1px solid rgba(0,0,0,0.1)`, color: T.red };
+    return { background: 'transparent', border: `1px solid rgba(0,0,0,0.1)`, color: T.text };
   };
   return (
-    <button onClick={onClick} disabled={disabled} style={{ width: '100%', padding: '9px 14px', borderRadius: 8, fontSize: '0.8rem', cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: T.fontBody, display: 'flex', alignItems: 'center', gap: 7, fontWeight: 500, transition: 'all 0.15s', opacity: disabled ? 0.5 : 1, ...getStyle() }}
-      onMouseEnter={e => {
-        if (disabled) return;
-        if (type === 'accent') e.currentTarget.style.background = `linear-gradient(135deg, rgba(0,229,255,0.22), rgba(124,58,255,0.16))`;
-        if (type === 'ghost') { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.background = T.s2; }
-        if (type === 'danger') e.currentTarget.style.background = T.redDim;
-      }}
-      onMouseLeave={e => {
-        if (disabled) return;
-        if (type === 'accent') e.currentTarget.style.background = `linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,255,0.1))`;
-        if (type === 'ghost') { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'transparent'; }
-        if (type === 'danger') e.currentTarget.style.background = 'transparent';
-      }}
+    <button onClick={onClick} disabled={disabled} style={{ 
+      width: '100%', padding: '12px 16px', borderRadius: 0, fontSize: '0.72rem', cursor: disabled ? 'not-allowed' : 'pointer', 
+      fontFamily: T.fontMono, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontWeight: 900, 
+      transition: 'all 0.15s', opacity: disabled ? 0.5 : 1, textTransform: 'uppercase', ...getStyle() 
+    }}
+      onMouseEnter={e => { if(!disabled && type !== 'accent') e.currentTarget.style.borderColor = T.text; }}
+      onMouseLeave={e => { if(!disabled && type !== 'accent') e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; }}
     >
-      {label}
+      {icon} {label}
     </button>
+  );
+}
+
+function EmptyState({ message, sub, icon }: { message: string; sub?: string; icon?: React.ReactNode }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '40px 20px', border: `1px dashed rgba(0,0,0,0.08)`, borderRadius: 0 }}>
+      <div style={{ color: T.text3, opacity: 0.3, marginBottom: 12, display: 'flex', justifyContent: 'center' }}>{icon}</div>
+      <div style={{ fontSize: '0.85rem', color: T.text, fontWeight: 900, fontFamily: T.fontHead, fontStyle: 'italic', marginBottom: 4 }}>{message}</div>
+      {sub && <div style={{ fontSize: '0.72rem', color: T.text3, lineHeight: 1.5 }}>{sub}</div>}
+    </div>
   );
 }

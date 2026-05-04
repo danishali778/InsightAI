@@ -54,12 +54,12 @@ export function MessageBubble({
 
   if (message.role === 'user') {
     return (
-      <div style={{ padding: '4px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 12 }}>
+      <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 20 }}>
         <div style={{
-          maxWidth: '70%', background: '#fafafa', border: `1px solid ${T.border}`,
-          borderRadius: '16px 16px 4px 16px', padding: '10px 16px',
-          fontSize: '0.92rem', lineHeight: 1.5, color: T.text,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+          maxWidth: '75%', background: '#fff', border: `1.5px solid rgba(0,0,0,0.1)`,
+          borderRadius: 0, padding: '14px 20px',
+          fontSize: '0.95rem', lineHeight: 1.6, color: T.text,
+          boxShadow: 'none',
         }}>
           {message.content}
         </div>
@@ -70,13 +70,14 @@ export function MessageBubble({
   return (
     <div id={message.id ? `msg-${message.id}` : undefined} style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
       {/* AI Header & Content */}
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '0 12px 20px' }}>
-        {/* Grid Logo Icon */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, width: 20, height: 20, marginTop: 4, flexShrink: 0 }}>
-          <div style={{ background: '#1a1a1a', borderRadius: 2 }} />
-          <div style={{ background: T.accent, borderRadius: 2 }} />
-          <div style={{ background: T.purple, borderRadius: 2 }} />
-          <div style={{ background: '#d1d1d1', borderRadius: 2 }} />
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', padding: '0 0 24px' }}>
+        <div style={{ 
+          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+          width: 24, height: 24, background: '#1a1a1a', borderRadius: 4, 
+          color: '#fff', fontSize: '0.8rem', fontWeight: 900, fontStyle: 'italic',
+          flexShrink: 0, marginTop: 4
+        }}>
+          Q
         </div>
         
         <div style={{ fontSize: '1rem', lineHeight: 1.6, color: T.text, fontWeight: 450, flex: 1 }}>
@@ -94,31 +95,32 @@ export function MessageBubble({
       {/* Technical Result Box (SQL, Table, Charts) */}
       {(message.sql || message.rows) && !message.error && (
         <div style={{
-          marginLeft: 34, // Alignment with text
+          marginLeft: 0, 
           background: '#fff', 
-          border: `1px solid #e5e5e5`,
-          borderRadius: 16, 
+          border: `1px solid rgba(0,0,0,0.08)`,
+          borderRadius: 0, 
           overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+          boxShadow: 'none',
+          marginBottom: 12
         }}>
           {/* Metadata Header */}
           <div style={{ 
-            padding: '10px 16px', 
-            background: '#fcfcfc', 
-            borderBottom: `1px solid #e5e5e5`,
+            padding: '12px 20px', 
+            background: 'rgba(0,0,0,0.02)', 
+            borderBottom: `1px solid rgba(0,0,0,0.05)`,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: T.text3, fontWeight: 600, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent }} />
-              {message.sql ? `SQL generated - ${message.sql.length} chars` : 'Data results'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.62rem', color: T.text3, fontWeight: 700, fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#1a1a1a' }} />
+              {message.sql ? `SQL GENERATED — ${message.sql.length} CHARS` : 'DATA OBSERVATIONS'}
             </div>
             <button 
               onClick={() => message.sql && navigator.clipboard.writeText(message.sql)}
-              style={{ background: 'none', border: 'none', color: T.accent, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', fontFamily: T.fontBody }}
+              style={{ background: 'none', border: 'none', color: T.text, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em' }}
             >
-              Copy Link
+              COPY LINK
             </button>
           </div>
 
@@ -156,34 +158,35 @@ export function MessageBubble({
           )}
 
           {/* Assistant Action Bar (Inside Box) */}
-          <div style={{ padding: '12px 16px', borderTop: `1px solid #e5e5e5`, display: 'flex', alignItems: 'center', gap: 10, background: '#fafafa' }}>
+          <div style={{ padding: '16px 20px', borderTop: `1px solid rgba(0,0,0,0.05)`, display: 'flex', alignItems: 'center', gap: 12, background: '#fff' }}>
             <button
               onClick={handleLibraryClick}
               disabled={!!saveLabel || !message.sql || isSmartSaving}
               style={{
-                padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`,
-                background: '#fff', color: saveLabel ? T.green : T.text2,
-                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 16px', borderRadius: 0, border: `1.5px solid #1a1a1a`,
+                background: '#fff', color: '#1a1a1a',
+                fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em'
               }}
             >
-              {saveLabel ? 'Saved' : 'Save to Library'}
+              {saveLabel ? 'SAVED' : 'SAVE TO LIBRARY'}
             </button>
 
             <button
               onClick={handleDashboardClick}
               disabled={isSmartSaving}
               style={{
-                padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.border}`,
-                background: isSmartSaving ? T.s2 : '#fff', 
-                color: T.text2,
-                fontSize: '0.75rem', fontWeight: 600, cursor: isSmartSaving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                transition: 'all 0.2s',
+                padding: '8px 16px', borderRadius: 0, border: `1.5px solid #1a1a1a`,
+                background: isSmartSaving ? 'rgba(0,0,0,0.05)' : '#fff', 
+                color: '#1a1a1a',
+                fontSize: '0.7rem', fontWeight: 900, cursor: isSmartSaving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                transition: 'all 0.2s', fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em'
               }}
             >
               {isSmartSaving ? '⏳...' : (
                 <>
-                  <Plus size={14} strokeWidth={2.5} />
-                  Add to Dashboard
+                  <Plus size={12} strokeWidth={3} />
+                  ADD TO DASHBOARD
                 </>
               )}
             </button>
@@ -198,30 +201,32 @@ export function MessageBubble({
                 }}
                 disabled={isPinning}
                 style={{
-                  padding: '6px 12px', borderRadius: 8, 
-                  border: `1px solid ${message.is_pinned ? T.accent : T.border}`,
-                  background: message.is_pinned ? T.accentDim : '#fff',
-                  color: message.is_pinned ? T.accent : T.text2,
-                  fontSize: '0.75rem', fontWeight: 600, cursor: isPinning ? 'default' : 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s',
+                  padding: '8px 16px', borderRadius: 0, 
+                  border: `1.5px solid #1a1a1a`,
+                  background: message.is_pinned ? '#1a1a1a' : '#fff',
+                  color: message.is_pinned ? '#fff' : '#1a1a1a',
+                  fontSize: '0.7rem', fontWeight: 900, cursor: isPinning ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
+                  fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em'
                 }}
               >
-                <Pin size={14} strokeWidth={2.5} style={{ transform: message.is_pinned ? 'rotate(45deg)' : 'none', transition: 'transform 0.3s' }} />
-                {message.is_pinned ? 'Pinned' : 'Pin Result'}
+                <Pin size={12} strokeWidth={3} style={{ transform: message.is_pinned ? 'rotate(45deg)' : 'none', transition: 'transform 0.3s' }} />
+                {message.is_pinned ? 'PINNED' : 'PIN RESULT'}
               </button>
             )}
 
             <button
               style={{
-                padding: '6px 12px', borderRadius: 8, border: `1px solid ${T.accent}`,
-                background: 'transparent', color: T.accent,
-                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s',
+                padding: '8px 16px', borderRadius: 0, border: `1.5px solid rgba(0,0,0,0.1)`,
+                background: 'transparent', color: T.text3,
+                fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
+                fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em'
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = T.accent; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.accent; }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#1a1a1a'; e.currentTarget.style.color = '#1a1a1a'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'; e.currentTarget.style.color = T.text3; }}
             >
-              <RotateCcw size={14} strokeWidth={2.5} />
-              Regenerate
+              <RotateCcw size={12} strokeWidth={3} />
+              REGENERATE
             </button>
 
             <div style={{ flex: 1 }} />

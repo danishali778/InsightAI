@@ -20,11 +20,11 @@ interface MainShellProps {
   hideHeader?: boolean;
 }
 
-export function MainShell({ 
-  title, 
-  subtitle, 
-  badge, 
-  headerActions, 
+export function MainShell({
+  title,
+  subtitle,
+  badge,
+  headerActions,
   children,
   onDashboardHover,
   hideSidebar = false,
@@ -32,11 +32,11 @@ export function MainShell({
   hideHeader = false
 }: MainShellProps) {
   return (
-    <div style={{ 
-      display: 'flex', 
-      height: '100vh', 
-      width: '100vw', 
-      overflow: 'hidden', 
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      width: '100vw',
+      overflow: 'hidden',
       background: 'transparent', // Let mesh background show through
       fontFamily: T.fontBody,
       color: T.text,
@@ -57,9 +57,9 @@ export function MainShell({
       >
         {/* Universal Header */}
         {!hideHeader && (
-          <AppHeader 
-            title={title} 
-            subtitle={subtitle} 
+          <AppHeader
+            title={title}
+            subtitle={subtitle}
             badge={badge}
           >
             {headerActions}
@@ -67,8 +67,8 @@ export function MainShell({
         )}
 
         {/* Page Content */}
-        <main style={{ 
-          flex: 1, 
+        <main style={{
+          flex: 1,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',

@@ -1,11 +1,27 @@
 import { useState, useRef } from 'react';
+import { 
+  Folder, 
+  Clock, 
+  Calendar, 
+  Users, 
+  Globe, 
+  Search, 
+  Plus,
+  Hash,
+  Tag
+} from 'lucide-react';
 import { T } from '../dashboard/tokens';
 import { createLibraryFolder } from '../../services/api';
 import type { FolderSidebarProps } from '../../types/library';
 
 const TAG_COLORS: Record<string, string> = {
-  revenue: '#00e5ff', churn: '#7c3aff', users: '#22d3a5',
-  weekly: '#f59e0b', critical: '#f87171', sales: '#ff6b35', funnel: '#c084fc',
+  revenue: T.accent, 
+  churn: T.red, 
+  users: T.green,
+  weekly: T.yellow, 
+  critical: T.red, 
+  sales: T.accent, 
+  funnel: T.purple,
 };
 
 export function FolderSidebar({ folders, tags, stats, activeFolder, activeTag, search, onFolderChange, onTagChange, onSearchChange, onFolderCreated }: FolderSidebarProps) {
@@ -36,87 +52,90 @@ export function FolderSidebar({ folders, tags, stats, activeFolder, activeTag, s
   };
 
   const quickAccess = [
-    { id: 'All Queries', icon: '⭐', count: stats.total_queries },
-    { id: 'Recently Run', icon: '🕐', count: stats.recently_run ?? 0 },
-    { id: 'Scheduled', icon: '📅', count: stats.scheduled },
-    { id: 'Shared with Me', icon: '👥', count: 0 },
-    { id: 'Public Library', icon: '🌐', count: 0 },
+    { id: 'All Queries', icon: <Hash size={14} />, count: stats.total_queries },
+    { id: 'Recently Run', icon: <Clock size={14} />, count: stats.recently_run ?? 0 },
+    { id: 'Scheduled', icon: <Calendar size={14} />, count: stats.scheduled },
+    { id: 'Shared with Me', icon: <Users size={14} />, count: 0 },
+    { id: 'Public Library', icon: <Globe size={14} />, count: 0 },
   ];
 
   return (
     <div style={{
-      width: 230, flexShrink: 0, background: T.s1, borderRight: `1px solid ${T.border}`,
+      width: 230, flexShrink: 0, background: T.bg, borderRight: `1px solid rgba(0,0,0,0.08)`,
       display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: T.fontBody
     }}>
       {/* Header & Search */}
-      <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ fontFamily: T.fontHead, fontWeight: 700, fontSize: '0.85rem', color: T.text, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          Folders
-          <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono }}>{folders.length}</span>
+      <div style={{ padding: '24px 16px 12px', borderBottom: `1px solid rgba(0,0,0,0.05)` }}>
+        <div style={{ 
+          fontFamily: T.fontMono, fontWeight: 800, fontSize: '0.62rem', 
+          color: T.text3, marginBottom: 16, display: 'flex', alignItems: 'center', 
+          justifyContent: 'space-between', textTransform: 'uppercase', letterSpacing: '0.15em'
+        }}>
+          Navigation
+          <span>{folders.length + quickAccess.length}</span>
         </div>
         <div style={{ position: 'relative' }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: T.text3, pointerEvents: 'none' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input placeholder="Search queries..." value={search} onChange={e => onSearchChange(e.target.value)} style={{
-            width: '100%', background: T.s2, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 10px 7px 28px',
-            color: T.text2, fontFamily: T.fontBody, fontSize: '0.76rem', outline: 'none', transition: 'border-color 0.2s'
+          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.text3, pointerEvents: 'none' }} />
+          <input placeholder="Filter library..." value={search} onChange={e => onSearchChange(e.target.value)} style={{
+            width: '100%', background: '#fff', border: `1px solid rgba(0,0,0,0.08)`, borderRadius: 0, padding: '8px 10px 8px 32px',
+            color: T.text, fontFamily: T.fontBody, fontSize: '0.78rem', outline: 'none', transition: 'all 0.2s ease'
           }}
-            onFocus={e => e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'}
-            onBlur={e => e.currentTarget.style.borderColor = T.border}
+            onFocus={e => e.currentTarget.style.borderColor = T.text}
+            onBlur={e => e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'}
           />
         </div>
       </div>
 
       {/* Body List */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px', display: 'flex', flexDirection: 'column', gap: 4 }} className="custom-scroll">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 8px', display: 'flex', flexDirection: 'column', gap: 2 }} className="custom-scroll">
         
         {/* Quick Access */}
-        <div style={{ marginBottom: 4 }}>
-          <div style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '1.2px', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, padding: '8px 8px 4px' }}>Quick Access</div>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.1em', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, padding: '8px 12px 6px' }}>Main</div>
           {quickAccess.map(f => (
             <FolderItem key={f.id} active={activeFolder === f.id} onClick={() => onFolderChange(f.id)} icon={f.icon} label={f.id} count={f.count} />
           ))}
         </div>
 
-        {/* My Folders (from API) */}
-        {folders.length > 0 && (
-          <div style={{ marginBottom: 4 }}>
-            <div style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '1.2px', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, padding: '8px 8px 4px' }}>My Folders</div>
-            {folders.map(f => (
-              <FolderItem key={f.name} active={activeFolder === f.name} onClick={() => onFolderChange(f.name)} icon="📁" label={f.name} count={f.count} />
-            ))}
+        {/* My Folders */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.1em', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, padding: '8px 12px 6px' }}>Directories</div>
+          {folders.map(f => (
+            <FolderItem key={f.name} active={activeFolder === f.name} onClick={() => onFolderChange(f.name)} icon={<Folder size={14} />} label={f.name} count={f.count} />
+          ))}
+        </div>
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <div style={{ padding: '12px 4px 0' }}>
+            <span style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.1em', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, padding: '0 0 10px 8px', display: 'block' }}>Taxonomy</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '0 8px' }}>
+              {tags.map(t => {
+                const active = activeTag === t;
+                return (
+                  <span key={t} onClick={() => onTagChange(active ? null : t)} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 0,
+                    border: `1px solid ${active ? T.text : 'rgba(0,0,0,0.08)'}`, background: active ? T.text : 'transparent',
+                    color: active ? '#fff' : T.text3, fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', fontFamily: T.fontMono,
+                    textTransform: 'uppercase', letterSpacing: '0.02em'
+                  }}
+                    onMouseEnter={e => { if(!active){ e.currentTarget.style.borderColor = T.text; e.currentTarget.style.color = T.text; } }}
+                    onMouseLeave={e => { if(!active){ e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)'; e.currentTarget.style.color = T.text3; } }}
+                  >
+                    <div style={{ width: 6, height: 6, borderRadius: 0, background: active ? '#fff' : (TAG_COLORS[t] || T.text3) }}></div>
+                    {t}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Tags (from API) */}
-      {tags.length > 0 && (
-        <div style={{ padding: '10px 10px 0' }}>
-          <span style={{ fontSize: '0.62rem', fontWeight: 600, letterSpacing: '1.2px', color: T.text3, textTransform: 'uppercase', fontFamily: T.fontMono, padding: '0 0 8px 8px', display: 'block' }}>Tags</span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, padding: '0 8px' }}>
-            {tags.map(t => {
-              const active = activeTag === t;
-              return (
-                <span key={t} onClick={() => onTagChange(active ? null : t)} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 20,
-                  border: `1px solid ${active ? 'rgba(0,229,255,0.3)' : T.border}`, background: active ? T.accentDim : 'transparent',
-                  color: active ? T.accent : T.text3, fontSize: '0.68rem', cursor: 'pointer', transition: 'all 0.15s', fontFamily: T.fontMono
-                }}
-                  onMouseEnter={e => { if(!active){ e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; e.currentTarget.style.color = T.accent; e.currentTarget.style.background = T.accentDim; } }}
-                  onMouseLeave={e => { if(!active){ e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text3; e.currentTarget.style.background = 'transparent'; } }}
-                >
-                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: TAG_COLORS[t] || T.text3 }}></div>
-                  {t}
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
-      <div style={{ padding: '10px 16px', borderTop: `1px solid ${T.border}`, marginTop: 'auto' }}>
+      <div style={{ padding: '16px', borderTop: `1px solid rgba(0,0,0,0.05)`, marginTop: 'auto', background: 'rgba(0,0,0,0.01)' }}>
         {creating ? (
-          <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <input
               ref={inputRef}
               value={newName}
@@ -125,48 +144,48 @@ export function FolderSidebar({ folders, tags, stats, activeFolder, activeTag, s
               onBlur={commitFolder}
               placeholder="Folder name..."
               style={{
-                flex: 1, background: T.s2, border: `1px solid rgba(0,229,255,0.3)`, borderRadius: 8,
-                padding: '6px 10px', color: T.text, fontFamily: T.fontBody, fontSize: '0.75rem', outline: 'none',
+                flex: 1, background: '#fff', border: `1px solid ${T.text}`, borderRadius: 0,
+                padding: '8px 10px', color: T.text, fontFamily: T.fontBody, fontSize: '0.78rem', outline: 'none',
               }}
             />
-            <button onMouseDown={cancelCreating} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: T.text3, fontSize: '1rem', lineHeight: 1, padding: '0 2px' }}>×</button>
           </div>
         ) : (
           <button onClick={startCreating} style={{
-            width: '100%', padding: '7px 10px', borderRadius: 8, border: `1px dashed ${T.border2}`, background: 'transparent',
-            color: T.text3, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-            transition: 'all 0.2s', fontFamily: T.fontBody
+            width: '100%', padding: '10px 12px', borderRadius: 0, border: `1px dashed rgba(0,0,0,0.15)`, background: 'transparent',
+            color: T.text3, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+            transition: 'all 0.2s ease', fontFamily: T.fontMono, textTransform: 'uppercase', letterSpacing: '0.05em'
           }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.3)'; e.currentTarget.style.color = T.accent; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border2; e.currentTarget.style.color = T.text3; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = T.text; e.currentTarget.style.color = T.text; e.currentTarget.style.background = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.15)'; e.currentTarget.style.color = T.text3; e.currentTarget.style.background = 'transparent'; }}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New Folder
+            <Plus size={14} /> New Directory
           </button>
         )}
       </div>
 
       <style>{`
-        .custom-scroll::-webkit-scrollbar { width: 3px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: ${T.s4}; border-radius: 2px; }
+        .custom-scroll::-webkit-scrollbar { width: 2px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }
       `}</style>
     </div>
   );
 }
 
-function FolderItem({ active, onClick, icon, label, count }: { active: boolean, onClick: () => void, icon: string, label: string, count: number }) {
+function FolderItem({ active, onClick, icon, label, count }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, count: number }) {
   return (
     <div onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 7, padding: '7px 9px', borderRadius: 8, cursor: 'pointer',
-      transition: 'all 0.15s', border: `1px solid ${active ? 'rgba(0,229,255,0.12)' : 'transparent'}`,
-      background: active ? T.s2 : 'transparent', marginBottom: 1
+      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 0, cursor: 'pointer',
+      transition: 'all 0.15s ease', border: `1px solid ${active ? 'rgba(0,0,0,0.08)' : 'transparent'}`,
+      background: active ? '#fff' : 'transparent', marginBottom: 1,
+      position: 'relative'
     }}
-      onMouseEnter={e => { if(!active) e.currentTarget.style.background = T.s2; }}
+      onMouseEnter={e => { if(!active) e.currentTarget.style.background = 'rgba(0,0,0,0.02)'; }}
       onMouseLeave={e => { if(!active) e.currentTarget.style.background = 'transparent'; }}
     >
-      <span style={{ fontSize: '0.85rem', flexShrink: 0, width: 18, textAlign: 'center', color: active ? T.accent : 'inherit' }}>{icon}</span>
-      <span style={{ fontSize: '0.8rem', color: active ? T.text : T.text2, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-      {count > 0 && <span style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, flexShrink: 0, background: T.s3, padding: '1px 6px', borderRadius: 8 }}>{count}</span>}
+      {active && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: T.text }} />}
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: active ? T.text : T.text3, opacity: active ? 1 : 0.6 }}>{icon}</span>
+      <span style={{ fontSize: '0.8rem', fontWeight: active ? 800 : 500, color: active ? T.text : T.text2, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+      {count > 0 && <span style={{ fontSize: '0.62rem', color: T.text3, fontFamily: T.fontMono, fontWeight: 700 }}>{count}</span>}
     </div>
   );
 }

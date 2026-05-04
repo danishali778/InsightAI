@@ -61,6 +61,16 @@ export const DashboardBackground: React.FC = () => {
         animation: 'mesh-float 30s infinite alternate ease-in-out',
       }} />
 
+      {/* Spatial Grid Overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px)',
+        backgroundSize: '32px 32px',
+        opacity: 0.8,
+        pointerEvents: 'none'
+      }} />
+
       <style>{`
         @keyframes mesh-float {
           0% { transform: translate(0, 0) rotate(0deg) scale(1); }

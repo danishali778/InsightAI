@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar } from 'recharts';
+import { BarChart3, Database, Layers, Layout, Clock, Activity } from 'lucide-react';
 import { MainShell } from '../components/common/MainShell';
 import { AnalyticsHero } from '../components/analytics/AnalyticsHero';
 import { AnalyticsSectionCard } from '../components/analytics/AnalyticsSectionCard';
@@ -14,53 +15,55 @@ const HEALTH_COLORS = [T.green, T.red];
 function AnalyticsEmptyState() {
   return (
     <div style={{ 
-      border: `1px solid ${T.border}`, 
-      borderRadius: 18, 
-      padding: '80px 40px', 
-      background: T.s1, 
+      border: `1px solid rgba(0,0,0,0.08)`, 
+      borderRadius: 0, 
+      padding: '100px 40px', 
+      background: '#fff', 
       textAlign: 'center',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: 20
+      gap: 24
     }}>
       <div style={{ 
-        width: 64, 
-        height: 64, 
-        borderRadius: 20, 
-        background: `rgba(0,229,255,0.1)`, 
+        width: 80, 
+        height: 80, 
+        borderRadius: 0, 
+        background: 'rgba(0,0,0,0.02)', 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        fontSize: '1.8rem'
+        color: T.text3,
+        border: '1px solid rgba(0,0,0,0.05)'
       }}>
-        📊
+        <BarChart3 size={40} strokeWidth={1.5} />
       </div>
-      <div style={{ maxWidth: 460 }}>
-        <h2 style={{ fontFamily: T.fontHead, fontSize: '1.4rem', color: T.text, marginBottom: 12 }}>No activity recorded yet</h2>
-        <p style={{ color: T.text2, lineHeight: 1.6, fontSize: '0.94rem', marginBottom: 24 }}>
-          Your analytics dashboard is calculated on-the-fly based on your query history and dashboard activity. 
-          Run your first query in Chat to start seeing performance insights here.
+      <div style={{ maxWidth: 480 }}>
+        <h2 style={{ fontFamily: T.fontHead, fontSize: '1.8rem', color: T.text, marginBottom: 12, fontWeight: 900, fontStyle: 'italic' }}>Zero Instrumentation Found</h2>
+        <p style={{ color: T.text3, lineHeight: 1.8, fontSize: '0.85rem', marginBottom: 32, fontFamily: T.fontMono, textTransform: 'uppercase' }}>
+          Your analytics ledger is currently vacant. Execution telemetry is harvested from live query history and active dashboard distribution.
         </p>
         <a 
           href="/chat" 
           style={{ 
             display: 'inline-flex',
             alignItems: 'center',
-            padding: '12px 24px',
-            borderRadius: 12,
-            background: T.accent,
+            padding: '14px 32px',
+            borderRadius: 0,
+            background: T.text,
             color: '#fff',
-            fontWeight: 600,
+            fontWeight: 900,
             textDecoration: 'none',
-            fontSize: '0.9rem',
-            transition: 'transform 0.2s ease',
-            boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)'
+            fontSize: '0.75rem',
+            fontFamily: T.fontMono,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            transition: 'all 0.2s'
           }}
-          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
-          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          onMouseOver={(e) => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+          onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
         >
-          Start Chatting
+          INITIATE FIRST QUERY
         </a>
       </div>
     </div>
@@ -102,95 +105,130 @@ export function AnalyticsPage() {
 
   return (
     <MainShell
-      title="Performance Insights"
-      subtitle="Universal analytics across all connections"
+      title="Analytical Intelligence"
+      subtitle="Universal telemetry across all infrastructure"
       badge={{
-        text: 'Live Data',
-        color: T.green,
-        icon: <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.green }} />
+        text: 'LIVE LEDGER',
+        color: T.text,
+        icon: <div style={{ width: 6, height: 6, borderRadius: 0, background: T.text }} />
       }}
     >
-      <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', overflowX: 'hidden', padding: '0 2px 30px' }}>
+      <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', overflowX: 'hidden', padding: '0 2px 40px' }} className="custom-scroll">
         <AnalyticsHero />
 
         {loading ? (
-          <div style={{ padding: '100px 0', textAlign: 'center', color: T.text3 }}>Loading insights...</div>
+          <div style={{ padding: '120px 0', textAlign: 'center', color: T.text3, fontFamily: T.fontMono, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Synchronizing telemetry...
+          </div>
         ) : error ? (
-          <div style={{ padding: '100px 0', textAlign: 'center', color: T.red }}>{error}</div>
+          <div style={{ padding: '120px 0', textAlign: 'center', color: T.red, fontFamily: T.fontMono, fontSize: '0.72rem', textTransform: 'uppercase' }}>
+            Transmission Error: {error}
+          </div>
         ) : overview && overview.total_queries === 0 ? (
           <AnalyticsEmptyState />
         ) : overview ? (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14, marginBottom: 20 }}>
-              <AnalyticsStatCard label="Active Connections" value={String(overview.active_connections)} hint="Connected databases available to chat, library, and dashboards." />
-              <AnalyticsStatCard label="Queries Run" value={String(overview.total_queries)} hint={`${overview.success_rate}% success rate across recorded executions.`} tone="green" />
-              <AnalyticsStatCard label="Saved Queries" value={String(overview.saved_queries)} hint={`${overview.scheduled_queries} scheduled queries currently configured.`} tone="purple" />
-              <AnalyticsStatCard label="Dashboards" value={String(overview.dashboards)} hint={`${overview.total_widgets} widgets created from query output.`} tone="yellow" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16, marginBottom: 24 }}>
+              <AnalyticsStatCard label="Active Nodes" value={String(overview.active_connections)} hint="Synchronized databases" />
+              <AnalyticsStatCard label="Execution Volume" value={String(overview.total_queries)} hint={`${overview.success_rate}% success threshold`} tone="green" />
+              <AnalyticsStatCard label="Asset Density" value={String(overview.saved_queries)} hint={`${overview.scheduled_queries} automated tasks`} tone="purple" />
+              <AnalyticsStatCard label="Interface Assets" value={String(overview.dashboards)} hint={`${overview.total_widgets} active components`} tone="yellow" />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16 }}>
-              <AnalyticsSectionCard eyebrow="Query health" title="Execution quality">
-                <div style={{ height: 240, width: '100%', display: 'flex', alignItems: 'center' }}>
-                  <ResponsiveContainer width="40%" height="100%">
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
+              <AnalyticsSectionCard eyebrow="Reliability metrics" title="Execution Quality">
+                <div style={{ height: 260, width: '100%', display: 'flex', alignItems: 'center' }}>
+                  <ResponsiveContainer width="45%" height="100%">
                     <PieChart>
-                      <Pie data={healthData} innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">
+                      <Pie data={healthData} innerRadius={60} outerRadius={85} paddingAngle={0} dataKey="value" stroke="none">
                         {healthData.map((_entry, index) => (
                           <Cell key={`cell-${index}`} fill={HEALTH_COLORS[index % HEALTH_COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip 
-                        contentStyle={{ background: T.s1, border: `1px solid ${T.border}`, borderRadius: 8, fontSize: '0.8rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-                        itemStyle={{ color: T.text }}
+                        contentStyle={{ background: '#fff', border: `1px solid ${T.text}`, borderRadius: 0, fontSize: '0.68rem', fontFamily: T.fontMono, boxShadow: 'none' }}
+                        itemStyle={{ color: T.text, fontWeight: 700 }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                   
-                  <div style={{ flex: 1, paddingLeft: 30 }}>
-                    <div style={{ fontSize: '2.2rem', fontFamily: T.fontHead, color: T.green }}>{overview.success_rate}%</div>
-                    <div style={{ color: T.text3, fontSize: '0.8rem', marginTop: 4, letterSpacing: 0.5, fontWeight: 500 }}>OVERALL RELIABILITY</div>
-                    <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: T.green }} />
-                        <span style={{ fontSize: '0.85rem', color: T.text2 }}>{queryHealth?.successful} Successful</span>
+                  <div style={{ flex: 1, paddingLeft: 40, borderLeft: '1px solid rgba(0,0,0,0.05)' }}>
+                    <div style={{ fontSize: '3.2rem', fontFamily: T.fontHead, color: T.text, fontWeight: 900, fontStyle: 'italic', lineHeight: 1 }}>{overview.success_rate}%</div>
+                    <div style={{ color: T.text3, fontSize: '0.62rem', marginTop: 8, letterSpacing: '0.15em', fontWeight: 900, fontFamily: T.fontMono, textTransform: 'uppercase' }}>AGGREGATE RELIABILITY</div>
+                    
+                    <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: 0, background: T.green }} />
+                          <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono, fontWeight: 800, textTransform: 'uppercase' }}>Successful</span>
+                        </div>
+                        <span style={{ fontSize: '0.85rem', color: T.text, fontWeight: 900, fontFamily: T.fontMono }}>{queryHealth?.successful}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: T.red }} />
-                        <span style={{ fontSize: '0.85rem', color: T.text2 }}>{queryHealth?.failed} Failed</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: 0, background: T.red }} />
+                          <span style={{ fontSize: '0.68rem', color: T.text3, fontFamily: T.fontMono, fontWeight: 800, textTransform: 'uppercase' }}>Failed</span>
+                        </div>
+                        <span style={{ fontSize: '0.85rem', color: T.text, fontWeight: 900, fontFamily: T.fontMono }}>{queryHealth?.failed}</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </AnalyticsSectionCard>
 
-              <AnalyticsSectionCard eyebrow="Asset summary" title="Library and dashboards">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingTop: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <AnalyticsSectionCard eyebrow="Infrastructure" title="Asset Inventory">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <div style={{ color: T.text3, fontSize: '0.7rem', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>SAVED IN LIBRARY</div>
-                      <div style={{ fontSize: '1.4rem', fontFamily: T.fontHead }}>{library?.total_queries || 0} Queries</div>
+                      <div style={{ color: T.text3, fontSize: '0.62rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: 8, fontFamily: T.fontMono, textTransform: 'uppercase' }}>Library Density</div>
+                      <div style={{ fontSize: '1.8rem', fontFamily: T.fontHead, fontWeight: 900, fontStyle: 'italic' }}>{library?.total_queries || 0} <span style={{ fontSize: '0.8rem', fontStyle: 'normal', fontWeight: 400, color: T.text3 }}>QUERIES</span></div>
                     </div>
-                    <div style={{ height: 40, width: 60 }}>
+                    <div style={{ height: 44, width: 80, opacity: 0.8 }}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={[{v: 4}, {v: 7}, {v: 5}, {v: 9}]}>
-                          <Bar dataKey="v" fill={T.accent} radius={[2, 2, 0, 0]} />
+                        <BarChart data={[{v: 4}, {v: 7}, {v: 5}, {v: 9}, {v: 6}, {v: 8}]}>
+                          <Bar dataKey="v" fill={T.text} radius={0} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                   
-                  <div style={{ height: 1, background: T.border, opacity: 0.5 }} />
+                  <div style={{ height: 1, background: 'rgba(0,0,0,0.05)' }} />
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div>
-                      <div style={{ color: T.text3, fontSize: '0.7rem', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>DASHBOARD ASSETS</div>
-                      <div style={{ fontSize: '1.4rem', fontFamily: T.fontHead }}>{dashboards?.total_widgets || 0} Widgets</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: T.text3, fontSize: '0.62rem', fontWeight: 900, letterSpacing: '0.1em', marginBottom: 8, fontFamily: T.fontMono, textTransform: 'uppercase' }}>Visualization Distribution</div>
+                      <div style={{ fontSize: '1.8rem', fontFamily: T.fontHead, fontWeight: 900, fontStyle: 'italic' }}>{dashboards?.total_widgets || 0} <span style={{ fontSize: '0.8rem', fontStyle: 'normal', fontWeight: 400, color: T.text3 }}>WIDGETS</span></div>
                     </div>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {Object.entries(dashboards?.viz_breakdown || {}).slice(0, 3).map(([key, val]) => (
-                        <div key={key} title={`${key}: ${val}`} style={{ width: 24, height: 24, borderRadius: 6, background: T.s2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', border: `1px solid ${T.border}` }}>
-                          📈
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {Object.entries(dashboards?.viz_breakdown || {}).slice(0, 4).map(([key, val]) => (
+                        <div key={key} title={`${key}: ${val}`} style={{ 
+                          width: 32, height: 32, borderRadius: 0, background: '#fff', 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                          color: T.text, border: `1px solid rgba(0,0,0,0.1)`,
+                          transition: 'all 0.15s'
+                        }} onMouseEnter={e => e.currentTarget.style.borderColor = T.text}
+                           onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(0,0,0,0.1)'}
+                        >
+                          {key === 'table' ? <Layers size={14} /> : key === 'bar' ? <BarChart3 size={14} /> : <Layout size={14} />}
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 20, marginTop: 8 }}>
+                    <div style={{ flex: 1, padding: '16px', background: 'rgba(0,0,0,0.02)', borderLeft: `2px solid ${T.text}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.text3, marginBottom: 4 }}>
+                        <Database size={12} />
+                        <span style={{ fontSize: '0.58rem', fontWeight: 900, fontFamily: T.fontMono, textTransform: 'uppercase' }}>Storage</span>
+                      </div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 900, color: T.text, fontFamily: T.fontMono }}>{overview.active_connections} NODES</div>
+                    </div>
+                    <div style={{ flex: 1, padding: '16px', background: 'rgba(0,0,0,0.02)', borderLeft: `2px solid ${T.text}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.text3, marginBottom: 4 }}>
+                        <Activity size={12} />
+                        <span style={{ fontSize: '0.58rem', fontWeight: 900, fontFamily: T.fontMono, textTransform: 'uppercase' }}>Uptime</span>
+                      </div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 900, color: T.text, fontFamily: T.fontMono }}>99.9% LIVE</div>
                     </div>
                   </div>
                 </div>
@@ -201,6 +239,11 @@ export function AnalyticsPage() {
           </>
         ) : null}
       </div>
+
+      <style>{`
+        .custom-scroll::-webkit-scrollbar { width: 2px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }
+      `}</style>
     </MainShell>
   );
 }
